@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IsaSAT_CDCL_SML (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IsaSAT_CDCL_SML</h1>
+
+<span class="command">theory</span> <span class="name">IsaSAT_CDCL_SML</span><br/>
+<span class="keyword">imports</span> <a href="IsaSAT_CDCL.html"><span class="name">IsaSAT_CDCL</span></a> <a href="IsaSAT_Propagate_Conflict_SML.html"><span class="name">IsaSAT_Propagate_Conflict_SML</span></a> <a href="IsaSAT_Conflict_Analysis_SML.html"><span class="name">IsaSAT_Conflict_Analysis_SML</span></a> <a href="IsaSAT_Backtrack_SML.html"><span class="name">IsaSAT_Backtrack_SML</span></a> <a href="IsaSAT_Decide_SML.html"><span class="name">IsaSAT_Decide_SML</span></a> <a href="IsaSAT_Show_SML.html"><span class="name">IsaSAT_Show_SML</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IsaSAT_CDCL_SML</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>IsaSAT_CDCL</span><span> </span><span>IsaSAT_Propagate_Conflict_SML</span><span> </span><span>IsaSAT_Conflict_Analysis_SML</span><span>
+</span><span>    </span><span>IsaSAT_Backtrack_SML</span><span>
+</span><span>    </span><span>IsaSAT_Decide_SML</span><span> </span><span>IsaSAT_Show_SML</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>get_conflict_wl_is_None</span><span> </span><span>decide_wl_or_skip_D_heur</span><span> </span><span>skip_and_resolve_loop_wl_D_heur</span><span>
+</span><span>  </span><span>backtrack_wl_D_nlit_heur</span><span> </span><span>isasat_current_status</span><span> </span><span>count_decided_st_heur</span><span> </span><span>get_conflict_wl_is_None_heur</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>cdcl_twl_o_prog_wl_D</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>cdcl_twl_o_prog_wl_D_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_o_prog_wl_D_heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_unbounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool_assn *a isasat_unbounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_o_prog_wl_D_heur_def</span><span> </span><span>PR_CONST_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>get_conflict_wl_is_None</span><span> </span><span>get_conflict_wl_is_None_heur_alt_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>cdcl_twl_o_prog_wl_D_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_o_prog_wl_D_heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[isasat_fast]<span class="hidden">&#8681;</span><sub>a</sub>
+      isasat_bounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; bool_assn *a isasat_bounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_o_prog_wl_D_heur_def</span><span> </span><span>PR_CONST_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>get_conflict_wl_is_None</span><span> </span><span>get_conflict_wl_is_None_heur_alt_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>isasat_fast_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>cdcl_twl_o_prog_wl_D_code.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>cdcl_twl_o_prog_wl_D_fast_code.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>cdcl_twl_stgy_prog_wl_D</span><span> </span><span>unit_propagation_outer_loop_wl_D_heur</span><span>
+</span><span>  </span><span>cdcl_twl_o_prog_wl_D_heur</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>cdcl_twl_stgy_prog_wl_D_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_stgy_prog_wl_D_heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_unbounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> isasat_unbounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_stgy_prog_wl_D_heur_def</span><span> </span><span>PR_CONST_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">export_code</span></span><span> </span><span>cdcl_twl_stgy_prog_wl_D_code</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>SML_imp</span><span> </span><span class="keyword2"><span class="keyword">module_name</span></span><span> </span><span>SAT_Solver</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">file</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;code/CDCL_Cached_Array_Trail.sml&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">d93efc62 </td><td align="center">Fri 06 Dec 2019 12:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

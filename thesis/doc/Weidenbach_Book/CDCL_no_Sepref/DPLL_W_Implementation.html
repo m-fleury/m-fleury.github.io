@@ -1,0 +1,972 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory DPLL_W_Implementation (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory DPLL_W_Implementation</h1>
+
+<span class="command">theory</span> <span class="name">DPLL_W_Implementation</span><br/>
+<span class="keyword">imports</span> <a href="DPLL_CDCL_W_Implementation.html"><span class="name">DPLL_CDCL_W_Implementation</span></a> <a href="DPLL_W.html"><span class="name">DPLL_W</span></a> <a href="Code_Target_Numeral.html"><span class="name">Code_Target_Numeral</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>DPLL_W_Implementation</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>DPLL_CDCL_W_Implementation</span><span> </span><span>DPLL_W</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;HOL-Library.Code_Target_Numeral&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Simple Implementation of DPLL&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Combining the propagate and decide: a DPLL step&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>DPLL_step</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;int dpll<span class="hidden">&#8681;</span><sub>W</sub>_ann_lits &#215; int literal list list
+  &#8658; int dpll<span class="hidden">&#8681;</span><sub>W</sub>_ann_lits &#215; int literal list list&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_step = (&#955;(Ms, N).
+  (case find_first_unit_clause N Ms of
+    Some (L, _) &#8658; (Propagated L () # Ms, N)
+  | _ &#8658;
+    if &#8707;C &#8712; set N. (&#8704;c &#8712; set C. -c &#8712; lits_of_l Ms)
+    then
+      (case backtrack_split Ms of
+        (_, L # M) &#8658; (Propagated (- (lit_of L)) () # M, N)
+      | (_, _) &#8658; (Ms, N)
+      )
+    else
+    (case find_first_unused_var N (lits_of_l Ms) of
+        Some a &#8658; (Decided a # Ms, N)
+      | None &#8658; (Ms, N))))&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Example of propagation:&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">value</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_step ([Decided (Neg 1)], [[Pos (1::int), Neg 2]])&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We define the conversion function between the states as defined in &#8249;Prop_DPLL&#8250; (with
+  multisets) and here (with lists).&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;toS &#8801; &#955;(Ms::(int, unit) ann_lits)
+                      (N:: int literal list list). (Ms, mset (map mset N)) &quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;toS&#39; &#8801; &#955;(Ms::(int, unit) ann_lits,
+                          N:: int literal list list). (Ms, mset (map mset N)) &quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Proof of correctness of @{term DPLL_step}&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>DPLL_step_is_a_dpll<span class="hidden">&#8681;</span><sub>W</sub>_step</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>step</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms&#39;, N&#39;) = DPLL_step (Ms, N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>neq</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms, N) &#8800; (Ms&#39;, N&#39;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub> (toS Ms N) (toS Ms&#39; N&#39;)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">let</span></span><span> </span><span class="var">?S</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms, mset (map mset N))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>L</span><span> </span><span>E</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span>unit</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unit_clause N Ms = Some (L, E)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>Ms&#39;N</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms&#39;, N&#39;) = (Propagated L () # Ms, N)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>step</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>DPLL_step_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>C</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>      </span><span>C</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;C &#8712; set N&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>Ms</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Ms &#8872;as CNot (mset C - {#L#})&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>undef</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;undefined_lit Ms L&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;L &#8712; set C&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>find_first_unit_clause_some</span><span class="delimiter">[</span><span>OF</span><span> </span><span>unit</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>metis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub> (Ms, mset (map mset N))
+         (Propagated L () # fst (Ms, mset (map mset N)), snd (Ms, mset (map mset N)))&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>.propagate</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>Ms</span><span> </span><span>undef</span><span> </span><span>C</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;L &#8712; set C&#8250;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>C</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>Ms&#39;N</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span>unit</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unit_clause N Ms = None&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span>exC</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;C &#8712; set N. Ms &#8872;as CNot (mset C)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>C</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>C</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;C &#8712; set N&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>Ms</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Ms &#8872;as CNot (mset C)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>L</span><span> </span><span>M</span><span> </span><span>M&#39;</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>bt</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;backtrack_split Ms = (M&#39;, L # M)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>step</span><span> </span><span>exC</span><span> </span><span>neq</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>DPLL_step_def</span><span> </span><span>prod.case</span><span> </span><span>unit</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;backtrack_split Ms&quot;</span></span></span><span class="delimiter">,</span><span> </span><span>rename_tac</span><span> </span><span>b</span><span class="delimiter">,</span><span> </span><span>case_tac</span><span> </span><span>b</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lits_of_l_unfold</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_decided L&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>backtrack_split_snd_hd_decided</span><span class="delimiter">[</span><span>of</span><span> </span><span>Ms</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub> (Ms, mset (map mset N))
+                  (Propagated (- lit_of L) () # M, snd (Ms, mset (map mset N)))&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>.backtrack</span><span class="delimiter">[</span><span>OF</span><span> </span><span>_</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;is_decided L&#8250;</span></span></span><span class="delimiter">,</span><span> </span><span>of</span><span> </span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>C</span><span> </span><span>Ms</span><span> </span><span>bt</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms&#39;, N&#39;) = (Propagated (- (lit_of L)) () # M, N)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>step</span><span> </span><span>exC</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>DPLL_step_def</span><span> </span><span>bt</span><span> </span><span>prod.case</span><span> </span><span>unit</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lits_of_l_unfold</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span>unit</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unit_clause N Ms = None&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span>exC</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172; (&#8707;C &#8712; set N. Ms &#8872;as CNot (mset C))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>L</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>unused</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unused_var N (lits_of_l Ms) = Some L&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>step</span><span> </span><span>exC</span><span> </span><span>neq</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>DPLL_step_def</span><span> </span><span>prod.case</span><span> </span><span>unit</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unused_var N (lits_of_l Ms)&quot;</span></span></span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lits_of_l_unfold</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub> (Ms, mset (map mset N))
+               (Decided L # fst (Ms, mset (map mset N)), snd (Ms, mset (map mset N)))&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>.decided</span><span class="delimiter">[</span><span>of</span><span> </span><span class="var">?S</span><span> </span><span>L</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>find_first_unused_var_Some</span><span class="delimiter">[</span><span>OF</span><span> </span><span>unused</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>Decided_Propagated_in_iff_in_lits_of_l</span><span> </span><span>atms_of_ms_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms&#39;, N&#39;) = (Decided L # Ms, N)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>step</span><span> </span><span>exC</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>DPLL_step_def</span><span> </span><span>unused</span><span> </span><span>prod.case</span><span> </span><span>unit</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lits_of_l_unfold</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unit_clause N Ms&quot;</span></span></span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>DPLL_step_stuck_final_state</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>step</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms, N) = DPLL_step (Ms, N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;conclusive_dpll<span class="hidden">&#8681;</span><sub>W</sub>_state (toS Ms N)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>unit</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unit_clause N Ms = None&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>step</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>DPLL_step_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span>option.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span>n</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;C &#8712; set N. Ms &#8872;as CNot (mset C)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>Ms</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms, N) = (case backtrack_split Ms of (x, []) &#8658; (Ms, N)
+                         | (x, L # M) &#8658; (Propagated (- lit_of L) () # M, N))&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>step</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>DPLL_step_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>unit</span><span> </span><span>lits_of_l_unfold</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;snd (backtrack_split Ms) = []&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;backtrack_split Ms&quot;</span></span></span><span class="delimiter">,</span><span> </span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;snd (backtrack_split Ms)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>a</span><span> </span><span>b</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;backtrack_split Ms = (a, b)&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;snd (backtrack_split Ms) = []&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;snd (backtrack_split Ms) = []&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>      </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>a</span><span> </span><span>b</span><span> </span><span>aa</span><span> </span><span>list</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">assume</span></span><span>
+</span><span>        </span><span>bt</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;backtrack_split Ms = (a, b)&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>        </span><span>bt&#39;</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;snd (backtrack_split Ms) = aa # list&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>Ms</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Ms = Propagated (- lit_of aa) () # list&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>Ms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_decided aa&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>backtrack_split_snd_hd_decided</span><span class="delimiter">[</span><span>of</span><span> </span><span>Ms</span><span class="delimiter">]</span><span> </span><span>bt</span><span> </span><span>bt&#39;</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fst (backtrack_split Ms) @ aa # list = Ms&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>backtrack_split_list_eq</span><span class="delimiter">[</span><span>of</span><span> </span><span>Ms</span><span class="delimiter">]</span><span> </span><span>bt&#39;</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>False</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>Ms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;snd (backtrack_split Ms) = []&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>n</span><span> </span><span>backtrack_snd_empty_not_decided</span><span class="delimiter">[</span><span>of</span><span> </span><span>Ms</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>conclusive_dpll<span class="hidden">&#8681;</span><sub>W</sub>_state_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;backtrack_split Ms&quot;</span></span></span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">{</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span>n</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172; (&#8707;C &#8712; set N. Ms &#8872;as CNot (mset C))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unused_var N (lits_of_l Ms) = None&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>step</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>DPLL_step_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>unit</span><span> </span><span>lits_of_l_unfold</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>a</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;a &#8712; set N. atm_of ` set a &#8838; atm_of ` (lits_of_l Ms)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fst (toS Ms N) &#8872;asm snd (toS Ms N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>true_annots_def</span><span> </span><span>CNot_def</span><span> </span><span>Ball_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>clarify</span><span>
+</span><span>        </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>x</span><span>
+</span><span>        </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span>x</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8712; set_mset (clauses (toS Ms N))&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;Ms &#8872;as CNot x&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>n</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>true_annots_def</span><span> </span><span>CNot_def</span><span> </span><span>Ball_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;total_over_m (lits_of_l Ms) {x}&quot;</span></span></span><span>
+</span><span>          </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>a</span><span> </span><span>x</span><span> </span><span>image_iff</span><span> </span><span>in_mono</span><span> </span><span>atms_of_s_def</span><span>
+</span><span>          </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>total_over_m_def</span><span> </span><span>total_over_set_def</span><span> </span><span>lits_of_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fst (toS Ms N) &#8872;a x&quot;</span></span></span><span>
+</span><span>          </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>total_not_CNot</span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lits_of_l Ms&quot;</span></span></span><span> </span><span>x</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>true_annot_def</span><span> </span><span>true_annots_true_cls</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>conclusive_dpll<span class="hidden">&#8681;</span><sub>W</sub>_state_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Adding invariants&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Invariant tested in the function&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">function</span></span><span> </span><span>DPLL_ci</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;int dpll<span class="hidden">&#8681;</span><sub>W</sub>_ann_lits &#8658; int literal list list
+  &#8658; int dpll<span class="hidden">&#8681;</span><sub>W</sub>_ann_lits &#215; int literal list list&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_ci Ms N =
+  (if &#172;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (Ms, mset (map mset N))
+  then (Ms, N)
+  else
+   let (Ms&#39;, N&#39;) = DPLL_step (Ms, N) in
+   if (Ms&#39;, N&#39;) = (Ms, N) then (Ms, N) else DPLL_ci Ms&#39; N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fast</span><span class="delimiter">+</span><span>
+</span><span class="keyword1"><span class="command">termination</span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>relation</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;{(S&#39;, S).  (toS&#39; S&#39;, toS&#39; S) &#8712; {(S&#39;, S). dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv S &#8743; dpll<span class="hidden">&#8681;</span><sub>W</sub> S S&#39;}}&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;wf {(S&#39;, S).(toS&#39; S&#39;, toS&#39; S) &#8712; {(S&#39;, S). dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv S &#8743; dpll<span class="hidden">&#8681;</span><sub>W</sub> S S&#39;}}&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>wf_if_measure_f</span><span class="delimiter">[</span><span>OF</span><span> </span><span>wf_dpll<span class="hidden">&#8681;</span><sub>W</sub></span><span class="delimiter">,</span><span> </span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;toS&#39;&quot;</span></span></span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>Ms</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;int dpll<span class="hidden">&#8681;</span><sub>W</sub>_ann_lits&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>N</span><span> </span><span>x</span><span> </span><span>xa</span><span> </span><span>y</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">assume</span></span><span class="string"><span class="delete"><span class="delete">&quot;&#172; &#172; dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS Ms N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>step</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x = DPLL_step (Ms, N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>x</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(xa, y) = x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(xa, y) &#8800; (Ms, N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;((xa, N), Ms, N) &#8712; {(S&#39;, S). (toS&#39; S&#39;, toS&#39; S) &#8712; {(S&#39;, S). dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv S &#8743; dpll<span class="hidden">&#8681;</span><sub>W</sub> S S&#39;}}&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>DPLL_step_is_a_dpll<span class="hidden">&#8681;</span><sub>W</sub>_step</span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>_same_clauses</span><span> </span><span>split_conv</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;No invariant tested&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">function</span></span><span> </span><span class="delimiter">(</span><span>domintros</span><span class="delimiter">)</span><span> </span><span>DPLL_part</span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;int dpll<span class="hidden">&#8681;</span><sub>W</sub>_ann_lits &#8658; int literal list list &#8658;
+  int dpll<span class="hidden">&#8681;</span><sub>W</sub>_ann_lits &#215; int literal list list&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_part Ms N =
+  (let (Ms&#39;, N&#39;) = DPLL_step (Ms, N) in
+   if (Ms&#39;, N&#39;) = (Ms, N) then (Ms, N) else DPLL_part Ms&#39; N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fast</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>snd_DPLL_step</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;snd (DPLL_step (Ms, N)) = N&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>DPLL_step_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split</span><span> </span><span>option.splits</span><span> </span><span>prod.splits</span><span> </span><span>list.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv_implieS_2_eq3_and_dom</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (Ms, mset (map mset N))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_ci Ms N = DPLL_part Ms N &#8743; DPLL_part_dom (Ms, N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>DPLL_ci.induct</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>1</span><span> </span><span>Ms</span><span> </span><span>N</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;snd (DPLL_step (Ms, N)) = N&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>Ms&#39;</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>Ms&#39;</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_step (Ms, N) = (Ms&#39;, N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_step (Ms, N)&quot;</span></span></span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>inv&#39;</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS Ms&#39; N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>mono_tags</span><span class="delimiter">)</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;1.prems&quot;</span></span></span><span> </span><span>DPLL_step_is_a_dpll<span class="hidden">&#8681;</span><sub>W</sub>_step</span><span>
+</span><span>    </span><span>Ms&#39;</span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv</span><span> </span><span>old.prod.inject</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms&#39;, N) &#8800; (Ms, N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_ci Ms&#39; N = DPLL_part Ms&#39; N &#8743; DPLL_part_dom (Ms&#39;, N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>1</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span>Ms&#39;</span><span> </span><span>N</span><span class="delimiter">]</span><span> </span><span>Ms&#39;</span><span>
+</span><span>      </span><span>1</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>inv&#39;</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_part_dom (Ms, N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>DPLL_part.domintros</span><span> </span><span>Ms&#39;</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_ci Ms N = DPLL_part Ms N&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;1.prems&quot;</span></span></span><span> </span><span>DPLL_part.psimps</span><span> </span><span>Ms&#39;</span><span>
+</span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;DPLL_ci Ms&#39; N = DPLL_part Ms&#39; N &#8743; DPLL_part_dom (Ms&#39;, N)&#8250;</span></span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;DPLL_part_dom (Ms, N)&#8250;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">{</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms&#39;, N) = (Ms, N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>DPLL_part.domintros</span><span> </span><span>DPLL_part.psimps</span><span> </span><span>Ms&#39;</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>DPLL_ci_dpll<span class="hidden">&#8681;</span><sub>W</sub>_rtranclp</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_ci Ms N = (Ms&#39;, N&#39;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub><span class="hidden">&#8679;</span><sup>*</sup><span class="hidden">&#8679;</span><sup>*</sup> (toS Ms N) (toS Ms&#39; N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>Ms</span><span> </span><span>N</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>Ms&#39;</span><span> </span><span>N&#39;</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>DPLL_ci.induct</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>1</span><span> </span><span>Ms</span><span> </span><span>N</span><span> </span><span>Ms&#39;</span><span> </span><span>N&#39;</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>IH</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>step</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>S<span class="hidden">&#8681;</span><sub>1</sub></span><span> </span><span>S<span class="hidden">&#8681;</span><sub>2</sub></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>S</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(S<span class="hidden">&#8681;</span><sub>1</sub>, S<span class="hidden">&#8681;</span><sub>2</sub>) = DPLL_step (Ms, N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_step (Ms, N)&quot;</span></span></span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS Ms N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms, N) = (Ms&#39;, N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>step</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS Ms N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(S<span class="hidden">&#8681;</span><sub>1</sub>, S<span class="hidden">&#8681;</span><sub>2</sub>) = (Ms, N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>S</span><span> </span><span>step</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS Ms N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(S<span class="hidden">&#8681;</span><sub>1</sub>, S<span class="hidden">&#8681;</span><sub>2</sub>) &#8800; (Ms, N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>S<span class="hidden">&#8681;</span><sub>1</sub>&#39;</span><span> </span><span>S<span class="hidden">&#8681;</span><sub>2</sub>&#39;</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_ci S<span class="hidden">&#8681;</span><sub>1</sub> N = (S<span class="hidden">&#8681;</span><sub>1</sub>&#39;, S<span class="hidden">&#8681;</span><sub>2</sub>&#39;)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_ci S<span class="hidden">&#8681;</span><sub>1</sub> N&quot;</span></span></span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_ci Ms N = DPLL_ci S<span class="hidden">&#8681;</span><sub>1</sub> N&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>DPLL_ci.simps</span><span class="delimiter">[</span><span>of</span><span> </span><span>Ms</span><span> </span><span>N</span><span class="delimiter">]</span><span> </span><span>calculation</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(case (S<span class="hidden">&#8681;</span><sub>1</sub>, S<span class="hidden">&#8681;</span><sub>2</sub>) of (ms, lss) &#8658;
+          if (ms, lss) = (Ms, N) then (Ms, N) else DPLL_ci ms N) = DPLL_ci Ms N&quot;</span></span></span><span>
+</span><span>          </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>S</span><span> </span><span>DPLL_ci.simps</span><span class="delimiter">[</span><span>of</span><span> </span><span>Ms</span><span> </span><span>N</span><span class="delimiter">]</span><span> </span><span>calculation</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>presburger</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(if (S<span class="hidden">&#8681;</span><sub>1</sub>, S<span class="hidden">&#8681;</span><sub>2</sub>) = (Ms, N) then (Ms, N) else DPLL_ci S<span class="hidden">&#8681;</span><sub>1</sub> N) = DPLL_ci Ms N&quot;</span></span></span><span>
+</span><span>          </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>          </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>calculation</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>presburger</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub><span class="hidden">&#8679;</span><sup>*</sup><span class="hidden">&#8679;</span><sup>*</sup> (toS S<span class="hidden">&#8681;</span><sub>1</sub>&#39; N) (toS Ms&#39; N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>IH</span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(S<span class="hidden">&#8681;</span><sub>1</sub>, S<span class="hidden">&#8681;</span><sub>2</sub>)&quot;</span></span></span><span> </span><span>S<span class="hidden">&#8681;</span><sub>1</sub></span><span> </span><span>S<span class="hidden">&#8681;</span><sub>2</sub></span><span class="delimiter">]</span><span> </span><span>S</span><span> </span><span>step</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub> (toS Ms N) (toS S<span class="hidden">&#8681;</span><sub>1</sub> N)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>DPLL_step_is_a_dpll<span class="hidden">&#8681;</span><sub>W</sub>_step</span><span> </span><span>S</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(S<span class="hidden">&#8681;</span><sub>1</sub>, S<span class="hidden">&#8681;</span><sub>2</sub>) &#8800; (Ms, N)&#8250;</span></span></span><span> </span><span>prod.sel</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>snd_DPLL_step</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>mono_tags</span><span class="delimiter">,</span><span> </span><span>hide_lams</span><span class="delimiter">)</span><span> </span><span>IH</span><span> </span><span>S</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(S<span class="hidden">&#8681;</span><sub>1</sub>, S<span class="hidden">&#8681;</span><sub>2</sub>) &#8800; (Ms, N)&#8250;</span></span></span><span>
+</span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;DPLL_ci Ms N = DPLL_ci S<span class="hidden">&#8681;</span><sub>1</sub> N&#8250;</span></span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS Ms N)&#8250;</span></span></span><span> </span><span>converse_rtranclp_into_rtranclp</span><span>
+</span><span>      </span><span>local.step</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv_dpll<span class="hidden">&#8681;</span><sub>W</sub>_tranclp_irrefl</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (Ms, N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub><span class="hidden">&#8679;</span><sup>+</sup><span class="hidden">&#8679;</span><sup>+</sup> (Ms, N) (Ms, N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;False&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;wf {(S&#39;, S). dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv S &#8743; dpll<span class="hidden">&#8681;</span><sub>W</sub><span class="hidden">&#8679;</span><sup>+</sup><span class="hidden">&#8679;</span><sup>+</sup> S S&#39;}&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>wf_dpll<span class="hidden">&#8681;</span><sub>W</sub>_tranclp</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;((Ms, N), (Ms, N)) &#8712; {(S&#39;, S). dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv S &#8743; dpll<span class="hidden">&#8681;</span><sub>W</sub><span class="hidden">&#8679;</span><sup>+</sup><span class="hidden">&#8679;</span><sup>+</sup> S S&#39;}&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span>False</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>wf_not_refl</span><span class="delimiter">[</span><span>OF</span><span> </span><span>1</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>DPLL_ci_final_state</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>step</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_ci Ms N = (Ms, N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>inv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS Ms N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;conclusive_dpll<span class="hidden">&#8681;</span><sub>W</sub>_state (toS Ms N)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>st</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub><span class="hidden">&#8679;</span><sup>*</sup><span class="hidden">&#8679;</span><sup>*</sup> (toS Ms N) (toS Ms N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>DPLL_ci_dpll<span class="hidden">&#8681;</span><sub>W</sub>_rtranclp</span><span class="delimiter">[</span><span>OF</span><span> </span><span>step</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_step (Ms, N) = (Ms, N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ccontr</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>Ms&#39;</span><span> </span><span>N&#39;</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>Ms&#39;N</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms&#39;, N&#39;) = DPLL_step (Ms, N)&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_step (Ms, N)&quot;</span></span></span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172; ?thesis&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_ci Ms&#39; N = (Ms, N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>step</span><span> </span><span>inv</span><span> </span><span>st</span><span> </span><span>Ms&#39;N</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub><span class="hidden">&#8679;</span><sup>+</sup><span class="hidden">&#8679;</span><sup>+</sup> (toS Ms N) (toS Ms N)&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>DPLL_ci_dpll<span class="hidden">&#8681;</span><sub>W</sub>_rtranclp</span><span> </span><span>DPLL_step_is_a_dpll<span class="hidden">&#8681;</span><sub>W</sub>_step</span><span> </span><span>Ms&#39;N</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;DPLL_step (Ms, N) &#8800; (Ms, N)&#8250;</span></span></span><span>
+</span><span>          </span><span>prod.sel</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>rtranclp_into_tranclp2</span><span> </span><span>snd_DPLL_step</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span>False</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv_dpll<span class="hidden">&#8681;</span><sub>W</sub>_tranclp_irrefl</span><span> </span><span>inv</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>DPLL_step_stuck_final_state</span><span class="delimiter">[</span><span>of</span><span> </span><span>Ms</span><span> </span><span>N</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>DPLL_step_obtains</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">obtains</span></span><span> </span><span>Ms&#39;</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms&#39;, N) = DPLL_step (Ms, N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>DPLL_step_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>no_types</span><span class="delimiter">,</span><span> </span><span>lifting</span><span class="delimiter">)</span><span> </span><span>DPLL_step_def</span><span> </span><span>prod.collapse</span><span> </span><span>snd_DPLL_step</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>DPLL_ci_obtains</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">obtains</span></span><span> </span><span>Ms&#39;</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms&#39;, N) = DPLL_ci Ms N&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>DPLL_ci.induct</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>1</span><span> </span><span>Ms</span><span> </span><span>N</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>IH</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>that</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>S</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>SN</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(S, N) = DPLL_step (Ms, N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>DPLL_step_obtains</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>metis</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172; dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS Ms N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>that</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">{</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span>n</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(S, N) &#8800; (Ms, N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>inv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS Ms N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;ms. DPLL_step (Ms, N) = (ms, N)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#8896;thesisa. (&#8896;S. (S, N) = DPLL_step (Ms, N) &#10233; thesisa) &#10233; thesisa&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>IH</span><span> </span><span>that</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">{</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span>n</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(S, N) = (Ms, N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>SN</span><span> </span><span>that</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span> </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>DPLL_ci_no_more_step</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>step</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_ci Ms N = (Ms&#39;, N&#39;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_ci Ms&#39; N&#39; = (Ms&#39;, N&#39;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>Ms&#39;</span><span> </span><span>N&#39;</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>DPLL_ci.induct</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>1</span><span> </span><span>Ms</span><span> </span><span>N</span><span> </span><span>Ms&#39;</span><span> </span><span>N&#39;</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>IH</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>step</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>S<span class="hidden">&#8681;</span><sub>1</sub></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>S</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(S<span class="hidden">&#8681;</span><sub>1</sub>, N) = DPLL_step (Ms, N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>DPLL_step_obtains</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS Ms N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>step</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">{</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS Ms N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(S<span class="hidden">&#8681;</span><sub>1</sub>, N) = (Ms, N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>S</span><span> </span><span>step</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span>inv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS Ms N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span>n</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(S<span class="hidden">&#8681;</span><sub>1</sub>, N) &#8800; (Ms, N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>S<span class="hidden">&#8681;</span><sub>1</sub>&#39;</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>SS</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(S<span class="hidden">&#8681;</span><sub>1</sub>&#39;, N) = DPLL_ci S<span class="hidden">&#8681;</span><sub>1</sub> N&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>DPLL_ci_obtains</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_ci Ms N = DPLL_ci S<span class="hidden">&#8681;</span><sub>1</sub> N&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(case (S<span class="hidden">&#8681;</span><sub>1</sub>, N) of (ms, lss) &#8658; if (ms, lss) = (Ms, N) then (Ms, N) else DPLL_ci ms N)
+ = DPLL_ci Ms N&quot;</span></span></span><span>
+</span><span>          </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>S</span><span> </span><span>DPLL_ci.simps</span><span class="delimiter">[</span><span>of</span><span> </span><span>Ms</span><span> </span><span>N</span><span class="delimiter">]</span><span> </span><span>calculation</span><span> </span><span>inv</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>presburger</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(if (S<span class="hidden">&#8681;</span><sub>1</sub>, N) = (Ms, N) then (Ms, N) else DPLL_ci S<span class="hidden">&#8681;</span><sub>1</sub> N) = DPLL_ci Ms N&quot;</span></span></span><span>
+</span><span>          </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>          </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>calculation</span><span> </span><span>n</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>presburger</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">moreover</span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_ci S<span class="hidden">&#8681;</span><sub>1</sub>&#39; N = (S<span class="hidden">&#8681;</span><sub>1</sub>&#39;, N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>step</span><span> </span><span>IH</span><span class="delimiter">[</span><span>OF</span><span> </span><span>_</span><span> </span><span>_</span><span> </span><span>S</span><span> </span><span>n</span><span> </span><span>SS</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>inv</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>step</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>DPLL_part_dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv_final</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>M</span><span> </span><span>Ms&#39;</span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(int, unit) ann_lits&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>N</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;int literal list list&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>inv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (Ms, mset (map mset N))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>MsN</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_part Ms N = (Ms&#39;, N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;conclusive_dpll<span class="hidden">&#8681;</span><sub>W</sub>_state (toS Ms&#39; N) &#8743; dpll<span class="hidden">&#8681;</span><sub>W</sub><span class="hidden">&#8679;</span><sup>*</sup><span class="hidden">&#8679;</span><sup>*</sup> (toS Ms N) (toS Ms&#39; N)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>2</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_ci Ms N = DPLL_part Ms N&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>inv</span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv_implieS_2_eq3_and_dom</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>star</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub><span class="hidden">&#8679;</span><sup>*</sup><span class="hidden">&#8679;</span><sup>*</sup> (toS Ms N) (toS Ms&#39; N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>MsN</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>DPLL_ci_dpll<span class="hidden">&#8681;</span><sub>W</sub>_rtranclp</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>inv&#39;</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS Ms&#39; N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>inv</span><span> </span><span>rtranclp_dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>star</span><span> </span><span>DPLL_ci_final_state</span><span class="delimiter">[</span><span>OF</span><span> </span><span>DPLL_ci_no_more_step</span><span> </span><span>inv&#39;</span><span class="delimiter">]</span><span> </span><span>2</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>MsN</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Embedding the invariant into the type&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Defining the type&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">typedef</span></span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>_state</span><span> </span><span class="delimiter">=</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;{(M::(int, unit) ann_lits, N::int literal list list).
+        dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS M N)}&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">morphisms</span></span><span> </span><span>rough_state_of</span><span> </span><span>state_of</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;([],[]) &#8712; {(M, N). dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS M N)}&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_part_dom ([], N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv_implieS_2_eq3_and_dom</span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[]&quot;</span></span></span><span> </span><span>N</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Some type classes&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">instantiation</span></span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>_state</span><span> </span><span class="delimiter">::</span><span> </span><span>equal</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>equal_dpll<span class="hidden">&#8681;</span><sub>W</sub>_state</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_state &#8658; dpll<span class="hidden">&#8681;</span><sub>W</sub>_state &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;equal_dpll<span class="hidden">&#8681;</span><sub>W</sub>_state S S&#39; = (rough_state_of S = rough_state_of S&#39;)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>standard</span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>rough_state_of_inject</span><span> </span><span>equal_dpll<span class="hidden">&#8681;</span><sub>W</sub>_state_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;DPLL&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>DPLL_step&#39;</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_state &#8658; dpll<span class="hidden">&#8681;</span><sub>W</sub>_state&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_step&#39; S = state_of (DPLL_step (rough_state_of S))&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>rough_state_of_inverse</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>DPLL_step_dpll<span class="hidden">&#8681;</span><sub>W</sub>_conc_inv</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_step (rough_state_of S) &#8712; {(M, N). dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS M N)}&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>M</span><span> </span><span>N</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span>S</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;rough_state_of S = (M, N)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;rough_state_of S&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>M&#39;</span><span> </span><span>N&#39;</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span>S&#39;</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;DPLL_step (rough_state_of S) = (M&#39;, N&#39;)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;DPLL_step (rough_state_of S)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;dpll<span class="hidden">&#8681;</span><sub>W</sub><span class="hidden">&#8679;</span><sup>*</sup><span class="hidden">&#8679;</span><sup>*</sup>  (toS M N) (toS M&#39; N&#39;)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>DPLL_step_is_a_dpll<span class="hidden">&#8681;</span><sub>W</sub>_step</span><span> </span><span>S</span><span> </span><span>S&#39;</span><span> </span><span>fst_conv</span><span> </span><span>r_into_rtranclp</span><span> </span><span>rtranclp.rtrancl_refl</span><span> </span><span>snd_conv</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>rough_state_of</span><span class="delimiter">[</span><span>of</span><span> </span><span>S</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>S&#39;</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>S</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>rtranclp_dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rough_state_of_DPLL_step&#39;_DPLL_step</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rough_state_of (DPLL_step&#39; S) = DPLL_step (rough_state_of S)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>DPLL_step_dpll<span class="hidden">&#8681;</span><sub>W</sub>_conc_inv</span><span> </span><span>DPLL_step&#39;_def</span><span> </span><span>state_of_inverse</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">function</span></span><span> </span><span>DPLL_tot</span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_state &#8658; dpll<span class="hidden">&#8681;</span><sub>W</sub>_state&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_tot S =
+  (let S&#39; = DPLL_step&#39; S in
+   if S&#39; = S then S else DPLL_tot S&#39;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fast</span><span class="delimiter">+</span><span>
+</span><span class="keyword1"><span class="command">termination</span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>relation</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;{(T&#39;, T).
+     (rough_state_of T&#39;, rough_state_of T)
+        &#8712; {(S&#39;, S). (toS&#39; S&#39;, toS&#39; S)
+              &#8712; {(S&#39;, S). dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv S &#8743; dpll<span class="hidden">&#8681;</span><sub>W</sub> S S&#39;}}}&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;wf {(b, a).
+          (rough_state_of b, rough_state_of a)
+            &#8712; {(b, a). (toS&#39; b, toS&#39; a)
+              &#8712; {(b, a). dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv a &#8743; dpll<span class="hidden">&#8681;</span><sub>W</sub> a b}}}&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>wf_if_measure_f</span><span class="delimiter">[</span><span>OF</span><span> </span><span>wf_if_measure_f</span><span class="delimiter">[</span><span>OF</span><span> </span><span>wf_dpll<span class="hidden">&#8681;</span><sub>W</sub></span><span class="delimiter">,</span><span> </span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;toS&#39;&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">,</span><span> </span><span>of</span><span> </span><span>rough_state_of</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>S</span><span> </span><span>x</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span>x</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x = DPLL_step&#39; S&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8800; S&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (case rough_state_of S of (Ms, N) &#8658; (Ms, mset (map mset N)))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>no_types</span><span class="delimiter">,</span><span> </span><span>lifting</span><span class="delimiter">)</span><span> </span><span>case_prodE</span><span> </span><span>mem_Collect_eq</span><span> </span><span>old.prod.case</span><span> </span><span>rough_state_of</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub> (case rough_state_of S of (Ms, N) &#8658; (Ms, mset (map mset N)))
+                      (case rough_state_of (DPLL_step&#39; S) of (Ms, N) &#8658; (Ms, mset (map mset N)))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>Ms</span><span> </span><span>N</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>Ms</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms, N) = rough_state_of S&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rough_state_of S&quot;</span></span></span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS&#39; (Ms, N))&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>calculation</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>Ms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>Ms&#39;</span><span> </span><span>N&#39;</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>Ms&#39;</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(Ms&#39;, N&#39;) = rough_state_of (DPLL_step&#39; S)&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rough_state_of (DPLL_step&#39; S)&quot;</span></span></span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS&#39; (Ms&#39;, N&#39;))&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>Ms&#39;</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>no_types</span><span class="delimiter">,</span><span> </span><span>lifting</span><span class="delimiter">)</span><span> </span><span>case_prod_unfold</span><span> </span><span>mem_Collect_eq</span><span> </span><span>rough_state_of</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub> (toS Ms N) (toS Ms&#39; N&#39;)&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>DPLL_step_is_a_dpll<span class="hidden">&#8681;</span><sub>W</sub>_step</span><span class="delimiter">[</span><span>of</span><span> </span><span>Ms&#39;</span><span> </span><span>N&#39;</span><span> </span><span>Ms</span><span> </span><span>N</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>Ms</span><span> </span><span>Ms&#39;</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;x &#8800; S&#8250;</span></span></span><span> </span><span>rough_state_of_inject</span><span> </span><span>x</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span class="delimiter">+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>Ms</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>Ms&#39;</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(x, S) &#8712; {(T&#39;, T). (rough_state_of T&#39;, rough_state_of T)
+    &#8712; {(S&#39;, S). (toS&#39; S&#39;, toS&#39; S) &#8712; {(S&#39;, S). dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv S &#8743; dpll<span class="hidden">&#8681;</span><sub>W</sub> S S&#39;}}}&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>x</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>code</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_tot S =
+  (let S&#39; = DPLL_step&#39; S in
+   if S&#39; = S then S else DPLL_tot S&#39;)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>DPLL_tot_DPLL_step_DPLL_tot</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_tot (DPLL_step&#39; S) = DPLL_tot S&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_step&#39; S = S&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>DPLL_tot.simps</span><span class="delimiter">[</span><span>of</span><span> </span><span>S</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>DPLL_tot.simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>DOPLL_step&#39;_DPLL_tot</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_step&#39; (DPLL_tot S) = DPLL_tot S&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>DPLL_tot.induct</span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#955;S. DPLL_step&#39; (DPLL_tot S) = DPLL_tot S&quot;</span></span></span><span> </span><span>S</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>     </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>full_types</span><span class="delimiter">)</span><span> </span><span>DPLL_tot.simps</span><span class="delimiter">)</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+why does this not work?
+proof (induction arbitrary: S rule: DPLL_tot.induct)
+  case (1 S&#39;) note IH = this(1)
+  show ?case
+    proof cases
+      assume &quot;DPLL_step&#39; S = S&quot;
+      thus ?thesis by auto
+    next
+      assume &quot;DPLL_step&#39; S &#8800; S&quot;
+      thus ?thesis using IH
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>DPLL_tot_final_state</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_tot S = S&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;conclusive_dpll<span class="hidden">&#8681;</span><sub>W</sub>_state (toS&#39; (rough_state_of S))&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_step&#39; S = S&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>DOPLL_step&#39;_DPLL_tot</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>metis</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_step (rough_state_of S) = (rough_state_of S)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>DPLL_step&#39;_def</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>DPLL_step_dpll<span class="hidden">&#8681;</span><sub>W</sub>_conc_inv</span><span> </span><span>rough_state_of_inverse</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>rough_state_of_DPLL_step&#39;_DPLL_step</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>mono_tags</span><span class="delimiter">,</span><span> </span><span>lifting</span><span class="delimiter">)</span><span> </span><span>DPLL_step_stuck_final_state</span><span> </span><span>old.prod.exhaust</span><span> </span><span>split_conv</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>DPLL_tot_star</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rough_state_of (DPLL_tot S) = S&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub><span class="hidden">&#8679;</span><sup>*</sup><span class="hidden">&#8679;</span><sup>*</sup> (toS&#39; (rough_state_of S)) (toS&#39; S&#39;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>S&#39;</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>DPLL_tot.induct</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>1</span><span> </span><span>S</span><span> </span><span>S&#39;</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">let</span></span><span> </span><span class="var">?x</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_step&#39; S&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;?x = S&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>1</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">{</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span>S</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;?x &#8800; S&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="var">?case</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_step&#39; S = S&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>S</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>blast</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;1.IH&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;1.prems&quot;</span></span></span><span> </span><span>DPLL_step_is_a_dpll<span class="hidden">&#8681;</span><sub>W</sub>_step</span><span> </span><span>DPLL_tot.simps</span><span> </span><span>case_prodE2</span><span>
+</span><span>        </span><span>rough_state_of_DPLL_step&#39;_DPLL_step</span><span> </span><span>rtranclp.rtrancl_into_rtrancl</span><span> </span><span>rtranclp.rtrancl_refl</span><span>
+</span><span>        </span><span>rtranclp_idemp</span><span> </span><span>split_conv</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rough_state_of_rough_state_of_Nil</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rough_state_of (state_of ([], N)) = ([], N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>DPLL_W_Implementation.dpll<span class="hidden">&#8681;</span><sub>W</sub>_state.state_of_inverse</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Theorem of correctness&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>DPLL_tot_correct</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rough_state_of (DPLL_tot (state_of (([], N)))) = (M, N&#39;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(M&#39;, N&#39;&#39;) = toS&#39; (M, N&#39;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M&#39; &#8872;asm N&#39;&#39; &#10231; satisfiable (set_mset N&#39;&#39;)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dpll<span class="hidden">&#8681;</span><sub>W</sub><span class="hidden">&#8679;</span><sup>*</sup><span class="hidden">&#8679;</span><sup>*</sup> (toS&#39; ([], N)) (toS&#39; (M, N&#39;))&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>DPLL_tot_star</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;conclusive_dpll<span class="hidden">&#8681;</span><sub>W</sub>_state (toS&#39; (M, N&#39;))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>DPLL_tot_final_state</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>mono_tags</span><span class="delimiter">,</span><span> </span><span>lifting</span><span class="delimiter">)</span><span> </span><span>DOPLL_step&#39;_DPLL_tot</span><span> </span><span>DPLL_tot.simps</span><span>
+</span><span>      </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>_conclusive_state_correct</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>DPLL_ci.simps</span><span>
+</span><span>    </span><span>DPLL_ci_dpll<span class="hidden">&#8681;</span><sub>W</sub>_rtranclp</span><span> </span><span>assms</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv_def</span><span> </span><span>prod.case</span><span> </span><span>prod.sel</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>prod.sel</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span>
+</span><span>    </span><span>rtranclp_dpll<span class="hidden">&#8681;</span><sub>W</sub>_inv</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>rtranclp_dpll<span class="hidden">&#8681;</span><sub>W</sub>_inv_starting_from_0</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Code export&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;A conversion to @{typ dpll<span class="hidden">&#8681;</span><sub>W</sub>_state}&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>Con</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(int, unit) ann_lits &#215; int literal list list
+                     &#8658; dpll<span class="hidden">&#8681;</span><sub>W</sub>_state&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Con xs = state_of (if dpll<span class="hidden">&#8681;</span><sub>W</sub>_all_inv (toS (fst xs) (snd xs)) then xs else ([], []))&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>code</span><span> </span><span>abstype</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Con (rough_state_of S) = S&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>rough_state_of</span><span class="delimiter">[</span><span>of</span><span> </span><span>S</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>Con_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>rough_state_of_DPLL_step&#39;_DPLL_step</span><span class="delimiter">[</span><span>code</span><span> </span><span>abstract</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>Con_DPLL_step_rough_state_of_state_of</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Con (DPLL_step (rough_state_of s)) = state_of (DPLL_step (rough_state_of s))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>Con_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>mono_tags</span><span class="delimiter">,</span><span> </span><span>lifting</span><span class="delimiter">)</span><span> </span><span>DPLL_step_dpll<span class="hidden">&#8681;</span><sub>W</sub>_conc_inv</span><span> </span><span>mem_Collect_eq</span><span>
+</span><span>    </span><span>prod.case_eq_if</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;A slightly different version of @{term DPLL_tot} where the returned boolean indicates the
+  result.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>DPLL_tot_rep</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;DPLL_tot_rep S =
+  (let (M, N) = (rough_state_of (DPLL_tot S)) in (&#8704;A &#8712; set N. (&#8707;a&#8712;set A. a &#8712; lits_of_l M), M))&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;One version of the generated SML code is here, but not included in the generated document.
+  The only differences are:
+  &#9642; export @{typ &quot;&#39;a literal&quot;} from the SML Module &#8249;Clausal_Logic&#8250;;
+  &#9642; export the constructor @{term Con} from &#8249;DPLL_W_Implementation&#8250;;
+  &#9642; export the @{term int} constructor from &#8249;Arith&#8250;.
+
+  All these allows to test on the code on some examples.
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*&lt;*)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">export_code</span></span><span> </span><span>DPLL_tot_rep</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>SML</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+structure HOL : sig
+  type &#39;a equal
+  val equal : &#39;a equal -&gt; &#39;a -&gt; &#39;a -&gt; bool
+  val eq : &#39;a equal -&gt; &#39;a -&gt; &#39;a -&gt; bool
+end = struct
+
+type &#39;a equal = {equal : &#39;a -&gt; &#39;a -&gt; bool};
+val equal = #equal : &#39;a equal -&gt; &#39;a -&gt; &#39;a -&gt; bool;
+
+fun eq A_ a b = equal A_ a b;
+
+end; (*struct HOL*)
+
+structure List : sig
+  val equal_list : &#39;a HOL.equal -&gt; (&#39;a list) HOL.equal
+  val find : (&#39;a -&gt; bool) -&gt; &#39;a list -&gt; &#39;a option
+  val filter : (&#39;a -&gt; bool) -&gt; &#39;a list -&gt; &#39;a list
+  val member : &#39;a HOL.equal -&gt; &#39;a list -&gt; &#39;a -&gt; bool
+  val list_ex : (&#39;a -&gt; bool) -&gt; &#39;a list -&gt; bool
+  val remove1 : &#39;a HOL.equal -&gt; &#39;a -&gt; &#39;a list -&gt; &#39;a list
+  val map : (&#39;a -&gt; &#39;b) -&gt; &#39;a list -&gt; &#39;b list
+  val list_all : (&#39;a -&gt; bool) -&gt; &#39;a list -&gt; bool
+end = struct
+
+fun equal_lista A_ [] (x21 :: x22) = false
+  | equal_lista A_ (x21 :: x22) [] = false
+  | equal_lista A_ (x21 :: x22) (y21 :: y22) =
+    HOL.eq A_ x21 y21 andalso equal_lista A_ x22 y22
+  | equal_lista A_ [] [] = true;
+
+fun equal_list A_ = {equal = equal_lista A_} : (&#39;a list) HOL.equal;
+
+fun find uu [] = NONE
+  | find p (x :: xs) = (if p x then SOME x else find p xs);
+
+fun filter p [] = []
+  | filter p (x :: xs) = (if p x then x :: filter p xs else filter p xs);
+
+fun member A_ [] y = false
+  | member A_ (x :: xs) y = HOL.eq A_ x y orelse member A_ xs y;
+
+fun list_ex p [] = false
+  | list_ex p (x :: xs) = p x orelse list_ex p xs;
+
+fun remove1 A_ x [] = []
+  | remove1 A_ x (y :: xs) =
+    (if HOL.eq A_ x y then xs else y :: remove1 A_ x xs);
+
+fun map f [] = []
+  | map f (x21 :: x22) = f x21 :: map f x22;
+
+fun list_all p [] = true
+  | list_all p (x :: xs) = p x andalso list_all p xs;
+
+end; (*struct List*)
+
+structure Set : sig
+  datatype &#39;a set = Set of &#39;a list | Coset of &#39;a list
+  val image : (&#39;a -&gt; &#39;b) -&gt; &#39;a set -&gt; &#39;b set
+  val member : &#39;a HOL.equal -&gt; &#39;a -&gt; &#39;a set -&gt; bool
+end = struct
+
+datatype &#39;a set = Set of &#39;a list | Coset of &#39;a list;
+
+fun image f (Set xs) = Set (List.map f xs);
+
+fun member A_ x (Coset xs) = not (List.member A_ xs x)
+  | member A_ x (Set xs) = List.member A_ xs x;
+
+end; (*struct Set*)
+
+structure Arith : sig
+  datatype int = Int_of_integer of IntInf.int
+  val equal_int : int HOL.equal
+end = struct
+
+datatype int = Int_of_integer of IntInf.int;
+
+fun integer_of_int (Int_of_integer k) = k;
+
+fun equal_inta k l = (((integer_of_int k) : IntInf.int) = (integer_of_int l));
+
+val equal_int = {equal = equal_inta} : int HOL.equal;
+
+end; (*struct Arith*)
+
+structure Product_Type : sig
+  val equal_unit : unit HOL.equal
+  val apfst : (&#39;a -&gt; &#39;b) -&gt; &#39;a * &#39;c -&gt; &#39;b * &#39;c
+  val equal_prod : &#39;a HOL.equal -&gt; &#39;b HOL.equal -&gt; &#39;a * &#39;b -&gt; &#39;a * &#39;b -&gt; bool
+end = struct
+
+fun equal_unita u v = true;
+
+val equal_unit = {equal = equal_unita} : unit HOL.equal;
+
+fun apfst f (x, y) = (f x, y);
+
+fun equal_prod A_ B_ (x1, x2) (y1, y2) =
+  HOL.eq A_ x1 y1 andalso HOL.eq B_ x2 y2;
+
+end; (*struct Product_Type*)
+
+structure Clausal_Logic : sig
+  datatype &#39;a literal = Pos of &#39;a | Neg of &#39;a
+  val equal_literala : &#39;a HOL.equal -&gt; &#39;a literal -&gt; &#39;a literal -&gt; bool
+  val equal_literal : &#39;a HOL.equal -&gt; &#39;a literal HOL.equal
+  val atm_of : &#39;a literal -&gt; &#39;a
+  val uminus_literal : &#39;a literal -&gt; &#39;a literal
+end = struct
+
+datatype &#39;a literal = Pos of &#39;a | Neg of &#39;a;
+
+fun equal_literala A_ (Pos x1) (Neg x2) = false
+  | equal_literala A_ (Neg x2) (Pos x1) = false
+  | equal_literala A_ (Neg x2) (Neg y2) = HOL.eq A_ x2 y2
+  | equal_literala A_ (Pos x1) (Pos y1) = HOL.eq A_ x1 y1;
+
+fun equal_literal A_ = {equal = equal_literala A_} : &#39;a literal HOL.equal;
+
+fun atm_of (Pos x1) = x1
+  | atm_of (Neg x2) = x2;
+
+fun is_pos (Pos x1) = true
+  | is_pos (Neg x2) = false;
+
+fun uminus_literal l = (if is_pos l then Neg else Pos) (atm_of l);
+
+end; (*struct Clausal_Logic*)
+
+structure Partial_Annotated_Herbrand_Interpretation : sig
+  datatype (&#39;a, &#39;b) ann_lit = Decided of &#39;a Clausal_Logic.literal |
+    Propagated of &#39;a Clausal_Logic.literal * &#39;b
+  val equal_ann_lit : &#39;a HOL.equal -&gt; &#39;b HOL.equal -&gt; (&#39;a, &#39;b) ann_lit HOL.equal
+  val lit_of : (&#39;a, &#39;b) ann_lit -&gt; &#39;a Clausal_Logic.literal
+  val lits_of : (&#39;a, &#39;b) ann_lit Set.set -&gt; &#39;a Clausal_Logic.literal Set.set
+  val backtrack_split :
+    (&#39;a, &#39;b) ann_lit list -&gt; (&#39;a, &#39;b) ann_lit list * (&#39;a, &#39;b) ann_lit list
+end = struct
+
+datatype (&#39;a, &#39;b) ann_lit = Decided of &#39;a Clausal_Logic.literal |
+  Propagated of &#39;a Clausal_Logic.literal * &#39;b;
+
+fun equal_ann_lita A_ B_ (Decided x1) (Propagated (x21, x22)) = false
+  | equal_ann_lita A_ B_ (Propagated (x21, x22)) (Decided x1) = false
+  | equal_ann_lita A_ B_ (Propagated (x21, x22)) (Propagated (y21, y22)) =
+    Clausal_Logic.equal_literala A_ x21 y21 andalso HOL.eq B_ x22 y22
+  | equal_ann_lita A_ B_ (Decided x1) (Decided y1) =
+    Clausal_Logic.equal_literala A_ x1 y1;
+
+fun equal_ann_lit A_ B_ = {equal = equal_ann_lita A_ B_} :
+  (&#39;a, &#39;b) ann_lit HOL.equal;
+
+fun lit_of (Decided x1) = x1
+  | lit_of (Propagated (x21, x22)) = x21;
+
+fun lits_of ls = Set.image lit_of ls;
+
+fun backtrack_split [] = ([], [])
+  | backtrack_split (Propagated (l, p) :: mlits) =
+    Product_Type.apfst (fn a =&gt; Propagated (l, p) :: a) (backtrack_split mlits)
+  | backtrack_split (Decided l :: mlits) = ([], Decided l :: mlits);
+
+end; (*struct Partial_Annotated_Herbrand_Interpretation*)
+
+structure DPLL_CDCL_W_Implementation : sig
+  val find_first_unused_var :
+    &#39;a HOL.equal -&gt;
+      (&#39;a Clausal_Logic.literal list) list -&gt;
+        &#39;a Clausal_Logic.literal Set.set -&gt; &#39;a Clausal_Logic.literal option
+  val find_first_unit_clause :
+    &#39;a HOL.equal -&gt;
+      (&#39;a Clausal_Logic.literal list) list -&gt;
+        (&#39;a, &#39;b) Partial_Annotated_Herbrand_Interpretation.ann_lit list -&gt;
+          (&#39;a Clausal_Logic.literal * &#39;a Clausal_Logic.literal list) option
+end = struct
+
+fun is_unit_clause_code A_ l m =
+  (case List.filter
+          (fn a =&gt;
+            not (Set.member A_ (Clausal_Logic.atm_of a)
+                  (Set.image Clausal_Logic.atm_of
+                    (Partial_Annotated_Herbrand_Interpretation.lits_of (Set.Set m)))))
+          l
+    of [] =&gt; NONE
+    | [a] =&gt;
+      (if List.list_all
+            (fn c =&gt;
+              Set.member (Clausal_Logic.equal_literal A_)
+                (Clausal_Logic.uminus_literal c)
+                (Partial_Annotated_Herbrand_Interpretation.lits_of (Set.Set m)))
+            (List.remove1 (Clausal_Logic.equal_literal A_) a l)
+        then SOME a else NONE)
+    | _ :: _ :: _ =&gt; NONE);
+
+fun is_unit_clause A_ l m = is_unit_clause_code A_ l m;
+
+fun find_first_unused_var A_ (a :: l) m =
+  (case List.find
+          (fn lit =&gt;
+            not (Set.member (Clausal_Logic.equal_literal A_) lit m) andalso
+              not (Set.member (Clausal_Logic.equal_literal A_)
+                    (Clausal_Logic.uminus_literal lit) m))
+          a
+    of NONE =&gt; find_first_unused_var A_ l m | SOME aa =&gt; SOME aa)
+  | find_first_unused_var A_ [] uu = NONE;
+
+fun find_first_unit_clause A_ (a :: l) m =
+  (case is_unit_clause A_ a m of NONE =&gt; find_first_unit_clause A_ l m
+    | SOME la =&gt; SOME (la, a))
+  | find_first_unit_clause A_ [] uu = NONE;
+
+end; (*struct DPLL_CDCL_W_Implementation*)
+
+structure DPLL_W_Implementation : sig
+  datatype dpll_W_state =
+    Con of
+      ((Arith.int, unit) Partial_Annotated_Herbrand_Interpretation.ann_lit list *
+        (Arith.int Clausal_Logic.literal list) list)
+  val dPLL_tot_rep :
+    dpll_W_state -&gt;
+      bool * (Arith.int, unit) Partial_Annotated_Herbrand_Interpretation.ann_lit list
+end = struct
+
+datatype dpll_W_state =
+  Con of
+    ((Arith.int, unit) Partial_Annotated_Herbrand_Interpretation.ann_lit list *
+      (Arith.int Clausal_Logic.literal list) list);
+
+fun rough_state_of (Con x) = x;
+
+fun equal_dpll_W_state sa s =
+  Product_Type.equal_prod
+    (List.equal_list
+      (Partial_Annotated_Herbrand_Interpretation.equal_ann_lit Arith.equal_int
+        Product_Type.equal_unit))
+    (List.equal_list
+      (List.equal_list (Clausal_Logic.equal_literal Arith.equal_int)))
+    (rough_state_of sa) (rough_state_of s);
+
+fun dPLL_step x =
+  (fn (ms, n) =&gt;
+    (case DPLL_CDCL_W_Implementation.find_first_unit_clause Arith.equal_int n ms
+      of NONE =&gt;
+        (if List.list_ex
+              (List.list_all
+                (fn c =&gt;
+                  Set.member (Clausal_Logic.equal_literal Arith.equal_int)
+                    (Clausal_Logic.uminus_literal c)
+                    (Partial_Annotated_Herbrand_Interpretation.lits_of (Set.Set ms))))
+              n
+          then (case Partial_Annotated_Herbrand_Interpretation.backtrack_split ms
+                 of (_, []) =&gt; (ms, n)
+                 | (_, l :: m) =&gt;
+                   (Partial_Annotated_Herbrand_Interpretation.Propagated
+                      (Clausal_Logic.uminus_literal
+                         (Partial_Annotated_Herbrand_Interpretation.lit_of l),
+                        ()) ::
+                      m,
+                     n))
+          else (case DPLL_CDCL_W_Implementation.find_first_unused_var
+                       Arith.equal_int n
+                       (Partial_Annotated_Herbrand_Interpretation.lits_of (Set.Set ms))
+                 of NONE =&gt; (ms, n)
+                 | SOME a =&gt;
+                   (Partial_Annotated_Herbrand_Interpretation.Decided a :: ms, n)))
+      | SOME (l, _) =&gt;
+        (Partial_Annotated_Herbrand_Interpretation.Propagated (l, ()) :: ms, n)))
+    x;
+
+fun dPLL_stepa s = Con (dPLL_step (rough_state_of s));
+
+fun dPLL_tot s = let
+                   val sa = dPLL_stepa s;
+                 in
+                   (if equal_dpll_W_state sa s then s else dPLL_tot sa)
+                 end;
+
+fun dPLL_tot_rep s =
+  let
+    val (m, n) = rough_state_of (dPLL_tot s);
+  in
+    (List.list_all
+       (List.list_ex
+         (fn a =&gt;
+           Set.member (Clausal_Logic.equal_literal Arith.equal_int) a
+             (Partial_Annotated_Herbrand_Interpretation.lits_of (Set.Set m))))
+       n,
+      m)
+  end;
+
+end; (*struct DPLL_W_Implementation*)
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+open Clausal_Logic;
+open DPLL_W_Implementation;
+open Arith;
+let
+  val P = Int_of_integer 1
+  val Q = Int_of_integer 2
+  val R = Int_of_integer 3
+  val S = Int_of_integer 4
+  val T = Int_of_integer 5
+  val U = Int_of_integer 6
+  val N = [[Neg P, Pos Q], [Neg R, Pos S], [Neg T, Neg U], [Neg R, Neg T, Pos U]]
+in
+ DPLL_W_Implementation.dPLL_tot_rep (Con ([], N))
+
+end
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+open Clausal_Logic;
+open DPLL_W_Implementation;
+open Arith;
+let
+  val P = Int_of_integer 1
+  val Q = Int_of_integer 2
+  val R = Int_of_integer 3
+  val S = Int_of_integer 4
+  val T = Int_of_integer 5
+  val N = [[Pos P, Pos Q, Pos R],
+           [Pos P,        Neg R],
+           [Neg P,             Pos S],
+           [Neg P,                    Pos T],
+           [       Pos Q,      Neg S, Neg T],
+           [       Neg Q]]
+in
+ DPLL_W_Implementation.dPLL_tot_rep (Con ([], N))
+end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+open Clausal_Logic;
+open DPLL_W_Implementation;
+open Arith;
+let
+  val P = Int_of_integer 1
+  val Q = Int_of_integer 2
+  val R = Int_of_integer 3
+  val S = Int_of_integer 4
+  val T = Int_of_integer 5
+  val N = [[Pos P, Pos Q, Pos R],
+           [Pos P,        Neg R],
+           [Neg P,             Pos S],
+           [Neg P,                    Pos T],
+           [       Pos Q,      Neg S, Neg T],
+           [       Neg Q]]
+in
+ DPLL_W_Implementation.dPLL_tot_rep (Con ([], N))
+end
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span class="delimiter">[</span><span class="delimiter">[</span><span>ML_print_depth</span><span class="delimiter">=</span><span>100</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+open Clausal_Logic;
+open DPLL_W_Implementation;
+open Arith;
+let
+  val a = Int_of_integer 10
+  val b = Int_of_integer 20
+  val c = Int_of_integer 1
+  val d = Int_of_integer 40
+  val e = Int_of_integer 50
+  val f = Int_of_integer 2
+  val g = Int_of_integer 60
+  val N = [[Pos a, Pos b],
+           [       Neg b, Pos c, Pos d],
+           [       Neg b,               Pos e],
+           [                     Neg d, Neg e, Pos f],
+           [Neg a,                                    Pos g],
+           [       Pos b,                             Neg g]]
+in
+ DPLL_W_Implementation.dPLL_tot_rep (Con ([], N))
+end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*&gt;*)</span></span></span></span></span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">d93efc62 </td><td align="center">Fri 06 Dec 2019 12:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

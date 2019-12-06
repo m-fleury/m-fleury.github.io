@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IsaSAT_CDCL (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IsaSAT_CDCL</h1>
+
+<span class="command">theory</span> <span class="name">IsaSAT_CDCL</span><br/>
+<span class="keyword">imports</span> <a href="IsaSAT_Propagate_Conflict.html"><span class="name">IsaSAT_Propagate_Conflict</span></a> <a href="IsaSAT_Conflict_Analysis.html"><span class="name">IsaSAT_Conflict_Analysis</span></a> <a href="IsaSAT_Backtrack.html"><span class="name">IsaSAT_Backtrack</span></a> <a href="IsaSAT_Decide.html"><span class="name">IsaSAT_Decide</span></a> <a href="IsaSAT_Show.html"><span class="name">IsaSAT_Show</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IsaSAT_CDCL</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>IsaSAT_Propagate_Conflict</span><span> </span><span>IsaSAT_Conflict_Analysis</span><span> </span><span>IsaSAT_Backtrack</span><span>
+</span><span>    </span><span>IsaSAT_Decide</span><span> </span><span>IsaSAT_Show</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Combining Together: the Other Rules&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>cdcl_twl_o_prog_wl_D_heur</span><span>
+</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;twl_st_wl_heur &#8658; (bool &#215; twl_st_wl_heur) nres&#8250;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_o_prog_wl_D_heur S =
+    do {
+      if get_conflict_wl_is_None_heur S
+      then decide_wl_or_skip_D_heur S
+      else do {
+        if count_decided_st_heur S &gt; zero_uint32_nat
+        then do {
+          T &#8592; skip_and_resolve_loop_wl_D_heur S;
+          ASSERT(length (get_clauses_wl_heur S) = length (get_clauses_wl_heur T));
+          U &#8592; backtrack_wl_D_nlit_heur T;
+          U &#8592; isasat_current_status U; &#8213; &#8249;Print some information every once in a while&#8250;
+          RETURN (False, U)
+        }
+        else RETURN (True, S)
+      }
+    }
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>twl_st_heur&#39;&#39;D_twl_st_heurD</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>H</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#8896;&#119967; r. f &#8712; twl_st_heur&#39;&#39; &#119967; r &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;twl_st_heur&#39;&#39; &#119967; r&#10217; nres_rel)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;f &#8712; twl_st_heur &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;twl_st_heur&#10217; nres_rel&#8250;</span></span></span><span>  </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8712; ?A B&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>f1</span><span> </span><span>f2</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>f</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;f = (f1, f2)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>f</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>f</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>fref_def</span><span> </span><span>twl_st_heur&#39;_def</span><span> </span><span>nres_rel_def</span><span> </span><span>in_pair_collect_simp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>conjI</span><span> </span><span>impI</span><span> </span><span>allI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span class="delimiter">[</span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;dom_m (get_clauses_wl y)&#8250;</span></span></span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length (get_clauses_wl_heur x)&#8250;</span></span></span><span class="delimiter">,</span><span>
+</span><span>        </span><span>unfolded</span><span> </span><span>ref_def</span><span> </span><span>twl_st_heur&#39;_def</span><span> </span><span>nres_rel_def</span><span> </span><span>in_pair_collect_simp</span><span> </span><span>f</span><span class="delimiter">,</span><span>
+</span><span>        </span><span>rule_format</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>f</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>fref_def</span><span> </span><span>twl_st_heur&#39;_def</span><span> </span><span>nres_rel_def</span><span> </span><span>in_pair_collect_simp</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>drule</span><span> </span><span>spec</span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span>x</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>drule</span><span> </span><span>spec</span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span>y</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;weaken_&#8659;&#39;&quot;</span></span></span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;twl_st_heur&#39;&#39; (dom_m (get_clauses_wl y))
+         (length (get_clauses_wl_heur x))&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur&#39;_def</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>twl_st_heur&#39;&#39;&#39;D_twl_st_heurD</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>H</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#8896;r. f &#8712; twl_st_heur&#39;&#39;&#39; r &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;twl_st_heur&#39;&#39;&#39; r&#10217; nres_rel)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;f &#8712; twl_st_heur &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;twl_st_heur&#10217; nres_rel&#8250;</span></span></span><span>  </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8712; ?A B&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>f1</span><span> </span><span>f2</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>f</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;f = (f1, f2)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>f</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>f</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>fref_def</span><span> </span><span>twl_st_heur&#39;_def</span><span> </span><span>nres_rel_def</span><span> </span><span>in_pair_collect_simp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>conjI</span><span> </span><span>impI</span><span> </span><span>allI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span class="delimiter">[</span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length (get_clauses_wl_heur x)&#8250;</span></span></span><span class="delimiter">,</span><span>
+</span><span>        </span><span>unfolded</span><span> </span><span>ref_def</span><span> </span><span>twl_st_heur&#39;_def</span><span> </span><span>nres_rel_def</span><span> </span><span>in_pair_collect_simp</span><span> </span><span>f</span><span class="delimiter">,</span><span>
+</span><span>        </span><span>rule_format</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>f</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>fref_def</span><span> </span><span>twl_st_heur&#39;_def</span><span> </span><span>nres_rel_def</span><span> </span><span>in_pair_collect_simp</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>drule</span><span> </span><span>spec</span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span>x</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>drule</span><span> </span><span>spec</span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span>y</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;weaken_&#8659;&#39;&quot;</span></span></span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;twl_st_heur&#39;&#39;&#39; (length (get_clauses_wl_heur x))&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur&#39;_def</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>twl_st_heur&#39;&#39;&#39;D_twl_st_heurD_prod</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>H</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#8896;r. f &#8712; twl_st_heur&#39;&#39;&#39; r &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;A &#215;<span class="hidden">&#8681;</span><sub>r</sub> twl_st_heur&#39;&#39;&#39; r&#10217; nres_rel)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;f &#8712; twl_st_heur &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;A &#215;<span class="hidden">&#8681;</span><sub>r</sub> twl_st_heur&#10217; nres_rel&#8250;</span></span></span><span>  </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8712; ?A B&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>f1</span><span> </span><span>f2</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>f</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;f = (f1, f2)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>f</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>f</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>fref_def</span><span> </span><span>twl_st_heur&#39;_def</span><span> </span><span>nres_rel_def</span><span> </span><span>in_pair_collect_simp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>conjI</span><span> </span><span>impI</span><span> </span><span>allI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span class="delimiter">[</span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length (get_clauses_wl_heur x)&#8250;</span></span></span><span class="delimiter">,</span><span>
+</span><span>        </span><span>unfolded</span><span> </span><span>ref_def</span><span> </span><span>twl_st_heur&#39;_def</span><span> </span><span>nres_rel_def</span><span> </span><span>in_pair_collect_simp</span><span> </span><span>f</span><span class="delimiter">,</span><span>
+</span><span>        </span><span>rule_format</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>f</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>fref_def</span><span> </span><span>twl_st_heur&#39;_def</span><span> </span><span>nres_rel_def</span><span> </span><span>in_pair_collect_simp</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>drule</span><span> </span><span>spec</span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span>x</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>drule</span><span> </span><span>spec</span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span>y</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;weaken_&#8659;&#39;&quot;</span></span></span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;A &#215;<span class="hidden">&#8681;</span><sub>r</sub> twl_st_heur&#39;&#39;&#39; (length (get_clauses_wl_heur x))&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur&#39;_def</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>cdcl_twl_o_prog_wl_D_heur_cdcl_twl_o_prog_wl_D</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(cdcl_twl_o_prog_wl_D_heur, cdcl_twl_o_prog_wl_D) &#8712;
+   {(S, T). (S, T) &#8712; twl_st_heur &#8743; length (get_clauses_wl_heur S) = r} &#8594;<span class="hidden">&#8681;</span><sub>f</sub>
+     &#10216;bool_rel &#215;<span class="hidden">&#8681;</span><sub>f</sub> {(S, T). (S, T) &#8712; twl_st_heur &#8743;
+        length (get_clauses_wl_heur S) &#8804; r + 6 + uint32_max div 2}&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>H</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(x, y) &#8712; {(S, T).
+               (S, T) &#8712; twl_st_heur &#8743;
+               length (get_clauses_wl_heur S) =
+               length (get_clauses_wl_heur x)} &#10233;
+           (x, y)
+           &#8712; {(S, T).
+               (S, T) &#8712; twl_st_heur_conflict_ana &#8743;
+               length (get_clauses_wl_heur S) =
+               length (get_clauses_wl_heur x)}&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_state_simp</span><span> </span><span>twl_st_heur_twl_st_heur_conflict_ana</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_o_prog_wl_D_heur_def</span><span> </span><span>cdcl_twl_o_prog_wl_D_def</span><span>
+</span><span>      </span><span>get_conflict_wl_is_None</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span>
+</span><span>        </span><span>decide_wl_or_skip_D_heur_decide_wl_or_skip_D</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>r</span><span class="delimiter">=</span><span>r</span><span class="delimiter">,</span><span> </span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">,</span><span> </span><span>THEN</span><span> </span><span>order_trans</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>skip_and_resolve_loop_wl_D_heur_skip_and_resolve_loop_wl_D</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>r</span><span class="delimiter">=</span><span>r</span><span class="delimiter">,</span><span> </span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>backtrack_wl_D_nlit_backtrack_wl_D</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>r</span><span class="delimiter">=</span><span>r</span><span class="delimiter">,</span><span> </span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>isasat_current_status_id</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">,</span><span> </span><span>THEN</span><span> </span><span>order_trans</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_state_simp</span><span>
+</span><span>          </span><span>get_conflict_wl_is_None_heur_get_conflict_wl_is_None</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down_unRET_Id</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>assumption</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>conc_fun_R_mono</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_state_simp</span><span> </span><span>twl_st_heur_count_decided_st_alt_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_state_simp</span><span> </span><span>twl_st_heur_twl_st_heur_conflict_ana</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_state_simp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>assumption</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>conc_fun_RES</span><span> </span><span>RETURN_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_state_simp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>cdcl_twl_o_prog_wl_D_heur_cdcl_twl_o_prog_wl_D2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(cdcl_twl_o_prog_wl_D_heur, cdcl_twl_o_prog_wl_D) &#8712;
+   {(S, T). (S, T) &#8712; twl_st_heur} &#8594;<span class="hidden">&#8681;</span><sub>f</sub>
+     &#10216;bool_rel &#215;<span class="hidden">&#8681;</span><sub>f</sub> {(S, T). (S, T) &#8712; twl_st_heur}&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>cdcl_twl_o_prog_wl_D_heur_cdcl_twl_o_prog_wl_D</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">,</span><span> </span><span>THEN</span><span> </span><span>order_trans</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>conc_fun_R_mono</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Combining Together: Full Strategy&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>  </span><span>cdcl_twl_stgy_prog_wl_D_heur</span><span>
+</span><span>   </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;twl_st_wl_heur &#8658; twl_st_wl_heur nres&#8250;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_stgy_prog_wl_D_heur S<span class="hidden">&#8681;</span><sub>0</sub> =
+  do {
+    do {
+        (brk, T) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub>
+        (&#955;(brk, _). &#172;brk)
+        (&#955;(brk, S).
+        do {
+          T &#8592; unit_propagation_outer_loop_wl_D_heur S;
+          cdcl_twl_o_prog_wl_D_heur T
+        })
+        (False, S<span class="hidden">&#8681;</span><sub>0</sub>);
+      RETURN T
+    }
+  }
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theorem</span></span><span> </span><span>unit_propagation_outer_loop_wl_D_heur_unit_propagation_outer_loop_wl_D</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(unit_propagation_outer_loop_wl_D_heur, unit_propagation_outer_loop_wl_D) &#8712;
+    twl_st_heur &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;twl_st_heur&#10217; nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>twl_st_heur&#39;&#39;D_twl_st_heurD</span><span class="delimiter">[</span><span>OF</span><span>
+</span><span>     </span><span>unit_propagation_outer_loop_wl_D_heur_unit_propagation_outer_loop_wl_D&#39;</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>cdcl_twl_stgy_prog_wl_D_heur_cdcl_twl_stgy_prog_wl_D</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(cdcl_twl_stgy_prog_wl_D_heur, cdcl_twl_stgy_prog_wl_D) &#8712; twl_st_heur &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;twl_st_heur&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>H</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(x, y) &#8712; {(S, T).
+               (S, T) &#8712; twl_st_heur &#8743;
+               length (get_clauses_wl_heur S) =
+               length (get_clauses_wl_heur x)} &#10233;
+           (x, y)
+           &#8712; {(S, T).
+               (S, T) &#8712; twl_st_heur_conflict_ana &#8743;
+               length (get_clauses_wl_heur S) =
+               length (get_clauses_wl_heur x)}&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_state_simp</span><span> </span><span>twl_st_heur_twl_st_heur_conflict_ana</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_stgy_prog_wl_D_heur_def</span><span> </span><span>cdcl_twl_stgy_prog_wl_D_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span>
+</span><span>        </span><span>unit_propagation_outer_loop_wl_D_heur_unit_propagation_outer_loop_wl_D&#39;</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>twl_st_heur&#39;&#39;D_twl_st_heurD</span><span class="delimiter">,</span><span> </span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>cdcl_twl_o_prog_wl_D_heur_cdcl_twl_o_prog_wl_D2</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_state_simp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_state_simp</span><span> </span><span>twl_st_heur&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_state_simp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_state_simp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>cdcl_twl_stgy_prog_break_wl_D_heur</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;twl_st_wl_heur &#8658; twl_st_wl_heur nres&#8250;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_stgy_prog_break_wl_D_heur S<span class="hidden">&#8681;</span><sub>0</sub> =
+  do {
+    b &#8592; RETURN (isasat_fast S<span class="hidden">&#8681;</span><sub>0</sub>);
+    (b, brk, T) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup>&#955;(b, brk, T). True<span class="hidden">&#8662;</span></sup>
+        (&#955;(b, brk, _). b &#8743; &#172;brk)
+        (&#955;(b, brk, S).
+        do {
+          ASSERT(isasat_fast S);
+          T &#8592; unit_propagation_outer_loop_wl_D_heur S;
+          ASSERT(isasat_fast T);
+          (brk, T) &#8592; cdcl_twl_o_prog_wl_D_heur T;
+          b &#8592; RETURN (isasat_fast T);
+          RETURN(b, brk, T)
+        })
+        (b, False, S<span class="hidden">&#8681;</span><sub>0</sub>);
+    if brk then RETURN T
+    else cdcl_twl_stgy_prog_wl_D_heur T
+  }&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">d93efc62 </td><td align="center">Fri 06 Dec 2019 12:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

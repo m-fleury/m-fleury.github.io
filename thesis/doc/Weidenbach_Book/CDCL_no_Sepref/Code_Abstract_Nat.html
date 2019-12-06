@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Code_Abstract_Nat (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Code_Abstract_Nat</h1>
+
+<span class="command">theory</span> <span class="name">Code_Abstract_Nat</span><br/>
+<span class="keyword">imports</span> <a href="../../HOL/HOL/Main.html"><span class="name">Main</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*  Title:      HOL/Library/Code_Abstract_Nat.thy
+    Author:     Stefan Berghofer, Florian Haftmann, TU Muenchen
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Avoidance of pattern matching on natural numbers&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Code_Abstract_Nat</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  When natural numbers are implemented in another than the
+  conventional inductive \&lt;^term&gt;&#8249;0::nat&#8250;/\&lt;^term&gt;&#8249;Suc&#8250; representation,
+  it is necessary to avoid all pattern matching on natural numbers
+  altogether.  This is accomplished by this theory (up to a certain
+  extent).
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Case analysis&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Case analysis on natural numbers is rephrased using a conditional
+  expression:
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>code</span><span class="delimiter">,</span><span> </span><span>code_unfold</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;case_nat = (&#955;f g n. if n = 0 then f else g (n - 1))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>fun_eq_iff</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>gr0_implies_Suc</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Preprocessors&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  The term \&lt;^term&gt;&#8249;Suc n&#8250; is no longer a valid pattern.  Therefore,
+  all occurrences of this term in a position where a pattern is
+  expected (i.e.~on the left-hand side of a code equation) must be
+  eliminated.  This can be accomplished -- as far as possible -- by
+  applying the following transformation rule:
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>Suc_if_eq</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;n. f (Suc n) &#8801; h n&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f 0 &#8801; g&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f n &#8801; if n = 0 then g else h (n - 1)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>eq_reflection</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>n</span><span class="delimiter">,</span><span> </span><span>insert</span><span> </span><span>assms</span><span class="delimiter">,</span><span> </span><span>simp_all</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  The rule above is built into a preprocessor that is plugged into
+  the code generator.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">setup</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+let
+
+val Suc_if_eq = Thm.incr_indexes 1 @{thm Suc_if_eq};
+
+fun remove_suc ctxt thms =
+  let
+    val vname = singleton (Name.variant_list (map fst
+      (fold (Term.add_var_names o Thm.full_prop_of) thms []))) &quot;n&quot;;
+    val cv = Thm.cterm_of ctxt (Var ((vname, 0), HOLogic.natT));
+    val lhs_of = snd o Thm.dest_comb o fst o Thm.dest_comb o Thm.cprop_of;
+    val rhs_of = snd o Thm.dest_comb o Thm.cprop_of;
+    fun find_vars ct = (case Thm.term_of ct of
+        (Const (\&lt;^const_name&gt;&#8249;Suc&#8250;, _) $ Var _) =&gt; [(cv, snd (Thm.dest_comb ct))]
+      | _ $ _ =&gt;
+        let val (ct1, ct2) = Thm.dest_comb ct
+        in 
+          map (apfst (fn ct =&gt; Thm.apply ct ct2)) (find_vars ct1) @
+          map (apfst (Thm.apply ct1)) (find_vars ct2)
+        end
+      | _ =&gt; []);
+    val eqs = maps
+      (fn thm =&gt; map (pair thm) (find_vars (lhs_of thm))) thms;
+    fun mk_thms (thm, (ct, cv&#39;)) =
+      let
+        val thm&#39; =
+          Thm.implies_elim
+           (Conv.fconv_rule (Thm.beta_conversion true)
+             (Thm.instantiate&#39;
+               [SOME (Thm.ctyp_of_cterm ct)] [SOME (Thm.lambda cv ct),
+                 SOME (Thm.lambda cv&#39; (rhs_of thm)), NONE, SOME cv&#39;]
+               Suc_if_eq)) (Thm.forall_intr cv&#39; thm)
+      in
+        case map_filter (fn thm&#39;&#39; =&gt;
+            SOME (thm&#39;&#39;, singleton
+              (Variable.trade (K (fn [thm&#39;&#39;&#39;] =&gt; [thm&#39;&#39;&#39; RS thm&#39;]))
+                (Variable.declare_thm thm&#39;&#39; ctxt)) thm&#39;&#39;)
+          handle THM _ =&gt; NONE) thms of
+            [] =&gt; NONE
+          | thmps =&gt;
+              let val (thms1, thms2) = split_list thmps
+              in SOME (subtract Thm.eq_thm (thm :: thms1) thms @ thms2) end
+      end
+  in get_first mk_thms eqs end;
+
+fun eqn_suc_base_preproc ctxt thms =
+  let
+    val dest = fst o Logic.dest_equals o Thm.prop_of;
+    val contains_suc = exists_Const (fn (c, _) =&gt; c = \&lt;^const_name&gt;&#8249;Suc&#8250;);
+  in
+    if forall (can dest) thms andalso exists (contains_suc o dest) thms
+      then thms |&gt; perhaps_loop (remove_suc ctxt) |&gt; (Option.map o map) Drule.zero_var_indexes
+       else NONE
+  end;
+
+val eqn_suc_preproc = Code_Preproc.simple_functrans eqn_suc_base_preproc;
+
+in
+
+  Code_Preproc.add_functrans (&quot;eqn_Suc&quot;, eqn_suc_preproc)
+
+end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">d93efc62 </td><td align="center">Fri 06 Dec 2019 12:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

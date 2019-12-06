@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory CDCL_Abstract_Clause_Representation (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory CDCL_Abstract_Clause_Representation</h1>
+
+<span class="command">theory</span> <span class="name">CDCL_Abstract_Clause_Representation</span><br/>
+<span class="keyword">imports</span> <a href="Partial_Herbrand_Interpretation.html"><span class="name">Partial_Herbrand_Interpretation</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>CDCL_Abstract_Clause_Representation</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Entailment_Definition.Partial_Herbrand_Interpretation</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span class="tfree">&#39;v</span><span> </span><span>clause</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;v literal multiset&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span class="tfree">&#39;v</span><span> </span><span>clauses</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;v clause multiset&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Abstract Clause Representation&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We will abstract the representation of clause and clauses via two locales. We expect our
+  representation to behave like multiset, but the internal representation can be done using list
+  or whatever other representation.
+
+  We assume the following:
+  &#9642; there is an equivalent to adding and removing a literal and to taking the union of clauses.
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>raw_cls</span><span> </span><span class="delimiter">=</span><span>
+</span><span>   </span><span class="keyword2"><span class="keyword">fixes</span></span><span>
+</span><span>    </span><span>mset_cls</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;cls &#8658; &#39;v clause&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The two following locales are the &#8727;&#8249;exact same&#8250; locale, but we need two different locales.
+  Otherwise, instantiating @{text raw_clss} would lead to duplicate constants.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>abstract_with_index</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span>
+</span><span>    </span><span>get_lit</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;it &#8658; &#39;conc option&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>convert_to_mset</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;conc multiset&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span>
+</span><span>    </span><span>in_clss_mset_cls</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;get_lit Cs a = Some e &#10233; e &#8712;# convert_to_mset Cs&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>in_mset_cls_exists_preimage</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;b &#8712;# convert_to_mset Cs &#10233; &#8707;b&#39;. get_lit Cs b&#39; = Some b&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>abstract_with_index2</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span>
+</span><span>    </span><span>get_lit</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;it &#8658; &#39;conc option&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>convert_to_mset</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;conc multiset&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span>
+</span><span>    </span><span>in_clss_mset_clss</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;get_lit Cs a = Some e &#10233; e &#8712;# convert_to_mset Cs&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>in_mset_clss_exists_preimage</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;b &#8712;# convert_to_mset Cs &#10233; &#8707;b&#39;. get_lit Cs b&#39; = Some b&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>raw_clss</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span>abstract_with_index</span><span> </span><span>get_lit</span><span> </span><span>mset_cls</span><span> </span><span class="delimiter">+</span><span>
+</span><span>  </span><span>abstract_with_index2</span><span> </span><span>get_cls</span><span> </span><span>mset_clss</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">for</span></span><span>
+</span><span>    </span><span>get_lit</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;cls &#8658; &#39;lit &#8658; &#39;v literal option&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>mset_cls</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;cls &#8658; &#39;v clause&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>
+</span><span>    </span><span>get_cls</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;clss &#8658; &#39;cls_it &#8658; &#39;cls option&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>mset_clss</span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;clss &#8658; &#39;cls multiset&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>cls_lit</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;cls &#8658; &#39;lit &#8658; &#39;v literal&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infix</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8595;&quot;</span></span></span><span> </span><span>49</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;C &#8595; a &#8801; the (get_lit C a)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>clss_cls</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;clss &#8658; &#39;cls_it &#8658; &#39;cls&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infix</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8659;&quot;</span></span></span><span> </span><span>49</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;C &#8659; a &#8801; the (get_cls C a)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>in_cls</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;lit &#8658; &#39;cls &#8658; bool&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infix</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8712;&#8595;&quot;</span></span></span><span> </span><span>49</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;a &#8712;&#8595; Cs &#8801; get_lit Cs a &#8800; None&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>in_clss</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;cls_it &#8658; &#39;clss &#8658; bool&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infix</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8712;&#8659;&quot;</span></span></span><span> </span><span>49</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;a &#8712;&#8659; Cs &#8801; get_cls Cs a &#8800; None&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>raw_clss</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;raw_clss S &#8801; image_mset mset_cls (mset_clss S)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">experiment</span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>safe_nth</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;safe_nth (x # _) 0 = Some x&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;safe_nth (_ # xs) (Suc n) = safe_nth xs n&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;safe_nth [] _ = None&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>safe_nth_nth</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;n &lt; length l &#10233; safe_nth l n = Some (nth l n)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>l</span><span> </span><span>n</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>safe_nth.induct</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>safe_nth_None</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;n &#8805; length l &#10233; safe_nth l n = None&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>l</span><span> </span><span>n</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>safe_nth.induct</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>safe_nth_Some_iff</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;safe_nth l n = Some m &#10231; n &lt; length l &#8743; m = nth l n&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>iffI</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">defer</span></span></span></span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>safe_nth_nth</span><span class="delimiter">)</span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>l</span><span> </span><span>n</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>safe_nth.induct</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>safe_nth_None_iff</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;safe_nth l n = None &#10231; n &#8805; length l&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>iffI</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">defer</span></span></span></span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>safe_nth_None</span><span class="delimiter">)</span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>l</span><span> </span><span>n</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>safe_nth.induct</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>abstract_with_index</span><span>
+</span><span>    </span><span>safe_nth</span><span>
+</span><span>    </span><span>mset</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>unfold_locales</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>safe_nth_Some_iff</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>in_set_conv_nth</span><span> </span><span>safe_nth_nth</span><span> </span><span>set_mset_mset</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>abstract_with_index2</span><span>
+</span><span>    </span><span>safe_nth</span><span>
+</span><span>    </span><span>mset</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>unfold_locales</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>safe_nth_Some_iff</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>in_set_conv_nth</span><span> </span><span>safe_nth_nth</span><span> </span><span>set_mset_mset</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>list_cls</span><span class="delimiter">:</span><span> </span><span>raw_clss</span><span>
+</span><span>    </span><span>safe_nth</span><span> </span><span>mset</span><span>
+</span><span>    </span><span>safe_nth</span><span> </span><span>mset</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>unfold_locales</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">d93efc62 </td><td align="center">Fri 06 Dec 2019 12:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

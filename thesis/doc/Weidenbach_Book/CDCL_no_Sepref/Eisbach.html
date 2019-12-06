@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Eisbach (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Eisbach</h1>
+
+<span class="command">theory</span> <span class="name">Eisbach</span><br/>
+<span class="keyword">imports</span> <span class="name">Pure</span><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*  Title:      HOL/Eisbach/Eisbach.thy
+    Author:     Daniel Matichuk, NICTA/UNSW
+
+Main entry point for Eisbach proof method language.
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Eisbach</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Pure</span><span>
+</span><span class="keyword2"><span class="keyword">keywords</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;method&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span>thy_decl</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;conclusion&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;declares&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;methods&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#166;&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8658;&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;uses&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML_file</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;parse_tools.ML&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">ML_file</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;method_closure.ML&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">ML_file</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;eisbach_rule_insts.ML&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">ML_file</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;match_method.ML&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method</span></span><span> </span><span>solves</span><span> </span><span class="keyword2"><span class="keyword">methods</span></span><span> </span><span>m</span><span> </span><span class="delimiter">=</span><span> </span><span class="delimiter">(</span><span>m</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method</span></span><span> </span><span>repeat_new</span><span> </span><span class="keyword2"><span class="keyword">methods</span></span><span> </span><span>m</span><span> </span><span class="delimiter">=</span><span> </span><span class="delimiter">(</span><span>m</span><span> </span><span class="delimiter">;</span><span> </span><span class="delimiter">(</span><span>repeat_new</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;m&#8250;</span></span></span><span class="delimiter">)</span><span class="delimiter">?</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Debugging methods&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>print_raw_goal</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; fn facts =&gt;
+  (fn (ctxt, st) =&gt; (
+     Output.writeln (Thm.string_of_thm ctxt st);
+     Seq.make_results (Seq.single (ctxt, st)))))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>print_headgoal</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; fn _ =&gt; fn (ctxt&#39;, thm) =&gt;
+    ((SUBGOAL (fn (t,_) =&gt;
+     (Output.writeln
+     (Pretty.string_of (Syntax.pretty_term ctxt t)); all_tac)) 1 thm);
+     (Seq.make_results (Seq.single (ctxt&#39;, thm)))))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fun method_evaluate text ctxt facts =
+  Method.NO_CONTEXT_TACTIC ctxt
+    (Method.evaluate_runtime text ctxt facts)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>timeit</span><span> </span><span class="delimiter">=</span><span>
+</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Method.text_closure &gt;&gt; (fn m =&gt; fn ctxt =&gt; fn facts =&gt;
+   let
+     fun timed_tac st seq = Seq.make (fn () =&gt; Option.map (apsnd (timed_tac st))
+       (timeit (fn () =&gt; (Seq.pull seq))));
+
+     fun tac st&#39; =
+       timed_tac st&#39; (method_evaluate m ctxt facts st&#39;);
+
+   in SIMPLE_METHOD tac [] end)
+&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Simple Combinators&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>defer_tac</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn _ =&gt; SIMPLE_METHOD (defer_tac 1))&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>prefer_last</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn _ =&gt; SIMPLE_METHOD (PRIMITIVE (Thm.permute_prems 0 ~1)))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>all</span><span> </span><span class="delimiter">=</span><span>
+</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Method.text_closure &gt;&gt; (fn m =&gt; fn ctxt =&gt; fn facts =&gt;
+   let
+     fun tac i st&#39; =
+       Goal.restrict i 1 st&#39;
+       |&gt; method_evaluate m ctxt facts
+       |&gt; Seq.map (Goal.unrestrict i)
+
+   in SIMPLE_METHOD (ALLGOALS tac) facts end)
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>determ</span><span> </span><span class="delimiter">=</span><span>
+</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Method.text_closure &gt;&gt; (fn m =&gt; fn ctxt =&gt; fn facts =&gt;
+   let
+     fun tac st&#39; = method_evaluate m ctxt facts st&#39;
+
+   in SIMPLE_METHOD (DETERM tac) facts end)
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>changed</span><span> </span><span class="delimiter">=</span><span>
+</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Method.text_closure &gt;&gt; (fn m =&gt; fn ctxt =&gt; fn facts =&gt;
+   let
+     fun tac st&#39; = method_evaluate m ctxt facts st&#39;
+
+   in SIMPLE_METHOD (CHANGED tac) facts end)
+&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The following &#8249;fails&#8250; and &#8249;succeeds&#8250; methods protect the goal from the effect
+      of a method, instead simply determining whether or not it can be applied to the current goal.
+      The &#8249;fails&#8250; method inverts success, only succeeding if the given method would fail.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>fails</span><span> </span><span class="delimiter">=</span><span>
+</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Method.text_closure &gt;&gt; (fn m =&gt; fn ctxt =&gt; fn facts =&gt;
+   let
+     fun fail_tac st&#39; =
+       (case Seq.pull (method_evaluate m ctxt facts st&#39;) of
+          SOME _ =&gt; Seq.empty
+        | NONE =&gt; Seq.single st&#39;)
+
+   in SIMPLE_METHOD fail_tac facts end)
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>succeeds</span><span> </span><span class="delimiter">=</span><span>
+</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Method.text_closure &gt;&gt; (fn m =&gt; fn ctxt =&gt; fn facts =&gt;
+   let
+     fun can_tac st&#39; =
+       (case Seq.pull (method_evaluate m ctxt facts st&#39;) of
+          SOME (st&#39;&#39;,_) =&gt; Seq.single st&#39;
+        | NONE =&gt; Seq.empty)
+
+   in SIMPLE_METHOD can_tac facts end)
+&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Finding a goal based on successful application of a method&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>find_goal</span><span> </span><span class="delimiter">=</span><span>
+</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Method.text_closure &gt;&gt; (fn m =&gt; fn ctxt =&gt; fn facts =&gt;
+   let
+     fun prefer_first i = SELECT_GOAL
+       (fn st&#39; =&gt;
+         (case Seq.pull (method_evaluate m ctxt facts st&#39;) of
+           SOME (st&#39;&#39;,_) =&gt; Seq.single st&#39;&#39;
+         | NONE =&gt; Seq.empty)) i THEN prefer_tac i
+
+   in SIMPLE_METHOD (FIRSTGOAL prefer_first) facts end)&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">d93efc62 </td><td align="center">Fri 06 Dec 2019 12:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+
