@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Array_of_Array_List (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Array_of_Array_List</h1>
+
+<span class="command">theory</span> <span class="name">Array_of_Array_List</span><br/>
+<span class="keyword">imports</span> <a href="LLVM_DS_Array_List.html"><span class="name">LLVM_DS_Array_List</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Array of Array Lists&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Array_of_Array_List</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>LLVM_DS_Array_List</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Arrays that own their Elements&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;idxe_map l i &#8801; if i&lt;length l then Some (l!i) else None&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>idxe_map_empty</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;idxe_map [] = Map.empty&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>idxe_map_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>idxe_map_dom</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dom (idxe_map l) = {0..&lt;length l}&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>idxe_map_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>le_idxe_map_updI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i&lt;length l &#10233; m &#8838;<span class="hidden">&#8681;</span><sub>m</sub> idxe_map l &#10233; m(i&#8614;l!i) &#8838;<span class="hidden">&#8681;</span><sub>m</sub> idxe_map l&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>idxe_map_def</span><span> </span><span>map_le_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>le_idxe_map_delD</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;m &#8838;<span class="hidden">&#8681;</span><sub>m</sub> idxe_map l &#10233; m(i:=None) &#8838;<span class="hidden">&#8681;</span><sub>m</sub> idxe_map (l[i:=x])&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>idxe_map_def</span><span> </span><span>map_le_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>le_idxe_map_delD&#39;</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;m &#8838;<span class="hidden">&#8681;</span><sub>m</sub> idxe_map l &#10233; m(i:=None) &#8838;<span class="hidden">&#8681;</span><sub>m</sub> idxe_map l&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>idxe_map_def</span><span> </span><span>map_le_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>le_idxe_mapD</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;m &#8838;<span class="hidden">&#8681;</span><sub>m</sub> idxe_map l &#10233; i&lt;length l &#10233; m i = Some xi &#10233; l!i = xi&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>idxe_map_def</span><span> </span><span>map_le_def</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>domI</span><span> </span><span>option.inject</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nao_assn A R &#8801; mk_assn (&#955;xss a. EXS xs. 
+       &#8639;narray_assn xs a 
+    ** &#8593;(length xs = length xss) 
+    ** &#8593;(R &#8838;<span class="hidden">&#8681;</span><sub>m</sub> idxe_map xs)
+    ** (&#8899;*i&#8712;{0..&lt;length xss} - dom R. &#8639;A (xss!i) (xs!i))  
+  )&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nao_new TYPE(&#39;a::llvm_rep) n &#8801; narray_new TYPE(&#39;a) n&quot;</span></span></span><span>
+</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nao_repl_init_aux</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>fri_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#9633; &#8866; &#8639;A x init&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#9633; &#8866; (&#8899;*i&#8712;{0..&lt;n::nat}. &#8639;A x init)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>n</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>n</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>atLeast0_lessThan_Suc</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>replicate_Suc</span><span class="delimiter">,</span><span> </span><span>goal_cases</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>1</span><span> </span><span class="keyword1"><span class="command">note</span></span><span> </span><span class="delimiter">[</span><span>fri_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ENTAILSD</span><span class="delimiter">)</span><span> </span><span>vcg</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">qed</span></span><span>    
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nao_new_init_rl</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#9633; &#8866; &#8639;A x init&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;snat.assn n ni) (nao_new TYPE(&#39;a::llvm_rep) ni) (&#955;a. &#8639;(nao_assn A Map.empty) (replicate n x) a)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>nao_assn_def</span><span> </span><span>nao_new_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>fri_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>nao_repl_init_aux</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span> </span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nao_nth a i &#8801; array_nth a i&quot;</span></span></span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nao_nth_aux</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i&lt;length xs&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i&#8713;R&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sep_set_img ({0..&lt;length xs} - R) P 
+        = (P i ** sep_set_img ({0..&lt;length xs} - insert i R) P)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;{0..&lt;length xs} - R = insert i ({0..&lt;length xs} - insert i R)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>1</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>    
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ndomIff</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i&#8713;dom m &#10231; m i = None&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nao_nth_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;(nao_assn A R) xs a ** &#8639;snat.assn i ii ** &#8593;(i&lt;length xs &#8743; i&#8713;dom R)) 
+    (nao_nth a ii) 
+    (&#955;xi. &#8639;(nao_assn A (R(i&#8614;xi))) xs a ** &#8639;A (xs!i) xi)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>nao_assn_def</span><span> </span><span>nao_nth_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>fri_red_img</span><span class="delimiter">[</span><span>fri_red_rules</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>nao_nth_aux</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>ndomIff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span>le_idxe_map_updI</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span> </span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nao_upd a i x &#8801; array_upd a i x&quot;</span></span></span><span>   
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nao_upd_aux</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>I</span><span> </span><span>xs</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">defines</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;I &#8801; {0..&lt;length xs}&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i&#8712;I&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i&#8712;R&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;length xsi = length xs&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8899;*j&#8712;I - (R - {i}). &#8639;A (xs[i := x] ! j) (xsi[i := xi] ! j)) = (&#8639;A x xi ** (&#8899;*j&#8712;I - R. &#8639;A (xs ! j) (xsi ! j)))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;I - (R - {i}) = insert i (I-R)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simplified</span><span class="delimiter">,</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i&#8713;I-R&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i&lt;length xs&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i&#8712;I&#8250;</span></span></span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>I_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;j&#8712;I-R &#10233; i&#8800;j&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>j</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i&#8712;R&#8250;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>1</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>  
+</span><span>          
+</span><span>  </span><span class="keyword1"><span class="command">term</span></span><span> </span><span>restrict_map</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nao_upd_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple
+    (&#8639;(nao_assn A R) xs a ** &#8639;A x xi ** &#8639;snat.assn i ii ** &#8593;(i&lt;length xs &#8743; i&#8712;dom R))
+    (nao_upd a ii xi)
+    (&#955;a&#39;. &#8593;(a&#39;=a) ** &#8639;(nao_assn A (R(i:=None))) (xs[i:=x]) a)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>nao_assn_def</span><span> </span><span>nao_upd_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>nao_upd_aux</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span>le_idxe_map_delD</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span>domI</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span> </span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nao_rejoin a i &#8801; return ()&quot;</span></span></span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nao_rejoin_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i&lt;length xs &#10233; {0..&lt;length xs} - (dom R - {i}) = insert i ({0..&lt;length xs} - dom R)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nao_rejoin_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;(nao_assn A R) xs a ** &#8639;A x xi ** &#8593;(x=xs!i) ** &#8639;snat.assn i ii ** &#8593;(i&lt;length xs &#8743; R i = Some xi))
+    (nao_rejoin a ii)
+    (&#955;_. &#8639;(nao_assn A (R(i:=None))) xs a)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>nao_rejoin_def</span><span> </span><span>nao_assn_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>le_idxe_map_delD&#39;</span><span> </span><span>nao_rejoin_aux</span><span> </span><span>domI</span><span> </span><span>le_idxe_mapD</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nao_open a &#8801; return ()&quot;</span></span></span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nao_open_rl</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;(nao_assn A R) xss a) (nao_open a) (&#955;_. 
+    EXS xs. 
+       &#8639;narray_assn xs a 
+    ** &#8593;(length xs = length xss) 
+    ** &#8593;(R &#8838;<span class="hidden">&#8681;</span><sub>m</sub> idxe_map xs)
+    ** (&#8899;*i&#8712;{0..&lt;length xss} - dom R. &#8639;A (xss!i) (xs!i))  
+  )&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>nao_open_def</span><span> </span><span>nao_assn_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>  
+</span><span>  
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nao_free free a len &#8801; doM {
+    llc_while 
+      (&#955;i. ll_icmp_slt i len)
+      (&#955;i. doM {
+        x &#8592; nao_nth a i;
+        free x;
+        i &#8592; ll_add i (signed_nat 1);
+        return i
+      })
+      (signed_nat 0);
+      
+    nao_open a;
+    narray_free a
+  }&quot;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;iseg_map n f (i::nat) &#8801; if i&lt;n then Some (f i) else None&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iseg_mapZ</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;iseg_map 0 f = Map.empty&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>iseg_map_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>ext</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iseg_map_upd_end_eq</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;iseg_map n f(n &#8614; x) = iseg_map (Suc n) (f(n:=x))&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>iseg_map_def</span><span> </span><span>restrict_map_def</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iseg_map_dom</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;dom (iseg_map n f) = {0..&lt;n}&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>iseg_map_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nao_free_rl</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x xi. llvm_htriple (&#8639;A x xi) (free xi) (&#955;_. &#9633;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+      (&#8639;(nao_assn A Map.empty) xs a ** &#8639;snat.assn l li ** &#8593;(l = length xs)) 
+      (nao_free free a li) 
+      (&#955;_. &#9633;)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>nao_free_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>annotate_llc_while</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> 
+</span><span>      </span><span>I</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;&#955;ii t. EXS f i. &#8639;snat.assn i ii ** &#8639;(nao_assn A (iseg_map i f)) xs a ** &#8593;(i&#8804;length xs) ** &#8593;<span class="hidden">&#8681;</span><sub>!</sub>(t = length xs - i)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>R</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;less_than&quot;</span></span></span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>iseg_map_upd_end_eq</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg_monadify</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Array of Array Lists&#8250;</span></span></span><span>        
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span class="delimiter">(</span><span class="tfree">&#39;ll</span><span class="delimiter">,</span><span class="tfree">&#39;a</span><span class="delimiter">,</span><span class="tfree">&#39;l</span><span class="delimiter">)</span><span> </span><span>array_array_list</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;ll word &#215; (&#39;a,&#39;l) array_list ptr&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;aal_assn &#8801; mk_assn (&#955;xs (ni,a). 
+    &#8639;snat.assn (length xs) ni ** &#8639;(nao_assn arl_assn Map.empty) xs a)&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;aal_assn&#39; TYPE(&#39;ll::len2) TYPE(&#39;a::llvm_rep) TYPE(&#39;l::len2) &#8801; aal_assn :: (_,(&#39;ll,&#39;a,&#39;l) array_array_list) dr_assn&quot;</span></span></span><span>
+</span><span>      
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;aal_new_raw n &#8801; doM {
+    a&#8592;nao_new TYPE((&#39;a::llvm_rep,&#39;l::len2) array_list) n;
+    return (n,a)
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*abbreviation &quot;aal_new TYPE(&#39;ll::len2) TYPE(&#39;a::llvm_rep) TYPE(&#39;l::len2) n &#8801; aal_new_raw n :: (&#39;ll,&#39;a,&#39;l) array_array_list llM&quot;*)</span></span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>snat_z_z_init</span><span class="delimiter">[</span><span>fri_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#9633; &#8866; &#8639;<span class="hidden">&#8681;</span><sub>p</sub>snat.assn 0 0&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>snat.assn_def</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>snat_invar_def</span><span> </span><span>sep_algebra_simps</span><span class="delimiter">)</span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>narray_assn_null_init</span><span class="delimiter">[</span><span>fri_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#9633; &#8866; &#8639;narray_assn [] null&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>narray_assn_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span class="delimiter">)</span><span>
+</span><span>   
+</span><span>  </span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>fri_rules</span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_init</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PRECOND (SOLVE_AUTO (4&lt;LENGTH(&#39;l))) 
+    &#10233; &#9633; &#8866; &#8639;arl_assn [] (init::(&#39;a::llvm_rep,&#39;l::len2) array_list)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span> </span><span>vcg_tag_defs</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ENTAILSD</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>aal_new_rl</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;snat.assn n ni ** &#8593;(4&lt;LENGTH(&#39;l::len2))) 
+    (aal_new_raw ni)
+    (&#955;p. &#8639;(aal_assn&#39; TYPE(&#39;ll::len2) TYPE(&#39;a::llvm_rep) TYPE(&#39;l::len2)) (replicate n []) p)
+    &quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>aal_assn_def</span><span> </span><span>aal_new_raw_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>nao_new_init_rl</span><span class="delimiter">[</span><span>OF</span><span> </span><span>arl_init</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>aal_push_back</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;l::len2,&#39;a::llvm_rep,&#39;ll::len2) array_array_list &#8658; &#39;li::len word &#8658; &#39;a &#8658; (&#39;l,&#39;a,&#39;ll) array_array_list llM&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span> </span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;aal_push_back na i x &#8801; doM {
+    let (n,a) = na;
+    aa &#8592; nao_nth a i;
+    aa &#8592; arl_push_back aa x;
+    a &#8592; nao_upd a i aa;
+    return (n,a)
+  }&quot;</span></span></span><span>  
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>aal_push_back_rl</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>a</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;ll::len2,&#39;a::llvm_rep,&#39;l::len2) array_array_list&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+      (&#8639;aal_assn xss a ** &#8639;snat.assn i ii ** &#8593;(i&lt;length xss &#8743; length (xss!i) + 1 &lt; max_snat LENGTH(&#39;l)))
+      (aal_push_back a ii x)
+      (&#955;a. &#8639;aal_assn (xss[i:=(xss!i) @ [x]]) a)
+    &quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>aal_assn_def</span><span> </span><span>aal_push_back_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span> </span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;aal_pop_back na i &#8801; doM {
+    let (n,a) = na;
+    aa &#8592; nao_nth a i;
+    (r,aa) &#8592; arl_pop_back aa;
+    a &#8592; nao_upd a i aa;
+    return (r,(n,a))
+  }&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>aal_pop_back_rl</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>a</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;ll::len2,&#39;a::llvm_rep,&#39;l::len2) array_array_list&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+      (&#8639;aal_assn xss a ** &#8639;snat.assn i ii ** &#8593;(i&lt;length xss &#8743; xss!i &#8800; []))
+      (aal_pop_back a ii)
+      (&#955;(x,a). &#8639;aal_assn (xss[i:=butlast (xss!i)]) a ** &#8593;(x = last (xss!i)))
+    &quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>aal_assn_def</span><span> </span><span>aal_pop_back_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>      
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span> </span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;aal_idx na i j &#8801; doM {
+    let (n,a) = na;
+    aa &#8592; nao_nth a i;
+    r &#8592; arl_nth aa j;
+    nao_rejoin a i;
+    return r
+  }&quot;</span></span></span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>aal_idx_rl</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;aal_assn xss a ** &#8639;snat.assn i ii ** &#8639;snat.assn j jj ** &#8593;(i&lt;length xss &#8743; j&lt;length (xss!i)))
+    (aal_idx a ii jj)
+    (&#955;x. &#8639;aal_assn xss a ** &#8593;(x = xss!i!j))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>aal_assn_def</span><span> </span><span>aal_idx_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span> </span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;aal_upd na i j x &#8801; doM {
+    let (n,a) = na;
+    aa &#8592; nao_nth a i;
+    aa &#8592; arl_upd aa j x;
+    a &#8592; nao_upd a i aa;
+    return (n,a)
+  }&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>aal_upd_rl</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>a</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;ll::len2,&#39;a::llvm_rep,&#39;l::len2) array_array_list&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+      (&#8639;aal_assn xss a ** &#8639;snat.assn i ii ** &#8639;snat.assn j jj ** &#8593;(i&lt;length xss &#8743; j &lt; length (xss!i)))
+      (aal_upd a ii jj x)
+      (&#955;a. &#8639;aal_assn (xss[i:=(xss!i)[j:=x]]) a)
+    &quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>aal_assn_def</span><span> </span><span>aal_upd_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>      
+</span><span>    
+</span><span>    
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span> </span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;aal_llen na i &#8801; doM {
+    let (n,a) = na;
+    aa &#8592; nao_nth a i;
+    r &#8592; arl_len aa;
+    nao_rejoin a i;
+    return r
+  }&quot;</span></span></span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>aal_llen_rl</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;aal_assn xss a ** &#8639;snat.assn i ii ** &#8593;(i&lt;length xss))
+    (aal_llen a ii)
+    (&#955;xi. EXS x. &#8639;aal_assn xss a **&#8639;snat.assn x xi ** &#8593;(x = length (xss!i)))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>aal_assn_def</span><span> </span><span>aal_llen_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span> </span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;aal_len na &#8801; doM {
+    let (n,a) = na;
+    return n
+  }&quot;</span></span></span><span> 
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>aal_len_rl</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple
+    (&#8639;aal_assn xss a)
+    (aal_len a)
+    (&#955;ni. &#8639;aal_assn xss a ** &#8639;snat.assn (length xss) ni)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>aal_len_def</span><span> </span><span>aal_assn_def</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span> </span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;aal_take na i l &#8801; doM {
+    let (n,a) = na;
+    aa &#8592; nao_nth a i;
+    aa &#8592; arl_take l aa;
+    a &#8592; nao_upd a i aa;
+    return (n,a)
+  }&quot;</span></span></span><span> 
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>aal_take_rl</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple
+    (&#8639;aal_assn xss a ** &#8639;snat.assn i ii ** &#8639;snat.assn l li ** &#8593;(i&lt;length xss &#8743; l &#8804; length (xss!i)))
+    (aal_take a ii li)
+    (&#955;a. &#8639;aal_assn (xss[i := take l (xss!i)]) a)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>aal_assn_def</span><span> </span><span>aal_take_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>        
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;aal_free na &#8801; doM {
+    let (n,a) = na;
+    nao_free arl_free a n
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>aal_free_rl</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;aal_assn xss a) 
+    (aal_free a) 
+    (&#955;_. &#9633;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>aal_assn_def</span><span> </span><span>aal_free_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>nao_free_rl</span><span class="delimiter">[</span><span>OF</span><span> </span><span>arl_free_rule</span><span class="delimiter">]</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">export_llvm</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;aal_new_raw :: 64 word &#8658; (64,8 word,64) array_array_list llM&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;aal_push_back :: (64,8 word,64) array_array_list &#8658; 64 word &#8658; 8 word &#8658; (64,8 word,64) array_array_list llM&quot;</span></span></span><span>  
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;aal_pop_back :: (64,8 word,64) array_array_list &#8658; 64 word &#8658; (8 word &#215; (64,8 word,64) array_array_list) llM&quot;</span></span></span><span>  
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;aal_idx :: (64,8 word,64) array_array_list &#8658; 64 word &#8658; 64 word &#8658; 8 word llM&quot;</span></span></span><span>  
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;aal_upd :: (64,8 word,64) array_array_list &#8658; 64 word &#8658; 64 word &#8658; 8 word &#8658; (64,8 word,64) array_array_list llM&quot;</span></span></span><span>  
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;aal_llen :: (64,8 word,64) array_array_list &#8658; 64 word &#8658; 64 word llM&quot;</span></span></span><span>  
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;aal_len :: (64,8 word,64) array_array_list &#8658; 64 word llM&quot;</span></span></span><span>  
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;aal_free :: (64,8 word,64) array_array_list &#8658; unit llM&quot;</span></span></span><span>  
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;aal_take :: (64,8 word,64) array_array_list &#8658; 64 word &#8658; 64 word &#8658; ((64,8 word,64) array_array_list) llM&quot;</span></span></span><span>  
+</span><span>    
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

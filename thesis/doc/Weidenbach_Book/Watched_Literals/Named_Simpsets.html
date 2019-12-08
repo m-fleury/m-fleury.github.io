@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Named_Simpsets (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Named_Simpsets</h1>
+
+<span class="command">theory</span> <span class="name">Named_Simpsets</span><br/>
+<span class="keyword">imports</span> <a href="../../HOL/HOL/Main.html"><span class="name">Main</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+  Named simpsets, analogously to named theorems.
+  
+  Author: Peter Lammich
+  
+  TODO: 
+  
+    Declare attributes with name of named simpset, instead of one global named_ss attribute!
+  
+    Initialize from merge of simpsets (?) This goes into direction of &quot;locale expressions&quot;, don&#39;t overshoot here!
+    
+    Isar-Syntax for adding/removing simprocs
+    
+  
+*)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Named Simpsets&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Named_Simpsets</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span>
+</span><span class="keyword2"><span class="keyword">keywords</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;named_simpset&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span>thy_decl</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;print_named_simpset&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span>diag</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Setup&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ML_file</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;named_simpsets.ML&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  val _ =
+    Outer_Syntax.local_theory \&lt;^command_keyword&gt;&#8249;named_simpset&#8250;
+      &quot;declare named simpset&quot;
+      (Parse.binding -- Scan.option (\&lt;^keyword&gt;&#8249;=&#8250; |-- Parse.position Parse.embedded) &gt;&gt; uncurry Named_Simpsets.declare_cmd);
+  &#8250;</span></span></span><span>
+</span><span>          
+</span><span>  </span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;      
+  val _ = let      
+    fun print_named_simpset_cmd name_src bang ctxt = let
+      val name = Named_Simpsets.check ctxt name_src
+    in
+      Named_Simpsets.put name ctxt
+      |&gt; Simplifier.pretty_simpset bang
+      |&gt; Pretty.writeln
+    end
+        
+  in
+    Outer_Syntax.command \&lt;^command_keyword&gt;&#8249;print_named_simpset&#8250;
+      &quot;print named simpset&quot;
+      (Parse.position Parse.name -- Parse.opt_bang &gt;&gt; (fn (name_src,b) =&gt;
+        Toplevel.keep (print_named_simpset_cmd name_src b o Toplevel.context_of)))
+        
+  end                
+  &#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">local_setup</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; I
+    #&gt; Named_Simpsets.declare @{binding HOL_ss} (SOME HOL_ss)
+    #&gt; Named_Simpsets.declare @{binding HOL_basic_ss} (SOME HOL_basic_ss)
+    #&gt; Named_Simpsets.declare @{binding Main_ss} (SOME (simpset_of @{context}))
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO/FIXME/XXX: Is this the intended way how to add an attribute to simp?*)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">setup</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;let
+    val named_ss_mod = Args.$$$ &quot;named_ss&quot; |-- Parse.position Parse.name --| Args.colon 
+      &gt;&gt; (fn raw_binding =&gt; {
+        init = (fn ctxt =&gt; Named_Simpsets.put (Named_Simpsets.check ctxt raw_binding) ctxt ),
+        attribute = Simplifier.simp_add, 
+        pos = &#8962;
+      })
+  in
+    Simplifier.method_setup (named_ss_mod :: Splitter.split_modifiers)
+  end
+  &#8250;</span></span></span><span>
+</span><span>    
+</span><span>  
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Examples&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">experiment</span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Isar Interface&#8250;</span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Start with cleared simpset *)</span></span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">named_simpset</span></span><span> </span><span>bar</span><span>
+</span><span>    
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Start with other named simpset *)</span></span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">named_simpset</span></span><span> </span><span>foo</span><span> </span><span class="delimiter">=</span><span> </span><span>HOL_ss</span><span>
+</span><span>
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Print Content *)</span></span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">print_named_simpset</span></span><span> </span><span>bar</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">print_named_simpset</span></span><span> </span><span>foo</span><span>
+</span><span>    
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Predefined simpsets *)</span></span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">print_named_simpset</span></span><span> </span><span>HOL_basic_ss</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">print_named_simpset</span></span><span> </span><span>HOL_ss</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">print_named_simpset</span></span><span> </span><span>Main_ss</span><span>          </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Simpset of theory HOL.Main *)</span></span></span></span></span><span>
+</span><span>    
+</span><span>    
+</span><span>    
+</span><span>        
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Adding and deleting simp rules *)</span></span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>nth_append</span><span class="delimiter">[</span><span>named_ss</span><span> </span><span>bar</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>nth_append</span><span class="delimiter">[</span><span>named_ss</span><span> </span><span>bar</span><span> </span><span>del</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>nth_append</span><span class="delimiter">[</span><span>named_ss</span><span> </span><span>bar</span><span> </span><span>add</span><span class="delimiter">]</span><span>
+</span><span>    
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Same for split and cong *)</span></span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>if_split</span><span class="delimiter">[</span><span>named_ss</span><span> </span><span>bar</span><span> </span><span>split</span><span> </span><span>add</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>if_split</span><span class="delimiter">[</span><span>named_ss</span><span> </span><span>bar</span><span> </span><span>split</span><span> </span><span>del</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>if_split</span><span class="delimiter">[</span><span>named_ss</span><span> </span><span>bar</span><span> </span><span>split</span><span class="delimiter">]</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>if_cong</span><span class="delimiter">[</span><span>named_ss</span><span> </span><span>bar</span><span> </span><span>cong</span><span> </span><span>add</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>if_cong</span><span class="delimiter">[</span><span>named_ss</span><span> </span><span>bar</span><span> </span><span>cong</span><span> </span><span>del</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>if_cong</span><span class="delimiter">[</span><span>named_ss</span><span> </span><span>bar</span><span> </span><span>cong</span><span class="delimiter">]</span><span>
+</span><span>    
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Using Named Simpsets *)</span></span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;([1,2,3]@[4])!1 = 2&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>named_ss</span><span> </span><span>bar</span><span class="delimiter">:</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;([1,2,3]@[4])!1 = 2&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>put_named_ss</span><span> </span><span>bar</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>named_ss</span><span> </span><span>Main_ss</span><span class="delimiter">:</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;([1,2,3]@[4])!1 = 2&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>use</span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>put_named_ss</span><span> </span><span>bar</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>          
+</span><span>  
+</span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;ML Interface&#8250;</span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">local_setup</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Named_Simpsets.declare @{binding foo2} NONE&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">local_setup</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Named_Simpsets.declare @{binding foo3} (SOME HOL_ss)&#8250;</span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">ML_val</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+      val ctxt = @{context}
+    
+      val ctxt = Named_Simpsets.put @{named_simpset foo} ctxt
+
+      
+      val _ = Named_Simpsets.map_ctxt
+    &#8250;</span></span></span><span>
+</span><span>    
+</span><span>  
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>  
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

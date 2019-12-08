@@ -1,0 +1,1061 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Lenses (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Lenses</h1>
+
+<span class="command">theory</span> <span class="name">Lenses</span><br/>
+<span class="keyword">imports</span> <a href="../../AFP/Refine_Monadic/Adhoc_Overloading.html"><span class="name">Adhoc_Overloading</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+  Partially inspired by Simon Foster&#39;s lens theory
+*)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Lenses</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;HOL-Library.Adhoc_Overloading&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">keywords</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;define_lenses&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span>thy_decl</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Lenses&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">datatype</span></span><span> </span><span class="delimiter">(</span><span class="tfree">&#39;a</span><span class="delimiter">,</span><span class="tfree">&#39;s</span><span class="delimiter">)</span><span> </span><span>lens</span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infixr</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10233;&quot;</span></span></span><span> </span><span>1</span><span class="delimiter">)</span><span> </span><span class="delimiter">=</span><span>
+</span><span>    </span><span>LENS</span><span> </span><span class="delimiter">(</span><span>get</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;s &#8658; &#39;a option&quot;</span></span></span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>put</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;s &#8658; &#39;s option&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L s &#8801; &#8704;x. put L x s &#8800; None&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get L s &#8801; get L s &#8800; None&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;get&#39; L s = the (get L s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;put&#39; L x s = the (put L x s)&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>lens</span><span> </span><span class="delimiter">=</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>L</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#10233; &#39;s&quot;</span></span></span><span>
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*assumes pre_get_imp: &quot;pre_put L x s &#10233; pre_get L s&quot;*)</span></span></span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>pre_get_imp_put</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;get L s &#8800; None &#10233; put L x s &#8800; None&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>pre_put_indep_val</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;put L y s&#8800;None &#10233; put L x s &#8800; None&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>get_put_pre</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L s &#10233; pre_get L (put&#39; L x s)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>get_put</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L s &#10233; get&#39; L (put&#39; L x s) = x&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>put_get</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get L s &#10233; put&#39; L (get&#39; L s) s = s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>put_put</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L s &#10233; put&#39; L x (put&#39; L y s) = put&#39; L x s&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>laws</span><span> </span><span class="delimiter">=</span><span> </span><span>get_put</span><span> </span><span>put_get</span><span> </span><span>put_put</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>pre_laws</span><span> </span><span class="delimiter">=</span><span> </span><span>get_put_pre</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pre_put_indep_val1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;put L y s = Some s&#39; &#10233; &#8707;s&#39;. put L x s = Some s&#39;&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>pre_put_indep_val</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pre_put_indep_val2</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;put L y s=None &#10233; put L x s=None&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>pre_put_indep_val</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>get&#39;</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;get L s = Some v &#10231; pre_get L s &#8743; v=get&#39; L s&quot;</span></span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;get L s = None &#10231; &#172;pre_get L s&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>pre_get_def</span><span> </span><span>get&#39;_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>put&#39;</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;put L x s = Some s&#39; &#10231; pre_put L s &#8743; s&#39;=put&#39; L x s&quot;</span></span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;put L x s = None &#10231; &#172;pre_put L s&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>pre_put_def</span><span> </span><span>put&#39;_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>0</span><span> </span><span>1</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>pre_put_indep_val2</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>pre_put_indep_val1</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pre_get_imp_putI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get L s &#10233; pre_put L s&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>pre_get_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>drule</span><span> </span><span>pre_get_imp_put</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>put&#39;</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>simp_rls</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>laws</span><span> </span><span>pre_laws</span><span> </span><span>get&#39;</span><span> </span><span>put&#39;</span><span> </span><span>pre_get_imp_putI</span><span>
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*lemmas intro_rls[intro] = TrueI*)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>hlens</span><span> </span><span class="delimiter">=</span><span> </span><span>lens</span><span> </span><span>L</span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>L</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#10233; &#39;s&quot;</span></span></span><span> </span><span class="delimiter">+</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>pre_get_imp_put</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L s &#10233; pre_get L s&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pre_put_eq</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L s &#10231; pre_get L s&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>pre_get_imp_put</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>hsimp_rls</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>pre_put_eq</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>is_lens</span><span> </span><span class="delimiter">=</span><span> </span><span>lens_axioms</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>lens_for_presentation</span><span> </span><span class="delimiter">=</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>L</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#10233; &#39;s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>get_put</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;put L x s = Some s&#39; &#10233; get L s&#39; = Some x&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>put_get</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;get L s = Some x &#10233; put L x s = Some s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>put_put</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;put L x s = Some s&#39;; put L y s = Some s&#39;&#39; &#10215; &#10233; put L x s&#39;&#39; = Some s&#39;&quot;</span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>put_indep</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;put L y s&#8800;None &#10231; get L s &#8800; None&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens L = lens_for_presentation L&quot;</span></span></span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>hlens_def</span><span> </span><span>lens_def</span><span> </span><span>hlens_axioms_def</span><span> </span><span>lens_for_presentation_def</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>pre_put_def</span><span> </span><span>pre_get_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarsimp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>safe</span><span class="delimiter">)</span><span>        
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>get&#39;_def</span><span> </span><span>option.sel</span><span> </span><span>put&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>get&#39;_def</span><span> </span><span>option.sel</span><span> </span><span>put&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>option.case</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>option.the_def</span><span> </span><span>put&#39;_def</span><span class="delimiter">)</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>metis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>metis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>option.sel</span><span> </span><span>put&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>get&#39;_def</span><span> </span><span>option.sel</span><span> </span><span>put&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>get&#39;_def</span><span> </span><span>option.sel</span><span> </span><span>put&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>option.case</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>option.the_def</span><span> </span><span>put&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>metis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>lens.simp_rls</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>hlens.hsimp_rls</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>hlens.is_lens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Required for rules where lens-property cannot be assumed, e.g., split rules&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put_single_point L b a &#10231; put L b a &#8800; None&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pre_put_single_point</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens L &#10233; pre_put_single_point L b a = pre_put L a&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>pre_put_single_point_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*declare lens.intro_rls[intro]*)</span></span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>LENS_downstage</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get (LENS g p) s &#10231; g s &#8800; None&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put (LENS g p) s &#10231; (&#8704;x. p x s &#8800; None)&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;get&#39; (LENS g p) = (&#955;s. the (g s))&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;put&#39; (LENS g p) = (&#955;x s. the (p x s))&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;get (LENS g p) = g&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;put (LENS g p) = p&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>pre_get_def</span><span> </span><span>pre_put_def</span><span> </span><span>get&#39;_def</span><span> </span><span>put&#39;_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>put_get&#39;_combine</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;(get L s &#8800; None) = pre_get L s&quot;</span></span></span><span>
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*&quot;lens L &#10233; (put L x s = None) &#10231; &#172;pre_put L s&quot;*)</span></span></span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;the (get L s) = get&#39; L s&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;the (put L x s) = put&#39; L x s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>get&#39;_def</span><span> </span><span>put&#39;_def</span><span> </span><span>pre_get_def</span><span> </span><span>pre_put_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>prod_eqI</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_ext</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">?</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens l1&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens l2&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s. pre_get l1 s = pre_get l2 s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s x. pre_put l1 s = pre_put l2 s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s. pre_get l2 s &#10233; get&#39; l1 s = get&#39; l2 s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s x. pre_put l2 s &#10233; put&#39; l1 x s = put&#39; l2 x s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;l1 = l2&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>l1</span><span class="delimiter">;</span><span> </span><span>cases</span><span> </span><span>l2</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>option.collapse</span><span> </span><span>option.simps</span><span class="delimiter">(</span><span>5</span><span class="delimiter">)</span><span> </span><span>option.the_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>LENS_downstage</span><span class="delimiter">(</span><span>4</span><span class="delimiter">)</span><span> </span><span>assms</span><span class="delimiter">(</span><span>4</span><span class="delimiter">)</span><span> </span><span>assms</span><span class="delimiter">(</span><span>6</span><span class="delimiter">)</span><span> </span><span>lens.put&#39;</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>lens.sel</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>option.expand</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Lens Algebra&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Identity Lens&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>id<span class="hidden">&#8681;</span><sub>L</sub></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#10233; &#39;a&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;id<span class="hidden">&#8681;</span><sub>L</sub> &#8801; LENS (&#955;x. Some x) (&#955;x s. Some x)&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens id<span class="hidden">&#8681;</span><sub>L</sub>&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>id<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get id<span class="hidden">&#8681;</span><sub>L</sub> s&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put id<span class="hidden">&#8681;</span><sub>L</sub> s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>id<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;get&#39; id<span class="hidden">&#8681;</span><sub>L</sub> s = s&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;put&#39; id<span class="hidden">&#8681;</span><sub>L</sub> x s = x&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>id<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Lens Composition&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>comp<span class="hidden">&#8681;</span><sub>L</sub></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a,&#39;b) lens &#8658; (&#39;b,&#39;c) lens &#8658; (&#39;a,&#39;c) lens&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;comp<span class="hidden">&#8681;</span><sub>L</sub> L1 L2 &#8801; LENS
+      (&#955;s. Option.bind (get L2 s) (get L1))
+      (&#955;x s.
+        Option.bind (get L2 s) (&#955;s&#39;.
+        Option.bind (put L1 x s&#39;) (&#955;s&#39;.
+        put L2 s&#39; s)))
+      &quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">notation</span></span><span> </span><span class="delimiter">(</span><span>input</span><span class="delimiter">)</span><span> </span><span>comp<span class="hidden">&#8681;</span><sub>L</sub></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infixr</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;;<span class="hidden">&#8681;</span><sub>L</sub>&quot;</span></span></span><span> </span><span>80</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>bcomp<span class="hidden">&#8681;</span><sub>L</sub></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infixl</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8729;<span class="hidden">&#8681;</span><sub>L</sub>&quot;</span></span></span><span> </span><span>80</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bcomp<span class="hidden">&#8681;</span><sub>L</sub> x y &#8801; comp<span class="hidden">&#8681;</span><sub>L</sub> y x&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>comp_lens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens l1&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens l2&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens (l1;<span class="hidden">&#8681;</span><sub>L</sub>l2)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>comp<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>Option.bind_splits</span><span> </span><span>prod.splits</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>comp_hlens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens l1&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens l2&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens (l1;<span class="hidden">&#8681;</span><sub>L</sub>l2)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>comp<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>Option.bind_splits</span><span> </span><span>prod.splits</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>compL_pre_get</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;lens l1; lens l2&#10215; &#10233; pre_get (l1;<span class="hidden">&#8681;</span><sub>L</sub>l2) s &#10231; pre_get l2 s &#8743; pre_get l1 (get&#39; l2 s)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>comp<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span> </span><span>Option.bind_splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>compL_pre_put</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;lens l1; lens l2&#10215; &#10233; pre_put (l1;<span class="hidden">&#8681;</span><sub>L</sub>l2) s
+    &#10231; pre_get l2 s &#8743; pre_put l1 (get&#39; l2 s)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>comp<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span> </span><span>Option.bind_splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>compL_decomp</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens l1&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens l2&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get (l1;<span class="hidden">&#8681;</span><sub>L</sub>l2) s &#10233; get&#39; (l1;<span class="hidden">&#8681;</span><sub>L</sub>l2) s = (get&#39; l1 (get&#39; l2 s))&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put (l1;<span class="hidden">&#8681;</span><sub>L</sub>l2) s &#10233; put&#39; (l1;<span class="hidden">&#8681;</span><sub>L</sub>l2) x s = put&#39; l2 (put&#39; l1 x (get&#39; l2 s)) s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>comp<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span> </span><span>option.splits</span><span> </span><span>Option.bind_splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Monoid Laws&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>prod.splits</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>id_left_neutral</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;hlens a &#10233; id<span class="hidden">&#8681;</span><sub>L</sub>;<span class="hidden">&#8681;</span><sub>L</sub>a = a&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>id_right_neutral</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;lens a &#10233; a;<span class="hidden">&#8681;</span><sub>L</sub>id<span class="hidden">&#8681;</span><sub>L</sub> = a&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>assoc_comp_weak</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens a &#10233; lens b &#10233; lens c &#10233; (a;<span class="hidden">&#8681;</span><sub>L</sub>b);<span class="hidden">&#8681;</span><sub>L</sub>c = a;<span class="hidden">&#8681;</span><sub>L</sub>b;<span class="hidden">&#8681;</span><sub>L</sub>c&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>assoc_comp</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(a;<span class="hidden">&#8681;</span><sub>L</sub>b);<span class="hidden">&#8681;</span><sub>L</sub>c = a;<span class="hidden">&#8681;</span><sub>L</sub>b;<span class="hidden">&#8681;</span><sub>L</sub>c&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>comp<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>ext</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>Option.bind_splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Independence&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Move
+  lemma option_eq_casesI:
+    assumes &quot;a=None &#10233; b=None&quot;
+    assumes &quot;&#8896;x. a=Some x &#10233; b=Some x&quot;
+    shows &quot;a = b&quot;
+    by (cases a; cases b; simp add: assms)
+  *)</span></span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>lens_indep</span><span> </span><span class="delimiter">=</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>X</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#10233; &#39;c&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>Y</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;b &#10233; &#39;c&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>get_put_irr1Some</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put Y s &#10233; get X (put&#39; Y y s) = Some x &#10233; get X s = Some x&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>get_put_irr1None</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put Y s &#10233; get X (put&#39; Y y s) = None &#10233; get X s = None&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>get_put_irr2Some</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put X s &#10233; get Y (put&#39; X x s) = Some y &#10233; get Y s = Some y&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>get_put_irr2None</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put X s &#10233; get Y (put&#39; X x s) = None &#10233; get Y s = None&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>pre_put_irr1</span><span class="delimiter">:</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put X s &#10233; pre_put Y (put&#39; X x s) &#10231; pre_put Y s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>pre_put_irr2</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put Y s &#10233; pre_put X (put&#39; Y y s) &#10231; pre_put X s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>comm</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; pre_put X s; pre_put Y s &#10215; &#10233; put&#39; X x (put&#39; Y y s) = put&#39; Y y (put&#39; X x s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>get_put_irr1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put Y s &#10233; get X (put&#39; Y y s) = get X s&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>get_put_irr1None</span><span> </span><span>get_put_irr1Some</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>get_put_irr2</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put X s &#10233; get Y (put&#39; X x s) = get Y s&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>get_put_irr2None</span><span> </span><span>get_put_irr2Some</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_indep_get&#39;</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put X s &#10233; get&#39; Y (put&#39; X x s) = get&#39; Y s&quot;</span></span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put Y s &#10233; get&#39; X (put&#39; Y y s) = get&#39; X s&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>get&#39;_def</span><span> </span><span>get_put_irr2</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>get&#39;_def</span><span> </span><span>get_put_irr1</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_indep_pre_get&#39;</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put Y s &#10233; pre_get X (put&#39; Y y s) &#10231; pre_get X s&quot;</span></span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put X s &#10233; pre_get Y (put&#39; X x s) &#10231; pre_get Y s&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>get_put_irr1</span><span> </span><span>get_put_irr2</span><span> </span><span>pre_get_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>simps</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>lens_indep_get&#39;</span><span> </span><span>lens_indep_pre_get&#39;</span><span> </span><span>pre_put_irr1</span><span> </span><span>pre_put_irr2</span><span>
+</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>lens_indep.simps</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">notation</span></span><span> </span><span>lens_indep</span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infix</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10781;&quot;</span></span></span><span> </span><span>50</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_indep_sym</span><span class="delimiter">:</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;x &#10781; y &#10233; y &#10781; x&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lens_indep_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>lens_indep_comm</span><span> </span><span class="delimiter">=</span><span> </span><span>lens_indep.comm</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_indep_left_comp</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#10781; y&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens x&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens y&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens z&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(x ;<span class="hidden">&#8681;</span><sub>L</sub> z) &#10781; (y ;<span class="hidden">&#8681;</span><sub>L</sub> z)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>comp<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>lens_indep_comm</span><span> </span><span>split</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>Option.bind_splits</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_indep_right_comp</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;y &#10781; z&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens x&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens y&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens z&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(x ;<span class="hidden">&#8681;</span><sub>L</sub> y) &#10781; (x ;<span class="hidden">&#8681;</span><sub>L</sub> z)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>comp<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>lens_indep_comm</span><span> </span><span>split</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>Option.bind_splits</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_indep_left_ext</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;y &#10781; z&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens x&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens y&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens z&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(x ;<span class="hidden">&#8681;</span><sub>L</sub> y) &#10781; z&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>comp<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>lens_indep_comm</span><span> </span><span>split</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>Option.bind_splits</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_indep_right_ext</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#10781; z&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens x&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens y&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens z&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#10781; (y ;<span class="hidden">&#8681;</span><sub>L</sub> z)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>lens_indep_left_ext</span><span> </span><span>lens_indep_sym</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_indep_extend2</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#10781; y&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens x&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens y&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens a&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens b&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;a ;<span class="hidden">&#8681;</span><sub>L</sub> x &#10781; b ;<span class="hidden">&#8681;</span><sub>L</sub> y&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>comp<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>lens_indep_comm</span><span> </span><span>split</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>Option.bind_splits</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>rnlens</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a &#10233; &#39;b) &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rnlens L &#8801; lens L &#8743; (&#8707;x y::&#39;a. &#8707;s. x&#8800;y &#8743; pre_put L s)&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rnlensI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">?</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>L</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#10233; &#39;b&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens L&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(x::&#39;a) &#8800; y&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rnlens L&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>rnlens_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rnlens_compI</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;rnlens A; rnlens B&#10215; &#10233; rnlens (A&#8729;<span class="hidden">&#8681;</span><sub>L</sub>B)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>rnlens_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>lens.get_put_pre</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rnlens_id_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rnlens (id<span class="hidden">&#8681;</span><sub>L</sub> :: &#39;a &#10233; &#39;a) &#10231; (&#8707;a b::&#39;a. a&#8800;b)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>rnlens_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rnlens_imp_lens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rnlens L &#10233; lens L&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>rnlens_def</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rnl_indep_not_refl</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;rnlens L &#10233; &#172;(L &#10781; L)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>rnlens_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>full_types</span><span class="delimiter">)</span><span> </span><span>lens.get_put</span><span> </span><span>lens_indep.lens_indep_get&#39;</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rnl_indep_not_id</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rnlens L&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;(id<span class="hidden">&#8681;</span><sub>L</sub> &#10781; L)&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;(L &#10781; id<span class="hidden">&#8681;</span><sub>L</sub>)&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;(id<span class="hidden">&#8681;</span><sub>L</sub> &#10781; L)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>rnlens_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>mono_tags</span><span class="delimiter">,</span><span> </span><span>lifting</span><span class="delimiter">)</span><span> </span><span>id<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>lens.get_put</span><span> </span><span>lens.sel</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>lens_indep.get_put_irr1</span><span> </span><span>option.sel</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;(L &#10781; id<span class="hidden">&#8681;</span><sub>L</sub>)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>lens_indep_sym</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Complete Lenses&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;complete_lens L &#8801; lens L &#8743; (&#8704;x. &#8707;y. pre_get L y &#8743; get&#39; L y = x)&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>complete_lens_is_lens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;complete_lens L &#10233; lens L&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>complete_lens_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>complete_lensI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">?</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens L&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. &#8707;y. pre_get L y &#8743; get&#39; L y = x&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;complete_lens L&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>complete_lens_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>complete_lensE</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;complete_lens L&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword2"><span class="keyword">obtains</span></span><span> </span><span>y</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get L y&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;get&#39; L y = x&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>complete_lens_def</span><span class="delimiter">)</span><span>
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_indep_shrink_left</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens L<span class="hidden">&#8681;</span><sub>1</sub>&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens L<span class="hidden">&#8681;</span><sub>2</sub>&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>COMPL</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;complete_lens L&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>INDEP</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;L &#8729;<span class="hidden">&#8681;</span><sub>L</sub> L<span class="hidden">&#8681;</span><sub>1</sub> &#10781; L &#8729;<span class="hidden">&#8681;</span><sub>L</sub> L<span class="hidden">&#8681;</span><sub>2</sub>&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;L<span class="hidden">&#8681;</span><sub>1</sub> &#10781; L<span class="hidden">&#8681;</span><sub>2</sub>&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>standard</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>s</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>ss</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get L ss&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;get&#39; L ss = s&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>COMPL</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>complete_lensE</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">interpret</span></span><span> </span><span>lens_indep</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;L &#8729;<span class="hidden">&#8681;</span><sub>L</sub> L<span class="hidden">&#8681;</span><sub>1</sub>&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;L &#8729;<span class="hidden">&#8681;</span><sub>L</sub> L<span class="hidden">&#8681;</span><sub>2</sub>&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fact</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">{</span></span><span>
+</span><span>      </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>x</span><span> </span><span>y</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L<span class="hidden">&#8681;</span><sub>2</sub> s&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens.get L<span class="hidden">&#8681;</span><sub>1</sub> (put&#39; L<span class="hidden">&#8681;</span><sub>2</sub> y s) = Some x&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">with</span></span><span> </span><span>get_put_irr1Some</span><span class="delimiter">[</span><span>of</span><span> </span><span>ss</span><span> </span><span>y</span><span> </span><span>x</span><span class="delimiter">]</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens.get L<span class="hidden">&#8681;</span><sub>1</sub> s = Some x&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">}</span></span><span>    
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">{</span></span><span>
+</span><span>      </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>y</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L<span class="hidden">&#8681;</span><sub>2</sub> s&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens.get L<span class="hidden">&#8681;</span><sub>1</sub> (put&#39; L<span class="hidden">&#8681;</span><sub>2</sub> y s) = None&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">with</span></span><span> </span><span>get_put_irr1None</span><span class="delimiter">[</span><span>of</span><span> </span><span>ss</span><span> </span><span>y</span><span class="delimiter">]</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens.get L<span class="hidden">&#8681;</span><sub>1</sub> s = None&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">}</span></span><span>    
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">{</span></span><span>
+</span><span>      </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>x</span><span> </span><span>y</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L<span class="hidden">&#8681;</span><sub>1</sub> s&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens.get L<span class="hidden">&#8681;</span><sub>2</sub> (put&#39; L<span class="hidden">&#8681;</span><sub>1</sub> x s) = Some y&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">with</span></span><span> </span><span>get_put_irr2Some</span><span class="delimiter">[</span><span>of</span><span> </span><span>ss</span><span> </span><span>x</span><span> </span><span>y</span><span class="delimiter">]</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens.get L<span class="hidden">&#8681;</span><sub>2</sub> s = Some y&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">}</span></span><span>    
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">{</span></span><span>
+</span><span>      </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>x</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L<span class="hidden">&#8681;</span><sub>1</sub> s&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens.get L<span class="hidden">&#8681;</span><sub>2</sub> (put&#39; L<span class="hidden">&#8681;</span><sub>1</sub> x s) = None&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">with</span></span><span> </span><span>get_put_irr2None</span><span class="delimiter">[</span><span>of</span><span> </span><span>ss</span><span> </span><span>x</span><span class="delimiter">]</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens.get L<span class="hidden">&#8681;</span><sub>2</sub> s = None&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">}</span></span><span>    
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">{</span></span><span>
+</span><span>      </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>x</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L<span class="hidden">&#8681;</span><sub>1</sub> s&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword1"><span class="command">with</span></span><span> </span><span>pre_put_irr1</span><span class="delimiter">[</span><span>of</span><span> </span><span>ss</span><span> </span><span>x</span><span class="delimiter">]</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L<span class="hidden">&#8681;</span><sub>2</sub> (put&#39; L<span class="hidden">&#8681;</span><sub>1</sub> x s) = pre_put L<span class="hidden">&#8681;</span><sub>2</sub> s&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">}</span></span><span> </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>n_pre_put_irr1</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">{</span></span><span>
+</span><span>      </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>y</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L<span class="hidden">&#8681;</span><sub>2</sub> s&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword1"><span class="command">with</span></span><span> </span><span>pre_put_irr2</span><span class="delimiter">[</span><span>of</span><span> </span><span>ss</span><span> </span><span>y</span><span class="delimiter">]</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L<span class="hidden">&#8681;</span><sub>1</sub> (put&#39; L<span class="hidden">&#8681;</span><sub>2</sub> y s) = pre_put L<span class="hidden">&#8681;</span><sub>1</sub> s&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">}</span></span><span> </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>n_pre_put_irr2</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">{</span></span><span>
+</span><span>      </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>x</span><span> </span><span>y</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L<span class="hidden">&#8681;</span><sub>1</sub> s&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put L<span class="hidden">&#8681;</span><sub>2</sub> s&quot;</span></span></span><span> 
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>comm</span><span class="delimiter">[</span><span>of</span><span> </span><span>ss</span><span> </span><span>x</span><span> </span><span>y</span><span class="delimiter">]</span><span>
+</span><span>      
+</span><span>      </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;put&#39; L<span class="hidden">&#8681;</span><sub>1</sub> x (put&#39; L<span class="hidden">&#8681;</span><sub>2</sub> y s) = get&#39; L (put&#39; (L&#8729;<span class="hidden">&#8681;</span><sub>L</sub>L<span class="hidden">&#8681;</span><sub>1</sub>) x (put&#39; (L&#8729;<span class="hidden">&#8681;</span><sub>L</sub>L<span class="hidden">&#8681;</span><sub>2</sub>) y ss))&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>n_pre_put_irr2</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">also</span></span><span> </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>comm</span><span class="delimiter">[</span><span>of</span><span> </span><span>ss</span><span> </span><span>x</span><span> </span><span>y</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8230; = get&#39; L (put&#39; (L&#8729;<span class="hidden">&#8681;</span><sub>L</sub>L<span class="hidden">&#8681;</span><sub>2</sub>) y (put&#39; (L&#8729;<span class="hidden">&#8681;</span><sub>L</sub>L<span class="hidden">&#8681;</span><sub>1</sub>) x ss))&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">also</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8230; = put&#39; L<span class="hidden">&#8681;</span><sub>2</sub> y (put&#39; L<span class="hidden">&#8681;</span><sub>1</sub> x s)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>n_pre_put_irr1</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">finally</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;put&#39; L<span class="hidden">&#8681;</span><sub>1</sub> x (put&#39; L<span class="hidden">&#8681;</span><sub>2</sub> y s) = put&#39; L<span class="hidden">&#8681;</span><sub>2</sub> y (put&#39; L<span class="hidden">&#8681;</span><sub>1</sub> x s)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_indep_left_comp_complete_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;complete_lens z&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens x&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens y&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;z &#8729;<span class="hidden">&#8681;</span><sub>L</sub> x &#10781; z &#8729;<span class="hidden">&#8681;</span><sub>L</sub> y &#10231; x &#10781; y&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>meson</span><span> </span><span>assms</span><span> </span><span>complete_lens_def</span><span> </span><span>lens_indep_left_comp</span><span> </span><span>lens_indep_shrink_left</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Transfer of Values&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Relation that indicates that &#8249;s&#39;&#8250; originated from &#8249;s&#8250; by changing &#8249;L&#8250;&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ltrans</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ltrans L s s&#39; &#8801; lens L &#8743; (&#8707;x. put L x s = Some s&#39;)&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ltransI</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens L &#10233; pre_put L s &#10233; ltrans L s (put&#39; L x s)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ltrans_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ltrans_trans</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ltrans L OO ltrans L = ltrans L&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ltrans_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ltrans_push_indep</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;L &#10781; L&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ltrans L&#39; s s&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;get L s = get L s&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ltrans_def</span><span> </span><span>lens_indep.get_put_irr1</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Predicate to indicate that all states in relation &#8249;R&#8250; are equal on &#8249;L&#8250;&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>eq_on<span class="hidden">&#8681;</span><sub>L</sub></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;eq_on<span class="hidden">&#8681;</span><sub>L</sub> R L &#8801; &#8704;s s&#39;. R s s&#39; &#10230; get L s = get L s&#39;&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>eq_on_compI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;eq_on<span class="hidden">&#8681;</span><sub>L</sub> R<span class="hidden">&#8681;</span><sub>1</sub> L &#10233; eq_on<span class="hidden">&#8681;</span><sub>L</sub> R<span class="hidden">&#8681;</span><sub>2</sub> L &#10233; eq_on<span class="hidden">&#8681;</span><sub>L</sub> (R<span class="hidden">&#8681;</span><sub>1</sub> OO R<span class="hidden">&#8681;</span><sub>2</sub>) L&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>eq_on<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>eq_on_ltrans_indepI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;L &#10781; L&#39; &#10233; eq_on<span class="hidden">&#8681;</span><sub>L</sub> (ltrans L&#39;) L&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>eq_on<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>ltrans_push_indep</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Lens Instances&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Function&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fun<span class="hidden">&#8681;</span><sub>L</sub></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;b &#10233; (&#39;a&#8658;&#39;b)&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;fun<span class="hidden">&#8681;</span><sub>L</sub> x &#8801; LENS (&#955;f. Some (f x)) (&#955;y f. Some (f(x:=y)))&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fun_lens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens (fun<span class="hidden">&#8681;</span><sub>L</sub> x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fun<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>funL_pre</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get (fun<span class="hidden">&#8681;</span><sub>L</sub> x) s&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put (fun<span class="hidden">&#8681;</span><sub>L</sub> x) s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fun<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>funL_getput&#39;</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;get&#39; (fun<span class="hidden">&#8681;</span><sub>L</sub> x) f = f x&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;put&#39; (fun<span class="hidden">&#8681;</span><sub>L</sub> x) a f = f(x:=a)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fun<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fun<span class="hidden">&#8681;</span><sub>L</sub>_indepI</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x&#8800;y &#10233; fun<span class="hidden">&#8681;</span><sub>L</sub> x &#10781; fun<span class="hidden">&#8681;</span><sub>L</sub> y&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>standard</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fun<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Products&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fst<span class="hidden">&#8681;</span><sub>L</sub></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#10233; &#39;a &#215; &#39;b&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fst<span class="hidden">&#8681;</span><sub>L</sub> &#8801; LENS (&#955;(a,_). Some a) (&#955;a (_,b). Some (a,b))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>snd<span class="hidden">&#8681;</span><sub>L</sub></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;b &#10233; &#39;a &#215; &#39;b&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;snd<span class="hidden">&#8681;</span><sub>L</sub> &#8801; LENS (&#955;(_,b). Some b) (&#955;b (a,_). Some (a,b))&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fst_lens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens fst<span class="hidden">&#8681;</span><sub>L</sub>&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fst<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>snd_lens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens snd<span class="hidden">&#8681;</span><sub>L</sub>&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>snd<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fstL_getput&#39;</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;get&#39; fst<span class="hidden">&#8681;</span><sub>L</sub> x = fst x&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;put&#39; fst<span class="hidden">&#8681;</span><sub>L</sub> a x = (a,snd x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fst<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sndL_getput&#39;</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;get&#39; snd<span class="hidden">&#8681;</span><sub>L</sub> x = snd x&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;put&#39; snd<span class="hidden">&#8681;</span><sub>L</sub> b x = (fst x,b)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>snd<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fstL_pre</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get fst<span class="hidden">&#8681;</span><sub>L</sub> s&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put fst<span class="hidden">&#8681;</span><sub>L</sub> s&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fst<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sndL_pre</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get snd<span class="hidden">&#8681;</span><sub>L</sub> s&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put snd<span class="hidden">&#8681;</span><sub>L</sub> s&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>snd<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>prod_indep</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fst<span class="hidden">&#8681;</span><sub>L</sub> &#10781; snd<span class="hidden">&#8681;</span><sub>L</sub>&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>unfold_locales</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Lists&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>idx<span class="hidden">&#8681;</span><sub>L</sub></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat &#8658; (&#39;a &#10233; &#39;a list)&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;idx<span class="hidden">&#8681;</span><sub>L</sub> i &#8801; LENS
+      (&#955;s. if i&lt;length s then Some (s!i) else None)
+      (&#955;x s. if i&lt;length s then Some (s[i:=x]) else None)&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>hd<span class="hidden">&#8681;</span><sub>L</sub></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#10233; &#39;a list&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;hd<span class="hidden">&#8681;</span><sub>L</sub> &#8801; LENS (&#955;x#_&#8658; Some x | _ &#8658; None) (&#955;x. &#955;_#xs &#8658; Some (x#xs) | _ &#8658; None )&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>tl<span class="hidden">&#8681;</span><sub>L</sub></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a list &#10233; &#39;a list&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;tl<span class="hidden">&#8681;</span><sub>L</sub> &#8801; LENS (&#955;_#xs&#8658; Some xs | _ &#8658; None) (&#955;xs. &#955;x#_ &#8658; Some (x#xs) | _ &#8658; None )&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>last<span class="hidden">&#8681;</span><sub>L</sub></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#10233; &#39;a list&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;last<span class="hidden">&#8681;</span><sub>L</sub> &#8801; LENS
+      (&#955;xs. if xs&#8800;[] then Some (last xs) else None)
+      (&#955;x xs. if xs&#8800;[] then Some (butlast xs @ [x]) else None)&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>idx_lens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens (idx<span class="hidden">&#8681;</span><sub>L</sub> i)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>idx<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span> </span><span>prod.splits</span><span> </span><span>Option.bind_splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>idxL_pre</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get (idx<span class="hidden">&#8681;</span><sub>L</sub> i) s &#10231; i &lt; length s&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put (idx<span class="hidden">&#8681;</span><sub>L</sub> i) s &#10231; i &lt; length s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>idx<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span> </span><span>Option.bind_splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>idxL_getput&#39;</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get (idx<span class="hidden">&#8681;</span><sub>L</sub> i) l &#10233; get&#39; (idx<span class="hidden">&#8681;</span><sub>L</sub> i) l = l!i&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put (idx<span class="hidden">&#8681;</span><sub>L</sub> i) l &#10233; put&#39; (idx<span class="hidden">&#8681;</span><sub>L</sub> i) a l = l[i:=a]&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>idx<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span> </span><span>Option.bind_splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hd_lens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens (hd<span class="hidden">&#8681;</span><sub>L</sub>)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>hd<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hd_lens_pre</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get hd<span class="hidden">&#8681;</span><sub>L</sub> l &#10231; l&#8800;[]&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put hd<span class="hidden">&#8681;</span><sub>L</sub> l &#10231; l&#8800;[]&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>hd<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hd_lens_getput&#39;</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get hd<span class="hidden">&#8681;</span><sub>L</sub> l &#10233; get&#39; hd<span class="hidden">&#8681;</span><sub>L</sub> l = hd l&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put hd<span class="hidden">&#8681;</span><sub>L</sub> l &#10233; put&#39; hd<span class="hidden">&#8681;</span><sub>L</sub> x l = x # tl l&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>hd<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>tl_lens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens (tl<span class="hidden">&#8681;</span><sub>L</sub>)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>tl<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>tlL_pre</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get tl<span class="hidden">&#8681;</span><sub>L</sub> l &#10231; l&#8800;[]&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put tl<span class="hidden">&#8681;</span><sub>L</sub> l &#10231; l&#8800;[]&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>tl<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>tlL_getput&#39;</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get tl<span class="hidden">&#8681;</span><sub>L</sub> l &#10233; get&#39; tl<span class="hidden">&#8681;</span><sub>L</sub> l = tl l&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put tl<span class="hidden">&#8681;</span><sub>L</sub> l &#10233; put&#39; tl<span class="hidden">&#8681;</span><sub>L</sub> xs l = hd l # xs&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>tl<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>last_lens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens (last<span class="hidden">&#8681;</span><sub>L</sub>)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>last<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span> </span><span>Option.bind_splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lastL_pre</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get last<span class="hidden">&#8681;</span><sub>L</sub> l &#10231; l&#8800;[]&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put last<span class="hidden">&#8681;</span><sub>L</sub> l &#10231; l&#8800;[]&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>last<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lastL_getput&#39;</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get last<span class="hidden">&#8681;</span><sub>L</sub> l &#10233; get&#39; last<span class="hidden">&#8681;</span><sub>L</sub> l = last l&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put last<span class="hidden">&#8681;</span><sub>L</sub> l &#10233; put&#39; last<span class="hidden">&#8681;</span><sub>L</sub> x l = butlast l@[x]&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>last<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span> </span><span>Option.bind_splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hdL_is_idx0</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hd<span class="hidden">&#8681;</span><sub>L</sub> = idx<span class="hidden">&#8681;</span><sub>L</sub> 0&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>hd<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>idx<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.splits</span><span> </span><span>if_splits</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hd_tl_indep</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hd<span class="hidden">&#8681;</span><sub>L</sub> &#10781; tl<span class="hidden">&#8681;</span><sub>L</sub>&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>unfold_locales</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>idx<span class="hidden">&#8681;</span><sub>L</sub>_indep</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i&#8800;j &#10233; idx<span class="hidden">&#8681;</span><sub>L</sub> i &#10781; idx<span class="hidden">&#8681;</span><sub>L</sub> j&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>unfold_locales</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>list_update_swap</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Option&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;the<span class="hidden">&#8681;</span><sub>L</sub> &#8801;
+    LENS (&#955;x. x) (&#955;x. &#955;Some _ &#8658; Some (Some x) | _ &#8658; None)&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>the_lens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens (the<span class="hidden">&#8681;</span><sub>L</sub>)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>the<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>theL_pre</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get the<span class="hidden">&#8681;</span><sub>L</sub> l &#10231; l&#8800;None&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put the<span class="hidden">&#8681;</span><sub>L</sub> l &#10231; l&#8800;None&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>the<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.split</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>theL_getput&#39;</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get the<span class="hidden">&#8681;</span><sub>L</sub> l &#10233; get&#39; the<span class="hidden">&#8681;</span><sub>L</sub> l = the l&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put the<span class="hidden">&#8681;</span><sub>L</sub> l &#10233; put&#39; the<span class="hidden">&#8681;</span><sub>L</sub> x l = Some x&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>the<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.split</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;crov<span class="hidden">&#8681;</span><sub>L</sub> &#8801;
+    LENS (&#955;x. x) (&#955;x _. Some (Some x))&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>crov_lens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens (crov<span class="hidden">&#8681;</span><sub>L</sub>)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>crov<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>crovL_pre</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get crov<span class="hidden">&#8681;</span><sub>L</sub> l &#10231; l&#8800;None&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put crov<span class="hidden">&#8681;</span><sub>L</sub> l&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>crov<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.split</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>crovL_getput&#39;</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get crov<span class="hidden">&#8681;</span><sub>L</sub> l &#10233; get&#39; crov<span class="hidden">&#8681;</span><sub>L</sub> l = the l&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;pre_put crov<span class="hidden">&#8681;</span><sub>L</sub> l &#10233; put&#39; crov<span class="hidden">&#8681;</span><sub>L</sub> x l = Some x&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>crov<span class="hidden">&#8681;</span><sub>L</sub>_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.split</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Datatype Lens Generation&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">context</span></span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">private</span></span><span> </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>theMO_return</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;the (Some x) = x&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">private</span></span><span> </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>domMO_return</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Some x &#8800; None&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">private</span></span><span> </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>domMO_None</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;(None &#8800; None)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">private</span></span><span> </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>the_None_undefined</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;the None = undefined&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>option.the_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+      structure Datatype_Lens = struct
+
+        type lens_info = {
+          lens_t : term,
+          def_thm : thm
+
+        }
+
+        fun morph_lens_info phi {lens_t, def_thm} =
+          {lens_t = Morphism.term phi lens_t,
+           def_thm = Morphism.thm phi def_thm}
+
+        val dummify_atomic_types = Term.map_types (Term.map_atyps (K Term.dummyT));
+
+
+        fun define_lens (cs : Ctr_Sugar.ctr_sugar) qualified i j lthy = let
+          val ctors = #ctrs cs
+          val namess = #selss cs |&gt; map (map (dest_Const #&gt; fst))
+
+          fun mk_optionMT T = Type (@{type_name option}, [T])
+
+          fun mk_return t = let
+            val T = fastype_of t
+            val rT = T --&gt; mk_optionMT T
+          in
+            Const (@{const_name Some},rT) $ t
+          end
+
+          fun mk_abort T = let
+            val rT = mk_optionMT T
+          in
+            Const (@{const_name None},rT)
+          end
+
+          fun mk_get ctxt ctor i = let
+            val (Ts,_) = strip_type (fastype_of ctor)
+            val (vs,_) = Variable.variant_fixes (map (K &quot;x&quot;) Ts) ctxt
+            val vs = map Free (vs ~~ Ts)
+            val t = mk_return (nth vs i) |&gt; fold lambda (rev vs)
+          in
+            t
+          end
+
+          fun mk_invcase ctxt T ctor = let
+            val (Ts,_) = strip_type (fastype_of ctor)
+            val (vs,_) = Variable.variant_fixes (map (K &quot;x&quot;) Ts) ctxt
+            val vs = map Free (vs ~~ Ts)
+            val t = mk_abort T |&gt; fold lambda (rev vs)
+          in
+            t
+          end
+
+          fun mk_put ctxt ctor pvn i = let
+            val (Ts,_) = strip_type (fastype_of ctor)
+            val (vs,_) = Variable.variant_fixes (map (K &quot;x&quot;) Ts) ctxt
+            val vsa = nth_map i (K pvn) vs
+            val vs = map Free (vs ~~ Ts)
+            val vsa = map Free (vsa ~~ Ts)
+            val t = mk_return (list_comb (ctor,vsa)) |&gt; fold lambda (rev vs)
+          in
+            t
+          end
+
+          fun mk_case ts = let
+            val rT = body_type (fastype_of (hd ts))
+            val cT = (map fastype_of ts) ---&gt; #T cs --&gt; rT
+
+            val (cn,_) = dest_Const (#casex cs)
+            val cc = Const (cn,cT)
+            val r = list_comb (cc,ts)
+          in
+            r
+          end
+
+          fun mk_lens ctxt i j = let
+            val ctor = nth ctors i
+            val lname = nth (nth namess i) j
+            val T = nth (binder_types (fastype_of ctor)) j
+
+            (* Get *)
+            val get =
+                 map (mk_invcase ctxt T) ctors
+              |&gt; nth_map i (K (mk_get ctxt ctor j))
+              |&gt; mk_case
+
+            (* Put *)
+            val (pvn,ctxt) = yield_singleton Variable.variant_fixes &quot;v&quot; ctxt
+            val pvT = nth (binder_types (fastype_of ctor)) j
+            val pv = Free (pvn,pvT)
+
+            val put =
+                 map (mk_invcase ctxt (#T cs)) ctors
+              |&gt; nth_map i (K (mk_put ctxt ctor pvn j))
+              |&gt; mk_case
+              |&gt; lambda pv
+
+            val lensT = Type (@{type_name lens},[T,#T cs])
+            val lens = Const (@{const_name LENS}, fastype_of get --&gt; fastype_of put --&gt; lensT)
+            val rhs_term = lens $ get $ put
+
+            val lname = String.tokens (fn x =&gt; x = #&quot;.&quot;) lname |&gt; rev
+            val (qname,lname) = (hd (tl lname),hd lname)
+            val lname = lname ^ &quot;<span class="hidden">&#8681;</span><sub>L</sub>&quot;
+            val lhs_term = Free (lname, fastype_of rhs_term)
+            val def_term = Logic.mk_equals (lhs_term,rhs_term)
+          in
+            ((qname,lname),def_term)
+          end
+
+          val ((qname,lname),def_term) = mk_lens lthy i j
+
+          val lname = Binding.name lname
+          val lname = Binding.qualify qualified qname lname
+
+          val (def_term,_) = yield_singleton (Variable.importT_terms) def_term lthy
+
+          val ((lens_t,(_,def_thm)),lthy) = Specification.definition
+            (SOME (lname,NONE,Mixfix.NoSyn)) [] [] ((Binding.empty,[]),def_term) lthy;
+
+
+          val lens_prop =
+              Const (@{const_name hlens}, fastype_of lens_t --&gt; HOLogic.boolT) $ lens_t
+            |&gt; HOLogic.mk_Trueprop
+
+          fun prove ctxt = let
+            val ctxt = put_simpset HOL_ss ctxt
+            val ctxt = ctxt
+              addsimps @{thms hlens.is_lens LENS_downstage theMO_return domMO_return domMO_None}
+              addsimps #injects cs
+              addsimps #distincts cs
+            val ctxt = Splitter.add_split (#split cs) ctxt
+            val ctxt = Splitter.add_split (#split_asm cs) ctxt
+          in
+            Locale.intro_locales_tac {strict=false,eager=true} ctxt []
+            THEN unfold_tac ctxt [def_thm]
+            THEN ALLGOALS (asm_full_simp_tac ctxt)
+          end
+
+          val lens_thm = Goal.prove lthy [] [] lens_prop (fn {context, ...} =&gt; prove context)
+          val lt_name = Binding.suffix_name &quot;_lens&quot; lname
+          val (_,lthy) = Local_Theory.note ((lt_name,@{attributes [simp, intro!]}),[lens_thm]) lthy
+
+          (* pre_get field<span class="hidden">&#8681;</span><sub>L</sub> x = is_CTOR x *)
+
+          val (vn,lthy) = yield_singleton Variable.variant_fixes &quot;x&quot; lthy
+          val v = Free (vn,Term.dummyT)
+
+          val has_proper_disc = case nth (#discs cs) i of
+            Const _ =&gt; true | _ =&gt; false
+
+          fun p_simp_tac ctxt = let
+            val disc_thms = if has_proper_disc then nth (#disc_thmss cs) i else []
+          in
+            asm_simp_tac (put_simpset HOL_ss ctxt addsimps @{thms
+                LENS_downstage option.sel option.simps the_None_undefined             
+              } @ [def_thm] @ #case_thms cs @ disc_thms @ #sel_defs cs
+            )
+          end
+
+          fun p_discsel_tac ctxt = Induct_Tacs.case_tac ctxt vn [] NONE 
+                THEN_ALL_NEW p_simp_tac ctxt
+
+          fun prove_define tac term suffix lthy = let
+            val _ = Pretty.block [Pretty.str &quot;Proving &quot;, Binding.pretty lname, Pretty.str &quot;_&quot;, Pretty.str suffix, Pretty.str &quot;: &quot;, Syntax.pretty_term lthy term]
+              |&gt; Pretty.string_of |&gt; writeln
+
+            val thm = Goal.prove lthy [] [] term (fn {context=ctxt,...} =&gt; ALLGOALS (tac ctxt))
+  
+            val name = Binding.suffix_name (&quot;_&quot;^suffix) lname
+            val (_,lthy) = Local_Theory.note ((name,@{attributes [simp]}),[thm]) lthy
+          in
+            lthy
+          end
+
+          val lthy =
+            if has_proper_disc then let
+              val pgdisc_term = 
+                HOLogic.mk_eq (
+                  (@{const pre_get (_,_)} $ lens_t ) $ v,
+                  nth (#discs cs) i $ v
+                )
+              |&gt; HOLogic.mk_Trueprop
+              |&gt; dummify_atomic_types |&gt; Syntax.check_term lthy
+    
+              val lthy = prove_define p_discsel_tac pgdisc_term &quot;pre_disc&quot; lthy
+            in lthy end
+            else if length (#ctrs cs) = 1 then let
+              val pgdisc_term =                 
+                HOLogic.mk_eq (
+                    (@{const pre_get (_,_)} $ lens_t ) $ v,
+                    @{const True}
+                  )
+                |&gt; HOLogic.mk_Trueprop
+                |&gt; dummify_atomic_types |&gt; Syntax.check_term lthy
+
+              val lthy = prove_define p_discsel_tac pgdisc_term &quot;pre_disc&quot; lthy
+            in lthy end
+            else lthy
+
+          val selget_term = 
+            HOLogic.mk_eq (
+              nth (nth (#selss cs) i) j $ v,
+              (@{const get&#39; (_,_)} $ lens_t ) $ v
+            )
+          |&gt; HOLogic.mk_Trueprop
+          |&gt; dummify_atomic_types |&gt; Syntax.check_term lthy
+
+          val lthy = prove_define p_discsel_tac selget_term &quot;sel_get&#39;&quot; lthy
+
+
+          val ctor = nth (#ctrs cs) i
+          val ctarity = fastype_of ctor |&gt; binder_types |&gt; length
+          val (ctargs,lthy) = Variable.variant_fixes (replicate ctarity &quot;x&quot; ) lthy
+            |&gt;&gt; map (fn x =&gt; Free (x, dummyT))
+
+          val get_ctor_term = HOLogic.mk_eq (
+            (@{const get&#39; (_,_)} $ lens_t ) $ (list_comb (ctor,ctargs)),
+            nth ctargs j)
+          |&gt; HOLogic.mk_Trueprop
+          |&gt; dummify_atomic_types |&gt; Syntax.check_term lthy
+
+          val lthy = prove_define p_simp_tac get_ctor_term &quot;get_ctor&quot; lthy
+
+          val put_ctor_term = HOLogic.mk_eq (
+            (@{const put&#39; (_,_)} $ lens_t ) $ v $ (list_comb (ctor,ctargs)),
+            list_comb (ctor,nth_map j (K v) ctargs))
+          |&gt; HOLogic.mk_Trueprop
+          |&gt; dummify_atomic_types |&gt; Syntax.check_term lthy
+
+          val lthy = prove_define p_simp_tac put_ctor_term &quot;put_ctor&quot; lthy
+
+          val linfo : lens_info = {lens_t = lens_t, def_thm = def_thm}
+
+        in
+          (linfo,lthy)
+        end
+
+        fun define_lens&#39; cs qual i j (def_thms,lthy) = let
+          val (dt,lthy) = define_lens cs qual i j lthy
+        in
+          (dt :: def_thms,lthy)
+        end
+
+        fun define_all_lenses_aux cs qual lthy = let
+          fun def_lens i (dtss,lthy) = let
+            val ub = nth (#ctrs cs) i |&gt; fastype_of |&gt; binder_types |&gt; length
+            val (dts,lthy) = fold (fn j =&gt; define_lens&#39; cs qual i j) (0 upto ub - 1) ([],lthy)
+          in
+            (dts::dtss,lthy)
+          end
+        in
+          fold (fn i =&gt; def_lens i) (0 upto length (#ctrs cs) - 1) ([],lthy)
+        end
+
+
+        fun define_all_lenses tyname cs qual lthy = let
+          val (lis,(lthy,lthy_old)) =
+            Local_Theory.open_target lthy |&gt; snd
+            |&gt; define_all_lenses_aux cs qual
+            ||&gt; `Local_Theory.close_target
+          val phi = Proof_Context.export_morphism lthy_old lthy
+          val lis = map (map (morph_lens_info phi)) lis
+
+          (* Indep-lemmas *)
+          fun prove_indep (li1 : lens_info, li2 : lens_info) ctxt = let
+            val iterm = @{const &quot;lens_indep&quot; (_,_,_)} $ #lens_t li1 $ #lens_t li2
+              |&gt; HOLogic.mk_Trueprop
+              |&gt; dummify_atomic_types |&gt; @{print}
+              |&gt; Syntax.check_term ctxt
+              
+            
+            fun p_simp_tac ctxt = auto_tac (put_simpset HOL_ss ctxt 
+              addsimps #def_thm li1 :: #def_thm li2 :: #distincts cs @ #injects cs 
+                      @ @{thms LENS_downstage option.sel option.simps }
+              |&gt; Splitter.add_split (#split cs)
+              |&gt; Splitter.add_split (#split_asm cs))
+
+            fun tac ctxt = 
+              Locale.intro_locales_tac {strict=false,eager=true} ctxt [] THEN p_simp_tac ctxt
+
+            val thm = Goal.prove ctxt [] [] iterm (fn {context=ctxt, ...} =&gt; tac ctxt)
+
+          in
+            thm
+          end
+
+          fun comp_indep_thms [] = []
+            | comp_indep_thms (li::lis) = map (fn li2 =&gt; prove_indep (li,li2) lthy) lis @ comp_indep_thms lis
+
+          val indep_thms = map comp_indep_thms lis |&gt; flat
+
+          val tyname&#39; = String.tokens (fn x =&gt; x = #&quot;.&quot;) tyname |&gt; rev |&gt; hd
+
+          val indeps_name = Binding.name &quot;indeps&quot; |&gt; Binding.qualify true tyname&#39; 
+
+          val (_,lthy) = Local_Theory.note ((indeps_name,@{attributes [simp]}),indep_thms) lthy
+        in
+          lthy
+        end
+
+      end
+    &#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+      let
+        val parse_qualified =
+          Scan.optional (@{keyword &quot;(&quot;} |-- (@{keyword open} &gt;&gt; K true) --| @{keyword &quot;)&quot;}) false
+      in
+        Outer_Syntax.local_theory
+          @{command_keyword define_lenses}
+          &quot;Define lenses for datatype&quot;
+          (parse_qualified -- Parse.type_const
+            &gt;&gt; (fn (qual, tyname) =&gt; fn lthy =&gt; let
+              val tyname =
+                  Proof_Context.read_type_name {proper=true, strict=false} lthy tyname
+               |&gt; dest_Type |&gt; fst
+              val cs = Ctr_Sugar.ctr_sugar_of lthy tyname
+              val _ = is_none cs andalso error (&quot;Not a datatype &quot; ^ tyname)
+              val cs = the cs
+            in
+              Datatype_Lens.define_all_lenses tyname cs qual lthy
+            end)
+          )
+      end
+    &#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*abbreviation comp<span class="hidden">&#8681;</span><sub>L</sub>_aux where &quot;comp<span class="hidden">&#8681;</span><sub>L</sub>_aux a b &#8801; comp<span class="hidden">&#8681;</span><sub>L</sub> b a&quot;
+  bundle forward_composition_syntax begin
+    no_notation comp<span class="hidden">&#8681;</span><sub>L</sub> (infixr &quot;;<span class="hidden">&#8681;</span><sub>L</sub>&quot; 80)
+    notation comp<span class="hidden">&#8681;</span><sub>L</sub>_aux (infixl &quot;&#8729;<span class="hidden">&#8681;</span><sub>L</sub>&quot; 80)
+  end
+  *)</span></span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Can be used to generate simp-lemma to unfold generated lenses. TODO: Generate clean simp-theorems! *)</span></span></span></span></span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*lemma lens_eq_unfolds:
+    assumes &quot;L &#8801; LENS g p&quot;
+    shows &quot;get L s = g s&quot; &quot;put L x s = p x s&quot;
+    using assms by auto
+  *)</span></span></span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+xxx, ctd here:
+lemmas &quot;get (CTOR &#8230;) =&quot; and &quot;put x (CTOR &#8230;) = &quot;
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Tests and Examples&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+  pre_get the_mem<span class="hidden">&#8681;</span><sub>L</sub> x = (x = x)
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">context</span></span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">private</span></span><span> </span><span class="keyword1"><span class="command">datatype</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span>test</span><span> </span><span class="delimiter">=</span><span>
+</span><span>      </span><span>A</span><span> </span><span class="delimiter">(</span><span>xcord</span><span class="delimiter">:</span><span> </span><span>nat</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>ycord</span><span class="delimiter">:</span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">|</span><span> </span><span>B</span><span> </span><span class="delimiter">(</span><span>name</span><span class="delimiter">:</span><span> </span><span>string</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">|</span><span> </span><span>C</span><span> </span><span>bool</span><span> </span><span>bool</span><span> </span><span>int</span><span>
+</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">private</span></span><span> </span><span class="keyword1"><span class="command">define_lenses</span></span><span> </span><span>test</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">print_theorems</span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">value</span></span><span> </span><span class="delimiter">[</span><span>code</span><span class="delimiter">]</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;put ycord<span class="hidden">&#8681;</span><sub>L</sub> &#39;&#39;bar&#39;&#39; (A 3 &#39;&#39;foo&#39;&#39;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">value</span></span><span> </span><span class="delimiter">[</span><span>code</span><span class="delimiter">]</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;put&#39; ycord<span class="hidden">&#8681;</span><sub>L</sub> &#39;&#39;bar&#39;&#39; (A 3 &#39;&#39;foo&#39;&#39;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">value</span></span><span> </span><span class="delimiter">[</span><span>code</span><span class="delimiter">]</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;put ycord<span class="hidden">&#8681;</span><sub>L</sub> &#39;&#39;bar&#39;&#39; (B &#39;&#39;foo&#39;&#39;)&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+    Lemmas:
+
+      sel_get&#39;: sel x = get&#39; sel<span class="hidden">&#8681;</span><sub>L</sub> x
+      pre_disc: pre_sel<span class="hidden">&#8681;</span><sub>L</sub> = is_C 
+      indeps: Cx<span class="hidden">&#8681;</span><sub>L</sub> &#10781; Cy<span class="hidden">&#8681;</span><sub>L</sub>
+
+  *)</span></span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

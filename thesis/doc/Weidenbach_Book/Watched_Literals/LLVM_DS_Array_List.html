@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory LLVM_DS_Array_List (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory LLVM_DS_Array_List</h1>
+
+<span class="command">theory</span> <span class="name">LLVM_DS_Array_List</span><br/>
+<span class="keyword">imports</span> <a href="LLVM_DS_NArray.html"><span class="name">LLVM_DS_NArray</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Array-Lists&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>LLVM_DS_Array_List</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>LLVM_DS_NArray</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span class="delimiter">(</span><span class="tfree">&#39;a</span><span class="delimiter">,</span><span class="tfree">&#39;l</span><span class="delimiter">)</span><span> </span><span>array_list</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;l word &#215; &#39;l word &#215; &#39;a narray&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Auxiliary Functions&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_initial_size &#8801; return ((signed_nat (8::_::len word)))&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_push_back&#39;</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a::llvm_rep,&#39;l::len2) array_list &#8658; &#39;a &#8658; (&#39;a,&#39;l) array_list llM&quot;</span></span></span><span>    
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_push_back&#39; al x &#8801; doM {
+      let (l,c,a) = al;
+      array_upd a l x;
+      l &#8592; ll_add l (signed_nat 1);
+      return (l,c,a)
+    }&quot;</span></span></span><span>
+</span><span>  
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_aux_compute_size</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;l::len2 word &#8658; &#39;l word &#8658; &#39;l word llM&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span>   
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;arl_aux_compute_size c c&#39; &#8801; doM {
+      max::&#39;l word &#8592; ll_max_snat;
+      max &#8592; ll_udiv max (signed_nat 2);
+      b &#8592; ll_icmp_ule c max;
+      llc_if b (doM {
+          c &#8592; ll_mul c (signed_nat 2);
+          cok &#8592; ll_icmp_sle c&#39; c;
+          llc_if cok (return c) (return c&#39;)
+        }) 
+        (return c&#39;)
+    }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_resize</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;l word &#8658; (&#39;a::llvm_rep,&#39;l::len2) array_list &#8658; (&#39;a,&#39;l) array_list llM&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_resize c&#39; al &#8801; doM {
+      let (l,c,a) = al;
+      c &#8592; arl_aux_compute_size c c&#39;;
+      a&#39; &#8592; narray_new TYPE(&#39;a) c;
+      arraycpy a&#39; a l;
+      narray_free a;
+      return (l,c,a&#39;)
+    }&quot;</span></span></span><span>    
+</span><span>  
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_ensure_capacity</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;l word &#8658; (&#39;a::llvm_rep,&#39;l::len2) array_list &#8658; (&#39;a,&#39;l) array_list llM&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_ensure_capacity c&#39; al &#8801; doM {
+      let (l,c,a) = al;
+      cok &#8592; ll_icmp_sle c&#39; c;
+      llc_if cok (return (l,c,a)) (arl_resize c&#39; (l,c,a))
+    }&quot;</span></span></span><span>
+</span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Interface Functions&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_new_raw</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a::llvm_rep,&#39;l::len2) array_list llM&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_new_raw &#8801; doM {
+    c &#8592; arl_initial_size;
+    a &#8592; narray_new TYPE(&#39;a) c;
+    return (signed_nat 0,c,a)
+  }&quot;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_new</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::llvm_rep itself &#8658; &#39;l::len2 itself &#8658; (&#39;a,&#39;l) array_list llM&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_new TYPE(&#39;a::llvm_rep) TYPE(&#39;l::len2) &#8801; arl_new_raw&quot;</span></span></span><span>
+</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_new_sz_raw</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;l::len2 word &#8658; (&#39;a::llvm_rep,&#39;l) array_list llM&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_new_sz_raw n &#8801; doM {
+    a &#8592; narray_new TYPE(&#39;a) n;
+    return (n,n,a)
+  }&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_new_sz</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::llvm_rep itself &#8658; &#39;l::len2 word &#8658; (&#39;a,&#39;l) array_list llM&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_new_sz TYPE(&#39;a) n &#8801; arl_new_sz_raw n&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_new_repl</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;l::len2 word &#8658; &#39;a::llvm_rep &#8658; (&#39;a,&#39;l) array_list llM&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_new_repl n x &#8801; doM {
+      a &#8592; narray_new_init n x;
+      return (n,n,a)
+    }&quot;</span></span></span><span>
+</span><span>    
+</span><span>          
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_clear</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a::llvm_rep,&#39;l::len2) array_list &#8658; (&#39;a::llvm_rep,&#39;l) array_list llM&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_clear al &#8801; doM {
+      let (l,c,a) = al;
+      return (signed_nat 0,c,a)
+    }&quot;</span></span></span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_free</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a::llvm_rep,&#39;l::len) array_list &#8658; unit llM&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_free al &#8801; doM {
+    let (_,_,a) = al;
+    narray_free a
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_nth</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a::llvm_rep,&#39;l::len2) array_list &#8658; &#39;ll::len2 word &#8658; &#39;a llM&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_nth al i &#8801; doM {
+      let (l,c,a) = al;
+      array_nth a i
+    }&quot;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_upd</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a::llvm_rep,&#39;l::len2) array_list &#8658; &#39;ll::len2 word &#8658; &#39;a &#8658; (&#39;a,&#39;l) array_list llM&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_upd al i x &#8801; doM {
+      let (l,c,a) = al;
+      array_upd a i x;
+      return (l,c,a)
+    }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_len</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a::llvm_rep,&#39;l::len2) array_list &#8658; &#39;l word llM&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_len al &#8801; let (l,c,a) = al in return l&quot;</span></span></span><span>
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_push_back al x &#8801; doM {
+    l &#8592; arl_len al;
+    l &#8592; ll_add l (signed_nat 1);
+    al &#8592; arl_ensure_capacity l al;
+    arl_push_back&#39; al x
+  }&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_pop_back al &#8801; doM {
+    let (l,c,a) = al;
+    l &#8592; ll_sub l (signed_nat 1);
+    r &#8592; array_nth a l;
+    return (r,(l,c,a))
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_take l&#39; al &#8801; doM {
+    let (l,c,a) = al;
+    return (l&#39;,c,a)
+  }&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_last al &#8801; doM {
+    let (l,c,a) = al;
+    l &#8592; ll_sub l (signed_nat 1);
+    r &#8592; array_nth a l;
+    return r
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_butlast al &#8801; doM {
+    let (l,c,a) = al;
+    l &#8592; ll_sub l (signed_nat 1);
+    return (l,c,a)
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Direct access to array underlying array-list &#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>array_of_arl</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a::llvm_rep,&#39;l::len2) array_list &#8658; &#39;a ptr&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> 
+</span><span>    </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;array_of_arl &#8801; &#955;(l,c,a). a&quot;</span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">export_llvm</span></span><span> </span><span class="delimiter">(</span><span>debug</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;arl_new_raw :: (64 word,64) array_list llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_new&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;arl_new_sz_raw :: 64 word &#8658; (64 word,64) array_list llM&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;arl_clear :: (64 word,64) array_list &#8658; (64 word,64) array_list llM&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;arl_free :: (64 word,64) array_list &#8658; unit llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_free&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;arl_nth :: (64 word,64) array_list &#8658; 64 word &#8658; 64 word llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_nth&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;arl_upd :: (64 word,64) array_list &#8658; 64 word &#8658; 64 word &#8658; (64 word,64) array_list llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_upd&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;arl_len :: (64 word,64) array_list &#8658; 64 word llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_len&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;arl_push_back :: (64 word,64) array_list &#8658; 64 word &#8658; (64 word,64) array_list llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_push_back&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;arl_pop_back :: (64 word,64) array_list &#8658; (64 word &#215; (64 word,64) array_list) llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_pop_back&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;arl_take :: 64 word &#8658; (64 word,64) array_list &#8658; (64 word,64) array_list llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_take&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;arl_last :: (64 word,64) array_list &#8658; 64 word llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_last&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;arl_butlast :: (64 word,64) array_list &#8658; ((64 word,64) array_list) llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_butlast&quot;</span></span></span><span>
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Reasoning Setup&#8250;</span></span></span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_assn&#39;</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a::llvm_rep list &#215; nat, &#39;l::len2 word &#215; &#39;l word &#215; &#39;a ptr) dr_assn&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_assn&#39; &#8801; mk_assn (&#955;(xs,c) (li,ci,ai). 
+      EXS l a. &#8639;snat.assn l li ** &#8639;snat.assn c ci ** &#8639;narray_assn a ai 
+        ** &#8593;(LENGTH(&#39;l)&gt;4 &#8743; l&#8804;c &#8743; c=length a &#8743; xs = take l a))&quot;</span></span></span><span>
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl_assn</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a::llvm_rep list, &#39;l::len2 word &#215; &#39;l word &#215; &#39;a ptr) dr_assn&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_assn &#8801; mk_assn (&#955;xs ali. EXS c. &#8639;arl_assn&#39; (xs,c) ali)&quot;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Auxiliary Rules&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_aux_compute_size_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+      (&#8593;<span class="hidden">&#8681;</span><sub>d</sub>(LENGTH(&#39;a)&gt;2) ** &#8639;snat.assn c ci ** &#8639;snat.assn c&#39; ci&#39; ** &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(c&#8804;c&#39;)) 
+      (arl_aux_compute_size ci (ci&#39;::&#39;a::len2 word)) 
+      (&#955;ri. EXS r. &#8639;snat.assn r ri ** &#8593;(max c c&#39; &#8804; r))&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_aux_compute_size_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>vcg_monadify</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_resize_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+      (&#8639;snat.assn l li ** &#8639;snat.assn c (ci::&#39;l::len2 word) ** &#8639;narray_assn a ai ** &#8639;snat.assn c<span class="hidden">&#8681;</span><sub>n</sub> ci<span class="hidden">&#8681;</span><sub>n</sub>
+        ** &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(LENGTH(&#39;l)&gt;2 &#8743; c<span class="hidden">&#8681;</span><sub>n</sub>&gt;c &#8743; l&#8804;c &#8743; c=length a)
+      ) 
+      (arl_resize ci<span class="hidden">&#8681;</span><sub>n</sub> (li,ci,ai))
+      (&#955;(li,ci,ai). EXS c&#39; a&#39;. &#8639;snat.assn l li ** &#8639;snat.assn c&#39; ci ** &#8639;narray_assn a&#39; ai
+        ** &#8593;(c&#39;&#8805;c<span class="hidden">&#8681;</span><sub>n</sub> &#8743; c&#39;=length a&#39; &#8743; take l a&#39; = take l a)
+      )&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_resize_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg&#39;</span><span>
+</span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_ensure_capacity_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple
+      (&#8639;arl_assn&#39; (al,oc) ali ** &#8639;snat.assn c ci) (arl_ensure_capacity ci ali) 
+      (&#955;ali. EXS c&#39;. &#8639;arl_assn&#39; (al,c&#39;) ali ** &#8593;(c&#39;&#8805;c))
+    &quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_assn&#39;_def</span><span> </span><span>arl_ensure_capacity_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_push_back&#39;_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+      (&#8639;arl_assn&#39; (al,c) ali ** &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(length al &lt; c)) 
+      (arl_push_back&#39; ali x) 
+      (&#955;ali. EXS c. &#8639;arl_assn&#39; (al@[x],c) ali)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_assn&#39;_def</span><span> </span><span>arl_push_back&#39;_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>vcg_monadify</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg&#39;</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>take_update_last</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>        
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_len_rule_internal</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;arl_assn&#39; (al,c) ali) (arl_len ali) (&#955;li. &#8639;arl_assn&#39; (al,c) ali ** &#8639;snat.assn (length al) li)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_assn&#39;_def</span><span> </span><span>arl_len_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Interface Rules&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_new_raw_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8593;(LENGTH(&#39;l)&gt;4)) (arl_new_raw) (&#955;ali. &#8639;arl_assn [] (ali::(_,&#39;l::len2)array_list))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_new_def</span><span> </span><span>arl_new_raw_def</span><span> </span><span>arl_initial_size_def</span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>vcg_monadify</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg&#39;</span><span>
+</span><span>  
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_new_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8593;(LENGTH(&#39;c)&gt;4)) (arl_new TYPE(&#39;a::llvm_rep) TYPE(&#39;c::len2)) (&#955;ali. &#8639;arl_assn [] ali)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_new_def</span><span> </span><span>arl_new_raw_def</span><span> </span><span>arl_initial_size_def</span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>vcg_monadify</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg&#39;</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_new_sz_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+      (&#8639;snat.assn n ni ** &#8593;(LENGTH(&#39;c::len2)&gt;4)) 
+      (arl_new_sz TYPE(&#39;a::llvm_rep) (ni::&#39;c word)) 
+      (&#955;ali. &#8639;arl_assn (replicate n init) ali)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_new_sz_def</span><span> </span><span>arl_new_sz_raw_def</span><span> </span><span>arl_initial_size_def</span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>vcg_monadify</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg&#39;</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_new_repl_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+      (&#8639;snat.assn n ni ** &#8593;(LENGTH(&#39;c::len2)&gt;4)) 
+      (arl_new_repl (ni::&#39;c word) x) 
+      (&#955;ali. &#8639;arl_assn (replicate n x) ali)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_new_repl_def</span><span> </span><span>arl_initial_size_def</span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>vcg_monadify</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg&#39;</span><span>
+</span><span>    
+</span><span>        
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_assn_init_pure</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;PRECOND (SOLVE_AUTO (4 &lt; LENGTH(&#39;l))) &#10233; &#9633; &#8866; &#8639;arl_assn [] (init::(_,&#39;l::len2)array_list)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span> </span><span>vcg_tag_defs</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>snat.assn_def</span><span> </span><span>snat_invar_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>fri_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>narray_assn_init_pure</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ENTAILSD</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_clear_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+      (&#8639;arl_assn al ali) 
+      (arl_clear ali) 
+      (&#955;ali. &#8639;arl_assn [] ali)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_clear_def</span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>vcg_monadify</span><span class="delimiter">)</span><span> </span><span>vcg&#39;</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_free_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;arl_assn al ali) (arl_free ali) (&#955;_. &#9633;)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span> </span><span>arl_free_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_nth_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+      (&#8639;arl_assn al ali ** &#8639;snat.assn i ii ** &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(i&lt;length al)) 
+      (arl_nth ali ii)
+      (&#955;x. &#8639;arl_assn al ali ** &#8593;(x = al!i))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span> </span><span>arl_nth_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>array_of_arl_nth_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;arl_assn xs a ** &#8639;snat.assn i ii ** &#8593;(i &lt; length xs))
+    (array_nth (array_of_arl a) ii)
+    (&#955;x. &#8639;arl_assn xs a ** &#8593;(x = xs!i))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span> </span><span>array_of_arl_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_upd_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+      (&#8639;arl_assn al ali ** &#8639;snat.assn i ii ** &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(i&lt;length al)) 
+      (arl_upd ali ii x)
+      (&#955;ali. &#8639;arl_assn (al[i:=x]) ali)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span> </span><span>arl_upd_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_len_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;arl_assn al ali) (arl_len ali) (&#955;li. &#8639;arl_assn al ali ** &#8639;snat.assn (length al) li)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_assn_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>arl_len_rule_internal</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_push_back_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;arl_assn al (ali::(_,&#39;l::len2)array_list) ** &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(length al + 1 &lt; max_snat LENGTH(&#39;l))) (arl_push_back ali x) (&#955;ali. &#8639;arl_assn (al@[x]) ali)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_assn_def</span><span> </span><span>arl_push_back_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>arl_len_rule_internal</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>vcg_monadify</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg&#39;</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_pop_back_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;arl_assn al (ali::(_,&#39;l::len2)array_list) ** &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(al&#8800;[])) (arl_pop_back ali) (&#955;(x,ali). &#8639;arl_assn (butlast al) ali ** &#8593;(x=last al))&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span> </span><span>arl_pop_back_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>arl_len_rule_internal</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>vcg_monadify</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg&#39;</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>take_minus_one_conv_butlast</span><span> </span><span>last_take_nth_conv</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_take_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+      (&#8639;arl_assn al (ali::(_,&#39;l::len2)array_list) ** &#8639;snat.assn l li ** &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(l &#8804; length al)) 
+      (arl_take li ali) 
+      (&#955;ali. &#8639;arl_assn (take l al) ali)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span> </span><span>arl_take_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_last_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;arl_assn al (ali::(_,&#39;l::len2)array_list) ** &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(al&#8800;[])) (arl_last ali) (&#955;x. &#8639;arl_assn al ali ** &#8593;(x=last al))&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span> </span><span>arl_last_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>arl_len_rule_internal</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>vcg_monadify</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg&#39;</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>last_take_nth_conv</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl_butlast_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;arl_assn al (ali::(_,&#39;l::len2)array_list) ** &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(al&#8800;[])) (arl_butlast ali) (&#955;ali. &#8639;arl_assn (butlast al) ali)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span> </span><span>arl_butlast_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>arl_len_rule_internal</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>vcg_monadify</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg&#39;</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>take_minus_one_conv_butlast</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>    
+</span><span>    
+</span><span>    
+</span><span>        
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

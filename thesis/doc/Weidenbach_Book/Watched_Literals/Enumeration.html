@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Enumeration (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Enumeration</h1>
+
+<span class="command">theory</span> <span class="name">Enumeration</span><br/>
+<span class="keyword">imports</span> <a href="../../HOL/HOL/Main.html"><span class="name">Main</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+ * Copyright 2014, NICTA
+ *
+ * This software may be distributed and modified according to the terms of
+ * the BSD 2-Clause license. Note that NO WARRANTY is provided.
+ * See &quot;LICENSE_BSD2.txt&quot; for details.
+ *
+ * @TAG(NICTA_BSD)
+ *)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Enumeration extensions and alternative definition&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Enumeration</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;enum &#8801; enum_class.enum&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;enum_all &#8801; enum_class.enum_all&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;enum_ex &#8801; enum_class.enum_ex&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">primrec</span></span><span> </span><span class="delimiter">(</span><span>nonexhaustive</span><span class="delimiter">)</span><span>
+</span><span>  </span><span>the_index</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a list &#8658; &#39;a &#8658; nat&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;the_index (x # xs) y = (if x = y then 0 else Suc (the_index xs y))&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>the_index_bounded</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8712; set xs &#10233; the_index xs x &lt; length xs&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>xs</span><span class="delimiter">,</span><span> </span><span>clarsimp</span><span class="delimiter">+</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nth_the_index</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8712; set xs &#10233; xs ! the_index xs x = x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>xs</span><span class="delimiter">,</span><span> </span><span>clarsimp</span><span class="delimiter">+</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>distinct_the_index_is_index</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; distinct xs ; n &lt; length xs &#10215; &#10233; the_index xs (xs ! n) = n&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>meson</span><span> </span><span>nth_eq_iff_index_eq</span><span> </span><span>nth_mem</span><span> </span><span>nth_the_index</span><span> </span><span>the_index_bounded</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>the_index_last_distinct</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;distinct xs &#8743; xs &#8800; [] &#10233; the_index xs (last xs) = length xs - 1&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>safe</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subgoal_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;xs ! (length xs - 1) = last xs&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subgoal_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;xs ! the_index xs (last xs) = last xs&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>nth_eq_iff_index_eq</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>       </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>assumption</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>the_index_bounded</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp_all</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>nth_the_index</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>xs</span><span class="delimiter">,</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span> </span><span>enum</span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* These two are added for historical reasons. *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>enum_surj</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>enum_UNIV</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>enum_distinct</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>enum_nonempty</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(enum :: &#39;a list) &#8800; []&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>enum_surj</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>
+</span><span>  </span><span>maxBound</span><span> </span><span class="delimiter">::</span><span> </span><span class="tfree">&#39;a</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;maxBound &#8801; last enum&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>
+</span><span>  </span><span>minBound</span><span> </span><span class="delimiter">::</span><span> </span><span class="tfree">&#39;a</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;minBound &#8801; hd enum&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>
+</span><span>  </span><span>toEnum</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat &#8658; &#39;a&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;toEnum n &#8801; if n &lt; length (enum :: &#39;a list) then enum ! n else the None&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>
+</span><span>  </span><span>fromEnum</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; nat&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;fromEnum x &#8801; the_index enum x&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>maxBound_is_length</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;fromEnum maxBound = length (enum :: &#39;a list) - 1&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>maxBound_def</span><span> </span><span>fromEnum_def</span><span> </span><span>the_index_last_distinct</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>maxBound_less_length</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(x &#8804; fromEnum maxBound) = (x &lt; length (enum :: &#39;a list))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>maxBound_is_length</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;length enum&quot;</span></span></span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>maxBound_is_bound</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;fromEnum x &#8804; fromEnum maxBound&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>maxBound_less_length</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fromEnum_def</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>the_index_bounded</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>to_from_enum</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>x</span><span> </span><span class="delimiter">::</span><span> </span><span class="tfree">&#39;a</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;toEnum (fromEnum x) = x&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8712; set enum&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>toEnum_def</span><span> </span><span>fromEnum_def</span><span> </span><span>nth_the_index</span><span> </span><span>the_index_bounded</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>from_to_enum</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8804; fromEnum maxBound &#10233; fromEnum (toEnum x) = x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>maxBound_less_length</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>toEnum_def</span><span> </span><span>fromEnum_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>map_enum</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>x</span><span> </span><span class="delimiter">::</span><span> </span><span class="tfree">&#39;a</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;map f enum ! fromEnum x = f x&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fromEnum x &#8804; fromEnum (maxBound :: &#39;a)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>maxBound_is_bound</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fromEnum x &lt; length (enum::&#39;a list)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>maxBound_less_length</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;map f enum ! fromEnum x = f (enum ! fromEnum x)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">also</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8712; set enum&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;enum ! fromEnum x = x&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>fromEnum_def</span><span> </span><span>nth_the_index</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">finally</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>
+</span><span>  </span><span>assocs</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a &#8658; &#39;b) &#8658; (&#39;a &#215; &#39;b) list&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;assocs f &#8801; map (&#955;x. (x, f x)) enum&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* For historical naming reasons. *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>enum_bool</span><span> </span><span class="delimiter">=</span><span> </span><span>enum_bool_def</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fromEnumTrue</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fromEnum True = 1&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>fromEnum_def</span><span> </span><span>enum_bool</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fromEnumFalse</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fromEnum False = 0&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>fromEnum_def</span><span> </span><span>enum_bool</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">class</span></span><span> </span><span>enum_alt</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>enum_alt</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat &#8658; &#39;a option&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">class</span></span><span> </span><span>enumeration_alt</span><span> </span><span class="delimiter">=</span><span> </span><span>enum_alt</span><span> </span><span class="delimiter">+</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>enum_alt_one_bound</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;enum_alt x = (None :: &#39;a option) &#10233; enum_alt (Suc x) = (None :: &#39;a option)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>enum_alt_surj</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;range enum_alt &#8746; {None} = UNIV&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>enum_alt_inj</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;(enum_alt x :: &#39;a option) = enum_alt y &#10233; (x = y) &#8744; (enum_alt x = (None :: &#39;a option))&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>enum_alt_inj_2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;enum_alt x = (enum_alt y :: &#39;a option)&quot;</span></span></span><span>
+</span><span>          </span><span class="string"><span class="delete"><span class="delete">&quot;enum_alt x &#8800; (None :: &#39;a option)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x = y&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>assms</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(x = y) &#8744; (enum_alt x = (None :: &#39;a option))&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>enum_alt_inj</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">with</span></span><span> </span><span>assms</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>clarsimp</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>enum_alt_surj_2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;x. enum_alt x = Some y&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Some y &#8712; range enum_alt &#8746; {None}&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>enum_alt_surj</span><span class="delimiter">)</span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Some y &#8712; range enum_alt&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>
+</span><span>  </span><span>alt_from_ord</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a list &#8658; nat &#8658; &#39;a option&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;alt_from_ord L &#8801; &#955;n. if (n &lt; length L) then Some (L ! n) else None&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>handy_if_lemma</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;((if P then Some A else None) = Some B) = (P &#8743; (A = B))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">class</span></span><span> </span><span>enumeration_both</span><span> </span><span class="delimiter">=</span><span> </span><span>enum_alt</span><span> </span><span class="delimiter">+</span><span> </span><span>enum</span><span> </span><span class="delimiter">+</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>enum_alt_rel</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;enum_alt = alt_from_ord enum&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span> </span><span>enumeration_both</span><span> </span><span class="delimiter">&lt;</span><span> </span><span>enumeration_alt</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro_classes</span><span class="delimiter">;</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>enum_alt_rel</span><span> </span><span>alt_from_ord_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span class="delimiter">[</span><span>1</span><span class="delimiter">]</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>safe</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">)</span><span class="delimiter">[</span><span>1</span><span class="delimiter">]</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>rev_image_eqI</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>the_index_bounded</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>nth_the_index</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>handy_if_lemma</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>nth_eq_iff_index_eq</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instantiation</span></span><span> </span><span>bool</span><span> </span><span class="delimiter">::</span><span> </span><span>enumeration_both</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>enum_alt_bool</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;enum_alt &#8801; alt_from_ord [False, True]&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">instance</span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro_classes</span><span class="delimiter">,</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>enum_bool_def</span><span> </span><span>enum_alt_bool</span><span class="delimiter">)</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>
+</span><span>  </span><span>toEnumAlt</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat &#8658; (&#39;a :: enum_alt)&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;toEnumAlt n &#8801; the (enum_alt n)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>
+</span><span>  </span><span>fromEnumAlt</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a :: enum_alt) &#8658; nat&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fromEnumAlt x &#8801; THE n. enum_alt n = Some x&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>
+</span><span>  </span><span>upto_enum</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a :: enumeration_alt) &#8658; &#39;a &#8658; &#39;a list&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;(1[_ .e. _])&quot;</span></span></span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;upto_enum n m &#8801; map toEnumAlt [fromEnumAlt n ..&lt; Suc (fromEnumAlt m)]&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fromEnum_alt_red</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;fromEnumAlt = (fromEnum :: (&#39;a :: enumeration_both) &#8658; nat)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>fromEnumAlt_def</span><span> </span><span>fromEnum_def</span><span> </span><span>enum_alt_rel</span><span> </span><span>alt_from_ord_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>theI2</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>conjI</span><span class="delimiter">)</span><span>
+</span><span>     </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarify</span><span class="delimiter">,</span><span> </span><span>rule</span><span> </span><span>nth_the_index</span><span class="delimiter">,</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>the_index_bounded</span><span class="delimiter">,</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>toEnum_alt_red</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;toEnumAlt = (toEnum :: nat &#8658; &#39;a :: enumeration_both)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ext</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>enum_alt_rel</span><span> </span><span>alt_from_ord_def</span><span> </span><span>toEnum_def</span><span> </span><span>toEnumAlt_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>upto_enum_red</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;[(n :: (&#39;a :: enumeration_both)) .e. m] = map toEnum [fromEnum n ..&lt; Suc (fromEnum m)]&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>upto_enum_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instantiation</span></span><span> </span><span>nat</span><span> </span><span class="delimiter">::</span><span> </span><span>enumeration_alt</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>enum_alt_nat</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;enum_alt &#8801; Some&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">instance</span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro_classes</span><span class="delimiter">;</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>enum_alt_nat</span><span> </span><span>UNIV_option_conv</span><span class="delimiter">)</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>toEnumAlt_nat</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;toEnumAlt = id&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ext</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>toEnumAlt_def</span><span> </span><span>enum_alt_nat</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fromEnumAlt_nat</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fromEnumAlt = id&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ext</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>fromEnumAlt_def</span><span> </span><span>enum_alt_nat</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>upto_enum_nat</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[n .e. m] = [n ..&lt; Suc m]&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>upto_enum_def</span><span class="delimiter">)</span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>
+</span><span>  </span><span>zipE1</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a :: enum_alt &#8658; &#39;b list &#8658; (&#39;a &#215; &#39;b) list&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;zipE1 x L &#8801; zip (map toEnumAlt [fromEnumAlt x ..&lt; fromEnumAlt x + length L]) L&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>
+</span><span>  </span><span>zipE2</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a :: enum_alt &#8658; &#39;a &#8658; &#39;b list &#8658; (&#39;a &#215; &#39;b) list&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;zipE2 x xn L &#8801; zip (map (&#955;n. toEnumAlt (fromEnumAlt x + (fromEnumAlt xn - fromEnumAlt x) * n))
+                      [0 ..&lt; length L]) L&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>
+</span><span>  </span><span>zipE3</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a list &#8658; &#39;b :: enum_alt &#8658; (&#39;a &#215; &#39;b) list&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;zipE3 L x &#8801; zip L (map toEnumAlt [fromEnumAlt x ..&lt; fromEnumAlt x + length L])&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>
+</span><span>  </span><span>zipE4</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a list &#8658; &#39;b :: enum_alt &#8658; &#39;b &#8658; (&#39;a &#215; &#39;b) list&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;zipE4 L x xn &#8801; zip L (map (&#955;n. toEnumAlt (fromEnumAlt x + (fromEnumAlt xn - fromEnumAlt x) * n))
+                         [0 ..&lt; length L])&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>to_from_enum_alt</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;toEnumAlt (fromEnumAlt x) = (x :: &#39;a :: enumeration_alt)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>rl</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;a b. a = Some b &#10233; the a = b&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fromEnumAlt_def</span><span> </span><span>toEnumAlt_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>rl</span><span class="delimiter">,</span><span> </span><span>rule</span><span> </span><span>theI&#39;</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>enum_alt_inj</span><span> </span><span>enum_alt_surj_2</span><span> </span><span>not_None_eq</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>upto_enum_triv</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[x .e. x] = [x]&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>upto_enum_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>toEnum_eq_to_fromEnum_eq</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>v</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a :: enum&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;n &#8804; fromEnum (maxBound :: &#39;a) &#10233; (toEnum n = v) = (n = fromEnum v)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>le_imp_diff_le</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(j::nat) &#8804; k &#10233; j - n &#8804; k&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fromEnum_upto_nth</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>start</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a :: enumeration_both&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;n &lt; length [start .e. end]&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fromEnum ([start .e. end] ! n) = fromEnum start + n&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>less_sub</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;m k m&#39; n. &#10214; (n::nat) &lt; m - k ; m &#8804; m&#39; &#10215; &#10233; n &lt; m&#39; - k&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>upt_Suc</span><span class="delimiter">[</span><span>simp</span><span> </span><span>del</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>upto_enum_red</span><span>
+</span><span>                </span><span>dest</span><span class="delimiter">:</span><span> </span><span>less_sub</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>m&#39;</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;Suc (fromEnum maxBound)&quot;</span></span></span><span class="delimiter">]</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>maxBound_is_bound</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>length_upto_enum_le_maxBound</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>start</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a :: enumeration_both&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;length [start .e. end] &#8804; Suc (fromEnum (maxBound :: &#39;a))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>upto_enum_red</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>le_imp_diff_le</span><span class="delimiter">[</span><span>OF</span><span> </span><span>maxBound_is_bound</span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;end&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>less_length_upto_enum_maxBoundD</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>start</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a :: enumeration_both&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;n &lt; length [start .e. end]&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;n &#8804; fromEnum (maxBound :: &#39;a)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>upto_enum_red</span><span> </span><span>less_Suc_eq_le</span><span>
+</span><span>                </span><span>le_trans</span><span class="delimiter">[</span><span>OF</span><span> </span><span>_</span><span> </span><span>le_imp_diff_le</span><span class="delimiter">[</span><span>OF</span><span> </span><span>maxBound_is_bound</span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;end&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>           </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fromEnum_eq_iff</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(fromEnum e = fromEnum f) = (e = f)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>a</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;e &#8712; set enum&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>b</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8712; set enum&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>nth_the_index</span><span class="delimiter">[</span><span>OF</span><span> </span><span>a</span><span class="delimiter">]</span><span> </span><span>nth_the_index</span><span class="delimiter">[</span><span>OF</span><span> </span><span>b</span><span class="delimiter">]</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fromEnum_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>metis</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>maxBound_is_bound&#39;</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;i = fromEnum (e::(&#39;a::enum)) &#10233; i &#8804; fromEnum (maxBound::(&#39;a::enum))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>clarsimp</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

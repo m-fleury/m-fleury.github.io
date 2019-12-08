@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Sep_Block_Allocator (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Sep_Block_Allocator</h1>
+
+<span class="command">theory</span> <span class="name">Sep_Block_Allocator</span><br/>
+<span class="keyword">imports</span> <a href="Monad.html"><span class="name">Monad</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Generic Block Allocator&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Sep_Block_Allocator</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;../../lib/Monad&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;This theory specifies the concepts of memory allocation and deallocation.
+    It is parameterized over the actual type of blocks.
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Memory and Addresses&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;A memory is a list of allocated or already freed blocks.
+    Allocated blocks are modeled by @{term &#8249;Some blk&#8250;}, 
+    freed blocks are modeled by @{term &#8249;None&#8250;}
+  &#8250;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">datatype</span></span><span> </span><span class="tfree">&#39;blk</span><span> </span><span>memory</span><span> </span><span class="delimiter">=</span><span> </span><span>MEMORY</span><span> </span><span class="delimiter">(</span><span>the_memory</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;blk option list&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">define_lenses</span></span><span> </span><span>memory</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;An address indexes a block, and then addresses into the value of this block.&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">datatype</span></span><span> </span><span class="tfree">&#39;baddr</span><span> </span><span>addr</span><span> </span><span class="delimiter">=</span><span> </span><span>ADDR</span><span> </span><span>nat</span><span> </span><span class="tfree">&#39;baddr</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;A pointer is either &#8249;null&#8250;, or an address&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">datatype</span></span><span> </span><span class="tfree">&#39;addr</span><span> </span><span>rptr</span><span> </span><span class="delimiter">=</span><span> </span><span>RP_NULL</span><span> </span><span class="delimiter">|</span><span> </span><span>RP_ADDR</span><span> </span><span class="delimiter">(</span><span>the_addr</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;addr&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">hide_const</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">open</span></span><span class="delimiter">)</span><span> </span><span>the_addr</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Type-class to model that there is a base address.&#8250;</span></span></span><span>  
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Remove from semantics, move to reasoning infrastructure? *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">class</span></span><span> </span><span>this_addr</span><span> </span><span class="delimiter">=</span><span> </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>this_addr</span><span> </span><span class="delimiter">::</span><span> </span><span class="tfree">&#39;a</span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We immediately show that the typeclass is not empty. 
+    This avoids confusion of the code generator with lemmas depending on this typeclass.&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">typedecl</span></span><span> </span><span>this_addr_witness</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">instantiation</span></span><span> </span><span>this_addr_witness</span><span> </span><span class="delimiter">::</span><span> </span><span>this_addr</span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">instance</span></span><span> </span><span class="keyword1"><span class="command">..</span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Memory Functions&#8250;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+    We specify the standard functions &#8249;alloc&#8250;, &#8249;free&#8250;, &#8249;load&#8250;, and &#8249;store&#8250;. 
+    They are parameterized over load and store functions for blocks.
+    
+    Additionally, we specify a &#8249;check_ptr&#8250; function, that asserts that a pointer is valid,
+    i.e., is either &#8249;null&#8250;, or points to an allocated block, and its block address is valid 
+    for this block.
+  &#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>block_allocator1</span><span> </span><span class="delimiter">=</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>static_err</span><span> </span><span class="delimiter">::</span><span> </span><span class="tfree">&#39;err</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>mem_err</span><span> </span><span class="delimiter">::</span><span> </span><span class="tfree">&#39;err</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>bload</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;baddr::this_addr &#8658; (&#39;val,_,&#39;block,&#39;err) M&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>bstore</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;val &#8658; &#39;baddr &#8658; (unit,_,&#39;block,&#39;err) M&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>bcheck_addr</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;baddr &#8658; (unit,_,&#39;block,&#39;err) M&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Allocate a new block, and a pointer to its start&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>alloc</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;block &#8658; (&#39;baddr addr rptr,_,&#39;block memory,&#39;err) M&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;alloc init &#8801; zoom (lift_lens static_err the_memory<span class="hidden">&#8681;</span><sub>L</sub>) (doM {
+      blocks &#8592; Monad.get;
+      let bi = length blocks;
+      let blocks = blocks @ [Some init];
+      Monad.set blocks;
+      return (RP_ADDR (ADDR bi this_addr))
+    })&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Free a block, specified by a pointer to its start&#8250;</span></span></span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>free</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;baddr addr rptr &#8658; (unit,_,&#39;block memory,&#39;err) M&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;free &#8801; 
+      &#955;RP_ADDR (ADDR bi ba) &#8658; doM {
+          fcheck mem_err (ba=this_addr);
+          &#8213;&#8249; TODO: Use load here! &#8250;
+          let L = lift_lens static_err the_memory<span class="hidden">&#8681;</span><sub>L</sub> &#8729; (lift_lens mem_err (idx<span class="hidden">&#8681;</span><sub>L</sub> bi));
+          blk &#8592; use L;
+          fcheck mem_err (blk &#8800; None);
+          L ::= None
+        } 
+      | _ &#8658; fail mem_err&quot;</span></span></span><span>
+</span><span>      
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We define a lens that focuses a block index. &#8250;</span></span></span><span>  
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Can we define lenses to focus addresses/pointers instead? *)</span></span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens_of_bi bi &#8801; the_memory<span class="hidden">&#8681;</span><sub>L</sub> &#8729;<span class="hidden">&#8681;</span><sub>L</sub> idx<span class="hidden">&#8681;</span><sub>L</sub> bi &#8729;<span class="hidden">&#8681;</span><sub>L</sub> the<span class="hidden">&#8681;</span><sub>L</sub>&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;elens_of_bi bi &#8801; lift_lens mem_err (lens_of_bi bi)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_of_bi</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens (lens_of_bi bi)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lens_of_bi_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Load from an address&#8250;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;load &#8801; &#955;RP_ADDR (ADDR bi ba) &#8658; zoom (elens_of_bi bi) (bload ba) | _ &#8658; fail mem_err&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Store at an address&#8250;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;store &#8801; &#955;x. &#955;RP_ADDR (ADDR bi ba) &#8658; zoom (elens_of_bi bi) (bstore x ba) | _ &#8658; fail mem_err&quot;</span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Check that pointer is valid&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;check_ptr &#8801; &#955;RP_NULL &#8658; return () | RP_ADDR (ADDR bi ba) &#8658; zoom (elens_of_bi bi) (bcheck_addr ba)&quot;</span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The empty memory&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;empty_memory &#8801; MEMORY []&quot;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>    
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Isabelle Code Generator Setup&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Setup to make the semantics executable inside Isabelle/HOL&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>block_allocator1_code</span><span class="delimiter">[</span><span>code</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span>
+</span><span>    </span><span>block_allocator1.alloc_def</span><span> 
+</span><span>    </span><span>block_allocator1.free_def</span><span>
+</span><span>    </span><span>block_allocator1.lens_of_bi_def</span><span>
+</span><span>    </span><span>block_allocator1.load_def</span><span>
+</span><span>    </span><span>block_allocator1.store_def</span><span>
+</span><span>    </span><span>block_allocator1.check_ptr_def</span><span>
+</span><span>    </span><span>block_allocator1.empty_memory_def</span><span>
+</span><span>  
+</span><span>  
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

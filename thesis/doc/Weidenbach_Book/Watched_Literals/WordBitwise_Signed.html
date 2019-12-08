@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory WordBitwise_Signed (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory WordBitwise_Signed</h1>
+
+<span class="command">theory</span> <span class="name">WordBitwise_Signed</span><br/>
+<span class="keyword">imports</span> <a href="More_Word.html"><span class="name">More_Word</span></a> <a href="Signed_Words.html"><span class="name">Signed_Words</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+ * Copyright 2014, NICTA
+ *
+ * This software may be distributed and modified according to the terms of
+ * the BSD 2-Clause license. Note that NO WARRANTY is provided.
+ * See &quot;LICENSE_BSD2.txt&quot; for details.
+ *
+ * @TAG(NICTA_BSD)
+ *)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Bitwise tactic for Signed Words&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>WordBitwise_Signed</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;HOL-Word.More_Word&quot;</span></span></span><span>
+</span><span>  </span><span>Signed_Words</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fun bw_tac_signed ctxt = let
+  val (ss, sss) = Word_Bitwise_Tac.expand_word_eq_sss
+  val sss = nth_map 2 (fn ss =&gt; put_simpset ss ctxt addsimps @{thms len_signed} |&gt; simpset_of) sss
+in
+    foldr1 (op THEN_ALL_NEW)
+      ((CHANGED o safe_full_simp_tac (put_simpset ss ctxt)) ::
+        map (fn ss =&gt; safe_full_simp_tac (put_simpset ss ctxt)) sss)
+  end;
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>word_bitwise_signed</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; Method.SIMPLE_METHOD (bw_tac_signed ctxt 1))&#8250;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;decomposer for word equalities and inequalities into bit propositions&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

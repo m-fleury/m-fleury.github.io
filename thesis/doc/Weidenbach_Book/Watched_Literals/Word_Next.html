@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Word_Next (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Word_Next</h1>
+
+<span class="command">theory</span> <span class="name">Word_Next</span><br/>
+<span class="keyword">imports</span> <a href="Aligned.html"><span class="name">Aligned</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Increment and Decrement Machine Words Without Wrap-Around&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Word_Next</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span>
+</span><span>  </span><span>Aligned</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Previous and next words addresses, without wrap around.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>word_next</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::len word &#8658; &#39;a::len word&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;word_next a &#8801; if a = max_word then max_word else a + 1&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>word_prev</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::len word &#8658; &#39;a::len word&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;word_prev a &#8801; if a = 0 then 0 else a - 1&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Examples:&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;word_next (2:: 8 word) = 3&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>eval</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;word_next (255:: 8 word) = 255&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>eval</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;word_prev (2:: 8 word) = 1&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>eval</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;word_prev (0:: 8 word) = 0&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>eval</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>plus_one_helper</span><span class="delimiter">[</span><span>elim</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;x &lt; n + (1 :: &#39;a :: len word) &#10233; x &#8804; n&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_less_nat_alt</span><span> </span><span>word_le_nat_alt</span><span> </span><span>field_simps</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;1 + n = 0&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span class="delimiter">(</span><span>asm</span><span class="delimiter">)</span><span> </span><span>unatSuc</span><span class="delimiter">,</span><span> </span><span>assumption</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>arith</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>plus_one_helper2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; x &#8804; n; n + 1 &#8800; 0 &#10215; &#10233; x &lt; n + (1 :: &#39;a :: len word)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_less_nat_alt</span><span> </span><span>word_le_nat_alt</span><span> </span><span>field_simps</span><span>
+</span><span>                </span><span>unatSuc</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>less_x_plus_1</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>x</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a :: len word&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">shows</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8800; max_word &#10233; (y &lt; (x + 1)) = (y &lt; x &#8744; y = x)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>iffI</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>disjCI</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>drule</span><span> </span><span>plus_one_helper</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subgoal_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &lt; x + 1&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>erule</span><span> </span><span>disjE</span><span class="delimiter">,</span><span> </span><span>simp_all</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>plus_one_helper2</span><span> </span><span class="delimiter">[</span><span>OF</span><span> </span><span>order_refl</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>notI</span><span class="delimiter">,</span><span> </span><span>drule</span><span> </span><span>max_word_wrap</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_Suc_leq</span><span class="delimiter">:</span><span> </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>k</span><span class="delimiter">::</span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::len word&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;k &#8800; max_word &#10233; x &lt; k + 1 &#10231; x &#8804; k&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>less_x_plus_1</span><span> </span><span>word_le_less_eq</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_Suc_le</span><span class="delimiter">:</span><span> </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>k</span><span class="delimiter">::</span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::len word&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8800; max_word &#10233; x + 1 &#8804; k &#10231; x &lt; k&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>meson</span><span> </span><span>not_less</span><span> </span><span>word_Suc_leq</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_lessThan_Suc_atMost</span><span class="delimiter">:</span><span> </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>k</span><span class="delimiter">::</span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::len word&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;k &#8800; max_word &#10233; {..&lt; k + 1} = {..k}&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>lessThan_def</span><span> </span><span>atMost_def</span><span> </span><span>word_Suc_leq</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_atLeastLessThan_Suc_atLeastAtMost</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>l</span><span class="delimiter">::</span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::len word&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;u &#8800; max_word &#10233; {l..&lt; u + 1} = {l..u}&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>atLeastAtMost_def</span><span> </span><span>atLeastLessThan_def</span><span> </span><span>word_lessThan_Suc_atMost</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_atLeastAtMost_Suc_greaterThanAtMost</span><span class="delimiter">:</span><span> </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>l</span><span class="delimiter">::</span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::len word&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;m &#8800; max_word &#10233; {m&lt;..u} = {m + 1..u}&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>greaterThanAtMost_def</span><span> </span><span>greaterThan_def</span><span> </span><span>atLeastAtMost_def</span><span> </span><span>atLeast_def</span><span> </span><span>word_Suc_le</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_atLeastLessThan_Suc_atLeastAtMost_union</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>l</span><span class="delimiter">::</span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::len word&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;m &#8800; max_word&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;l &#8804; m&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;m &#8804; u&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;{l..m} &#8746; {m+1..u} = {l..u}&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>ivl_disj_un_two</span><span class="delimiter">(</span><span>8</span><span class="delimiter">)</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>assms</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;{l..u} = {l..m} &#8746; {m&lt;..u}&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">with</span></span><span> </span><span>assms</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_atLeastAtMost_Suc_greaterThanAtMost</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_adjacent_union</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;word_next e = s&#39; &#10233; s &#8804; e &#10233; s&#39; &#8804; e&#39; &#10233; {s..e} &#8746; {s&#39;..e&#39;} = {s .. e&#39;}&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>Un_absorb2</span><span> </span><span>atLeastatMost_subset_iff</span><span> </span><span>ivl_disj_un_two</span><span class="delimiter">(</span><span>7</span><span class="delimiter">)</span><span> </span><span>max_word_max</span><span>
+</span><span>            </span><span>word_atLeastLessThan_Suc_atLeastAtMost</span><span> </span><span>word_le_less_eq</span><span> </span><span>word_next_def</span><span> </span><span>linorder_not_le</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

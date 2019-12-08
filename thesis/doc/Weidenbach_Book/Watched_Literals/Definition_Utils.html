@@ -1,0 +1,952 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Definition_Utils (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Definition_Utils</h1>
+
+<span class="command">theory</span> <span class="name">Definition_Utils</span><br/>
+<span class="keyword">imports</span> <a href="../../AFP/Automatic_Refinement/Refine_Lib.html"><span class="name">Refine_Lib</span></a> <a href="../../AFP/Sepref_Basic/Rewrite.html"><span class="name">Rewrite</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Definition_Utils</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> 
+</span><span>  </span><span>Main</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Automatic_Refinement.Refine_Lib&quot;</span></span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;HOL-Library.Rewrite&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">keywords</span></span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;concrete_definition&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span>thy_decl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prepare_code_thms&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span>thy_decl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;synth_definition&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span>thy_goal</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+    (* DO NOT USE IN PRODUCTION VERSION &#8594; SLOWDOWN *)
+    declare [[ML_exception_debugger, ML_debugger, ML_exception_trace]]
+  *)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  This theory provides a tool for extracting definitions from terms, and
+  for generating code equations for recursion combinators.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+  TODO: Copied and merged from $AFP/Refine_Monadic/Refine_Automation
+    and isafol/GRAT/gratchk/Synth_Definition
+
+  TODO: Not properly localized  
+  
+  
+  TODO: Finally merge Definition_Utils and Synth_Definition structure. 
+    Use &#8977; instead of schematics for user interface!
+    
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML_val</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Symtab.update_list&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+signature DEFINITION_UTILS = sig
+  type extraction = {
+    pattern: term,   (* Pattern to be defined as own constant *)
+    gen_thm: thm,    (* Code eq generator: [| c==rhs; ... |] ==&gt; c == ... *)
+    gen_tac: local_theory -&gt; tactic&#39; (* Solves remaining premises of gen_thm *)
+  }
+
+  val extract_as_def: (string * typ) list -&gt; string -&gt; term 
+    -&gt; local_theory -&gt; ((term * thm) * local_theory)
+
+  (* Returns new_def_thm, code_thms, raw_def_thms *)  
+  val extract_recursion_eqs: extraction list -&gt; string -&gt; thm 
+    -&gt; local_theory -&gt; ((thm * thm list * thm list) * local_theory)
+    
+  (* Generate and register with names, code-theorems by specified attrib *)  
+  val extract_recursion_eqs&#39;: extraction list -&gt; string -&gt; Token.src list -&gt; thm 
+    -&gt; local_theory -&gt; ((thm list) * local_theory)
+
+  val declare_extraction_group: binding -&gt; Context.generic -&gt; string * Context.generic
+  val add_extraction: xstring * Position.T -&gt; extraction -&gt; Context.generic -&gt; Context.generic
+  val check_extraction_group: Proof.context -&gt; xstring * Position.T -&gt; string
+  val get_extraction_group: Proof.context -&gt; string -&gt; extraction list
+  
+  val prepare_code_thms_cmd: (xstring * Position.T) list -&gt; Token.src list -&gt; thm -&gt; local_theory -&gt; local_theory
+
+  val sd_cmd: ((binding * Token.src list) * Token.src list) * string -&gt; Proof.context -&gt; Proof.state
+  val sd_parser: Token.T list -&gt; (((binding * Token.src list) * Token.src list) * string) * Token.T list
+  
+  
+  val define_concrete_fun: extraction list option -&gt; binding -&gt; 
+    Token.src list -&gt; Token.src list -&gt; indexname list -&gt; thm -&gt;
+    cterm list -&gt; local_theory -&gt; (thm * thm) * local_theory
+  
+  val mk_qualified: string -&gt; bstring -&gt; binding
+
+  (* Convert &#8977; to schematic variable *)
+  val prepare_pattern: term -&gt; term 
+  
+  val prepare_cd_pattern: Proof.context -&gt; cterm -&gt; cterm
+  val add_cd_pattern: cterm -&gt; Context.generic -&gt; Context.generic
+  val del_cd_pattern: cterm -&gt; Context.generic -&gt; Context.generic
+  val get_cd_patterns: Proof.context -&gt; cterm list
+
+  val add_vc_rec_thm: thm -&gt; Context.generic -&gt; Context.generic
+  val del_vc_rec_thm: thm -&gt; Context.generic -&gt; Context.generic
+  val get_vc_rec_thms: Proof.context -&gt; thm list
+
+  val add_vc_solve_thm: thm -&gt; Context.generic -&gt; Context.generic
+  val del_vc_solve_thm: thm -&gt; Context.generic -&gt; Context.generic
+  val get_vc_solve_thms: Proof.context -&gt; thm list
+
+  val vc_solve_tac: Proof.context -&gt; bool -&gt; tactic&#39;
+  val vc_solve_modifiers: Method.modifier parser list
+
+  val setup: theory -&gt; theory
+end
+
+structure Definition_Utils :DEFINITION_UTILS = struct
+
+  type extraction = {
+    pattern: term,   (* Pattern to be defined as own constant *)
+    gen_thm: thm,    (* Code eq generator: [| c==rhs; ... |] ==&gt; c == ... *)
+    gen_tac: local_theory -&gt; tactic&#39; (* Solves remaining premises of gen_thm *)
+  }
+
+  val eq_extraction = (op = o apply2 #pattern)
+  
+  structure extractions = Generic_Data (
+    type T = extraction list Name_Space.table
+    val empty = Name_Space.empty_table &quot;Fixed-Point Extractions&quot;
+    val extend = I
+    val merge = Name_Space.join_tables (fn _ =&gt; Library.merge eq_extraction)
+  )
+
+  fun declare_extraction_group binding context = let
+    val table = extractions.get context
+    val (name,table) = Name_Space.define context false (binding,[]) table
+    val context = extractions.put table context
+  in
+    (name,context)
+  end
+  
+  fun add_extraction namepos ex context = let
+    fun f table = let
+      val (key,_) = Name_Space.check context table namepos
+      val table = Name_Space.map_table_entry key (Library.update eq_extraction ex) table
+    in
+      table
+    end
+  in
+    extractions.map f context
+  end
+  
+  fun check_extraction_group ctxt namepos = let
+    val context = Context.Proof ctxt
+    val table = extractions.get context
+    val (key,_) = Name_Space.check context table namepos
+  in
+    key
+  end
+  
+  fun get_extraction_group ctxt full_name = let
+    val context = Context.Proof ctxt
+    val table = extractions.get context
+    val (_,exs) = Name_Space.check context table (full_name,Position.none)
+  in 
+    exs
+  end
+  
+  
+(*  
+    Context.theory_map (extractions.map (
+      Symtab.update_list (op = o apply2 #pattern) (name,ex)))
+*)      
+
+  (*
+    Define new constant name for subterm t in context bnd.
+    Returns replacement for t using the new constant and definition 
+    theorem.
+  *)
+  fun extract_as_def bnd name t lthy = let
+    val loose = rev (loose_bnos t);
+
+    val nctx = Variable.names_of lthy
+    val (name,nctx) = Name.variant name nctx (* TODO: Disambiguate name by appending serial_string() *)
+    val name = name ^ serial_string()
+    val (rnames,_) = fold_map (Name.variant o #1) bnd nctx
+    
+    (*val rnames = #1 (Variable.names_of lthy |&gt; fold_map (Name.variant o #1) bnd);*)
+    val rfrees = map (fn (name,(_,typ)) =&gt; Free (name,typ)) (rnames ~~ bnd);
+    val t&#39; = subst_bounds (rfrees,t);
+    val params = map Bound (rev loose);
+    
+    val param_vars 
+      = (Library.foldl (fn (l,i) =&gt; nth rfrees i :: l) ([],loose));
+    val param_types = map fastype_of param_vars;
+
+    val def_t = Logic.mk_equals 
+      (list_comb (Free (name,param_types ---&gt; fastype_of t&#39;),param_vars),t&#39;)
+    |&gt; fold (Logic.all) param_vars 
+
+    (* TODO: Makarius says: Use Local_Theory.define here! *)  
+    val ((lhs_t,(_,def_thm)),lthy) 
+      = Specification.definition NONE [] [] (Binding.empty_atts,def_t) lthy;
+
+    (*val _ = tracing &quot;xxxx&quot;;*)
+    val app_t = list_comb (lhs_t, params);
+  in 
+    ((app_t,def_thm),lthy)
+  end;
+
+
+fun mk_qualified basename q = Binding.qualify true basename (Binding.name q);
+
+
+local
+
+  fun transform exs t lthy = let 
+    val pat_net : extraction Item_Net.T =
+      Item_Net.init (op= o apply2 #pattern) (fn {pattern, ...} =&gt; [pattern])
+      |&gt; fold Item_Net.update exs
+
+    val thy = Proof_Context.theory_of lthy
+      
+    fun tr env t ctx = let
+      (* Recurse for subterms *)
+      val (t,ctx) = case t of
+        t1$t2 =&gt; let
+            val (t1,ctx) = tr env t1 ctx
+            val (t2,ctx) = tr env t2 ctx
+          in 
+            (t1$t2,ctx)
+          end
+      | Abs (x,T,t) =&gt; let 
+            val (t&#39;,ctx) = tr ((x,T)::env) t ctx
+          in (Abs (x,T,t&#39;),ctx) end
+      | _ =&gt; (t,ctx)      
+
+      (* Check if we match a pattern *)
+      val ex = 
+        Item_Net.retrieve_matching pat_net t
+        |&gt; get_first (fn ex =&gt; 
+             case
+               try (Pattern.first_order_match thy (#pattern ex,t)) 
+                 (Vartab.empty,Vartab.empty)
+             of NONE =&gt; NONE | SOME _ =&gt; SOME ex
+           )
+    in
+      case ex of 
+        NONE =&gt; (t,ctx)
+      | SOME ex =&gt; let
+          (* Extract as new constant *)
+          val (idx,defs,lthy) = ctx
+          val name = (&quot;f_&quot; ^ string_of_int idx)
+          val ((t,def_thm),lthy) = extract_as_def env name t lthy
+          val ctx = (idx+1,(def_thm,ex)::defs,lthy)
+        in
+          (t,ctx)
+        end
+    end
+        
+    val (t,(_,defs,lthy)) = tr [] t (0,[],lthy)
+  in 
+    ((t,defs),lthy)
+  
+  end
+
+  fun simp_only_tac thms ctxt = simp_tac (put_simpset HOL_basic_ss ctxt addsimps thms)
+  
+in
+
+
+fun extract_recursion_eqs [] _ def_thm lthy = ((def_thm,[],[]),lthy)
+  | extract_recursion_eqs exs basename def_thm lthy = let
+ 
+  val def_thm = Local_Defs.meta_rewrite_rule lthy def_thm
+
+  (* Open local target *)
+  val (_,lthy) = Local_Theory.open_target lthy 
+  val lthy = Local_Theory.map_background_naming (Name_Space.mandatory_path basename) lthy
+  
+  val (def_thm, lthy) = yield_singleton (apfst snd oo Variable.import true) def_thm lthy
+  
+  val rhs = Thm.rhs_of def_thm |&gt; Thm.term_of
+  
+  (* Transform RHS, generating new constants *)
+  val ((rhs&#39;,aux_defs),lthy) = transform exs rhs lthy;
+  val aux_def_thms = map #1 aux_defs
+  
+  (* Prove equality *)
+  val rhs_eq_thm = Goal.prove_internal 
+    lthy [] (Logic.mk_equals (rhs,rhs&#39;) |&gt; Thm.cterm_of lthy)
+    (K (ALLGOALS (simp_only_tac aux_def_thms lthy)))
+
+  (* Generate new definition theorem *)  
+  val code_thm = Thm.transitive def_thm rhs_eq_thm  
+      
+  (* Generate code equations *)
+  fun mk_code_thm lthy (def_thm,{gen_thm, gen_tac, ...}) = let
+    val ((_,def_thm),lthy&#39;) = yield_singleton2 
+      (Variable.import true) def_thm lthy;
+    val thm = def_thm RS gen_thm;
+    val tac = SOLVED&#39; (gen_tac lthy&#39;)
+      ORELSE&#39; (simp_only_tac aux_def_thms lthy&#39; THEN&#39; gen_tac lthy&#39;)
+      (* TODO: The unfold auf_def_thms fallback is a dirty hack, to enable e.g., monotonicity proofs
+        without proper mono-prover setup for the generated constants.
+        
+        A cleaner way would only generate constants along with mono-prover-setup!
+      *)
+
+    val thm = the (SINGLE (ALLGOALS tac) thm);
+    val thm = singleton (Variable.export lthy&#39; lthy) thm;
+  in
+    thm
+  end;
+  
+  val aux_code_thms = map (mk_code_thm lthy) aux_defs;
+
+  val _ = if forall Thm.no_prems aux_code_thms then () else 
+    warning &quot;Unresolved premises in code theorems&quot;
+    
+  (* Close Target *)
+  val lthy1 = lthy
+  val lthy = Local_Theory.close_target lthy
+
+  (* Transfer Results *)
+  val xfer = Local_Theory.standard_form lthy1 lthy Morphism.thm
+  
+  val code_thm = xfer code_thm
+  val aux_code_thms = map xfer aux_code_thms
+  val aux_def_thms = map xfer aux_def_thms
+    
+in
+  ((code_thm,aux_code_thms,aux_def_thms),lthy)
+end;
+
+end
+
+(*
+fun extract_recursion_eqs exs basename orig_def_thm lthy = let
+  val thy = Proof_Context.theory_of lthy
+ 
+  val pat_net : extraction Item_Net.T =
+    Item_Net.init (op= o apply2 #pattern) (fn {pattern, ...} =&gt; [pattern])
+    |&gt; fold Item_Net.update exs
+
+  local
+    fun tr env t ctx = let
+      (* Recurse for subterms *)
+      val (t,ctx) = case t of
+        t1$t2 =&gt; let
+            val (t1,ctx) = tr env t1 ctx
+            val (t2,ctx) = tr env t2 ctx
+          in 
+            (t1$t2,ctx)
+          end
+      | Abs (x,T,t) =&gt; let 
+            val (t&#39;,ctx) = tr ((x,T)::env) t ctx
+          in (Abs (x,T,t&#39;),ctx) end
+      | _ =&gt; (t,ctx)      
+
+      (* Check if we match a pattern *)
+      val ex = 
+        Item_Net.retrieve_matching pat_net t
+        |&gt; get_first (fn ex =&gt; 
+             case
+               try (Pattern.first_order_match thy (#pattern ex,t)) 
+                 (Vartab.empty,Vartab.empty)
+             of NONE =&gt; NONE | SOME _ =&gt; SOME ex
+           )
+    in
+      case ex of 
+        NONE =&gt; (t,ctx)
+      | SOME ex =&gt; let
+          (* Extract as new constant *)
+          val (idx,defs,lthy) = ctx
+          val name = (basename ^ &quot;_&quot; ^ string_of_int idx)
+          val ((t,def_thm),lthy) = extract_as_def env name t lthy
+          val ctx = (idx+1,(def_thm,ex)::defs,lthy)
+        in
+          (t,ctx)
+        end
+    end
+  in
+    fun transform t lthy = let 
+      val (t,(_,defs,lthy)) = tr [] t (0,[],lthy)
+    in 
+      ((t,defs),lthy)
+    end
+  end
+
+  (* Import theorem and extract RHS *)
+  
+  (* val lthy0 = lthy *)
+  val orig_def_thm = Local_Defs.meta_rewrite_rule lthy orig_def_thm
+  val args = Thm.lhs_of orig_def_thm |&gt; Thm.term_of |&gt; Term.strip_comb |&gt; snd |&gt; take_suffix is_Var
+    |&gt; map (fst o fst o dest_Var)
+  
+  val orig_def_thm = Local_Defs.abs_def_rule lthy orig_def_thm
+  
+  val ((_,orig_def_thm&#39;),lthy) = yield_singleton2 
+    (Variable.importT) orig_def_thm lthy;
+  val (lhs,rhs) = orig_def_thm&#39; (*|&gt; Local_Defs.meta_rewrite_rule lthy *) |&gt; Thm.prop_of |&gt; Logic.dest_equals;
+  
+  (* Transform RHS, generating new constants *)
+  val ((rhs&#39;,defs),lthy) = transform rhs lthy;
+  val def_thms = map #1 defs
+
+  (* Obtain new def_thm *)
+  val def_unfold_ss = 
+    put_simpset HOL_basic_ss lthy addsimps (orig_def_thm::def_thms)
+
+  val _ = @{print}  (orig_def_thm::def_thms)
+  
+  local  
+    val lthy0 = lthy
+    val (argns,lthy) = Variable.variant_fixes args lthy
+    
+    val tys = fastype_of lhs |&gt; binder_types |&gt; take (length args)
+    
+    val args = map Free (argns ~~ tys)
+
+    val lhs = list_comb (lhs,args)
+    val rhs = list_comb (rhs&#39;,args)
+
+    val new_def_ct = Logic.mk_equals (lhs,rhs) |&gt; Thm.cterm_of lthy
+
+    val _ = tracing &quot;Prove&quot;
+    val new_def_thm = Goal.prove_internal lthy [] new_def_ct (K (simp_tac def_unfold_ss 1))
+    val _ = tracing &quot;Done&quot;
+  in 
+    val new_def_thm = singleton (Variable.export lthy lthy0) new_def_thm
+  end
+  
+  
+  (*  
+  val def_unfold_ss = 
+    put_simpset HOL_basic_ss lthy addsimps (orig_def_thm::def_thms)
+  val new_def_thm = Goal.prove_internal lthy
+    [] (Logic.mk_equals (lhs,rhs&#39;) |&gt; Thm.cterm_of lthy) (K (simp_tac def_unfold_ss 1))
+  *)
+
+  (* Obtain new theorem by folding with defs of generated constants *)
+  (* TODO: Maybe cleaner to generate eq-thm and prove by &quot;unfold, refl&quot; *)
+  (*val new_def_thm 
+    = Library.foldr (fn (dt,t) =&gt; Local_Defs.fold lthy [dt] t) 
+        (def_thms,orig_def_thm&#39;);*)
+
+  (* Prepare code equations *)
+  fun mk_code_thm lthy (def_thm,{gen_thm, gen_tac, ...}) = let
+    val ((_,def_thm),lthy&#39;) = yield_singleton2 
+      (Variable.import true) def_thm lthy;
+    val thm = def_thm RS gen_thm;
+    val tac = SOLVED&#39; (gen_tac lthy&#39;)
+      ORELSE&#39; (simp_tac def_unfold_ss THEN&#39; gen_tac lthy&#39;)
+
+    val thm = the (SINGLE (ALLGOALS tac) thm);
+    val thm = singleton (Variable.export lthy&#39; lthy) thm;
+  in
+    thm
+  end;
+  
+  val code_thms = map (mk_code_thm lthy) defs;
+
+  val _ = if forall Thm.no_prems code_thms then () else 
+    warning &quot;Unresolved premises in code theorems&quot;
+    
+in
+  ((new_def_thm,code_thms,def_thms),lthy)
+end;
+*)
+
+fun extract_recursion_eqs&#39; exs basename attribs orig_def_thm lthy = let
+  
+  val ((new_def_thm,code_thms,def_thms),lthy) = extract_recursion_eqs exs basename orig_def_thm lthy
+
+  (* Register definitions of generated constants *)
+  val (_,lthy) 
+    = Local_Theory.note ((mk_qualified basename &quot;defs&quot;,[]),def_thms) lthy;
+  
+  val code_thms = new_def_thm::code_thms
+    
+  val (_,lthy) = Local_Theory.note 
+    ((mk_qualified basename &quot;code&quot;,attribs),code_thms)
+     lthy;
+in
+  (code_thms,lthy)
+end  
+
+fun prepare_code_thms_cmd names attribs thm lthy = let
+  fun name_of (Const (n,_)) = n 
+    | name_of (Free (n,_)) = n
+    | name_of _ = raise (THM (&quot;No definitional theorem&quot;,0,[thm]));
+
+  val (lhs,_) = thm |&gt; Local_Defs.meta_rewrite_rule lthy |&gt; Thm.prop_of |&gt; Logic.dest_equals;
+  val basename = lhs |&gt; strip_comb |&gt; #1 
+    |&gt; name_of 
+    |&gt; Long_Name.base_name;
+
+  val exs_tab = extractions.get (Context.Proof lthy)
+  
+  val exs = map (Name_Space.check (Context.Proof lthy) exs_tab #&gt; snd) names |&gt; flat
+  val exs = case exs of [] =&gt; Name_Space.dest_table exs_tab |&gt; map snd |&gt; flat | _ =&gt; exs
+
+  val _ = case exs of [] =&gt; error &quot;No extraction patterns selected&quot; | _ =&gt; ()
+  
+  val (_,lthy) = extract_recursion_eqs&#39; exs basename attribs thm lthy
+
+in
+  lthy
+end;
+
+
+fun extract_concrete_fun _ [] concl = 
+  raise TERM (&quot;Conclusion does not match any extraction pattern&quot;,[concl])
+  | extract_concrete_fun thy (pat::pats) concl = (
+      case Refine_Util.fo_matchp thy pat concl of
+        NONE =&gt; extract_concrete_fun thy pats concl
+        | SOME [t] =&gt; t
+        | SOME (t::_) =&gt; (
+          warning (&quot;concrete_definition: Pattern has multiple holes, taking &quot;
+            ^ &quot;first one: &quot; ^ @{make_string} pat
+          ); t)
+        | _ =&gt; (warning (&quot;concrete_definition: Ignoring invalid pattern &quot; 
+             ^ @{make_string} pat);
+             extract_concrete_fun thy pats concl)
+    )
+
+
+(* Define concrete function from refinement lemma *)
+fun define_concrete_fun gen_code fun_name attribs_def_raw attribs_ref_raw param_names thm pats
+  (orig_lthy:local_theory) = 
+let
+  val lthy = orig_lthy;
+  val ((inst,thm&#39;),lthy) = yield_singleton2 (Variable.import true) thm lthy;
+
+  val concl = thm&#39; |&gt; Thm.concl_of
+
+  (*val ((typ_subst,term_subst),lthy) 
+    = Variable.import_inst true [concl] lthy;
+  val concl = Term_Subst.instantiate (typ_subst,term_subst) concl;
+  *)
+
+  val term_subst = #2 inst |&gt; map (apsnd Thm.term_of) 
+
+  val param_terms = map (fn name =&gt;
+    case AList.lookup (fn (n,v) =&gt; n = #1 v) term_subst name of
+      NONE =&gt; raise TERM (&quot;No such variable: &quot;
+                           ^Term.string_of_vname name,[concl])
+    | SOME t =&gt; t
+  ) param_names;
+
+  (* 
+  val _ = Syntax.pretty_term lthy concl |&gt; Pretty.writeln
+  val _ = Pretty.big_list &quot;Patterns&quot; (map (Syntax.pretty_term lthy o Thm.term_of) pats) |&gt; Pretty.writeln
+  *)
+  
+  val f_term = extract_concrete_fun (Proof_Context.theory_of lthy) pats concl;
+
+  val lhs_type = map Term.fastype_of param_terms ---&gt; Term.fastype_of f_term;
+  val lhs_term 
+    = list_comb ((Free (Binding.name_of fun_name,lhs_type)),param_terms);
+  val def_term = Logic.mk_equals (lhs_term,f_term) 
+    |&gt; fold Logic.all param_terms;
+
+  val attribs_def = map (Attrib.check_src lthy) attribs_def_raw;
+  val attribs_ref = map (Attrib.check_src lthy) attribs_ref_raw;
+
+  val ((_,(_,def_thm)),lthy) = Specification.definition 
+    (SOME (fun_name,NONE,Mixfix.NoSyn)) [] [] ((Binding.empty,attribs_def),def_term) lthy;
+
+  val folded_thm = Local_Defs.fold lthy [def_thm] thm&#39;;
+
+  val basename = Binding.name_of fun_name
+  
+  val (_,lthy) 
+    = Local_Theory.note 
+       ((mk_qualified (basename) &quot;refine&quot;,attribs_ref),[folded_thm]) 
+       lthy;
+
+  val lthy = case gen_code of
+    NONE =&gt; lthy
+  | SOME modes =&gt; let
+      val (_,lthy) = extract_recursion_eqs&#39; modes (Binding.name_of fun_name) @{attributes [code]} def_thm lthy
+    in
+      lthy
+    end
+      
+      
+in
+  ((def_thm,folded_thm),lthy)
+end;
+
+  fun prepare_pattern t = let
+    val nidx = maxidx_of_term t + 1
+  
+    val t_orig = t
+    
+    val t = map_aterms (fn 
+          @{mpat (typs) &quot;&#8977;::?&#39;v_T&quot;} =&gt; Var ((&quot;HOLE&quot;,nidx),T)
+        | v as Var ((name,_),T) =&gt; if String.isPrefix &quot;_&quot; name then v else Var ((&quot;_&quot;^name,nidx),T)
+        | t =&gt; t
+      ) t
+    |&gt; Term_Subst.zero_var_indexes
+  
+    fun is_hole (Var ((n,_),_)) = not (String.isPrefix &quot;_&quot; n)
+      | is_hole _ = false
+    
+    val num_holes = fold_aterms (fn t =&gt; is_hole t ? (curry op + 1)) t 0  
+      
+    val _ = num_holes = 1 orelse raise TERM(&quot;cd-pattern has multiple or no holes&quot;,[t_orig,t])
+  in
+    t
+  end
+
+
+    (*val cfg_prep_code = Attrib.setup_config_bool @{binding synth_definition_prep_code} (K false)*)
+    local 
+      open Refine_Util
+      (*val flags = parse_bool_config&#39; &quot;prep_code&quot; cfg_prep_code
+      val parse_flags = parse_paren_list&#39; flags  *)
+
+    in       
+      val sd_parser = (*parse_flags --*) Parse.binding -- Parse.opt_attribs --| @{keyword &quot;is&quot;} 
+        -- Scan.optional (Parse.attribs --| Parse.$$$ &quot;:&quot;) [] -- Parse.term 
+    end  
+
+
+    fun sd_cmd (((name,attribs_def_raw),attribs_ref_raw),t_raw) lthy = let
+      local
+        (*val ctxt = Refine_Util.apply_configs flags lthy*)
+      in
+        (*val flag_prep_code = Config.get ctxt cfg_prep_code*)
+      end
+
+      val read = Syntax.read_prop (Proof_Context.set_mode Proof_Context.mode_pattern lthy)
+      
+      val t = t_raw |&gt; read |&gt; prepare_pattern
+      val ctxt = Variable.declare_term t lthy
+      val pat= Thm.cterm_of ctxt t
+      val goal=t
+
+      
+      fun 
+        after_qed [[thm]] ctxt = let
+            val thm = singleton (Variable.export ctxt lthy) thm
+
+            val (_,lthy) 
+              = Local_Theory.note 
+                 ((mk_qualified (Binding.name_of name) &quot;refine_raw&quot;,[]),[thm]) 
+                 lthy;
+
+            val ((dthm,rthm),lthy) = define_concrete_fun NONE name attribs_def_raw attribs_ref_raw [] thm [pat] lthy
+
+            (* FIXME: Does not work, as we cannot see the default extraction patterns!
+            val lthy = lthy 
+              |&gt; flag_prep_code ? Refine_Automation.extract_recursion_eqs 
+                [Sepref_Extraction.heap_extraction] (Binding.name_of name) dthm
+            *)
+
+            val _ = Thm.pretty_thm lthy dthm |&gt; Pretty.string_of |&gt; writeln
+            val _ = Thm.pretty_thm lthy rthm |&gt; Pretty.string_of |&gt; writeln
+          in
+            lthy
+          end
+        | after_qed thmss _ = raise THM (&quot;After-qed: Wrong thmss structure&quot;,~1,flat thmss)
+
+    in
+      Proof.theorem NONE after_qed [[ (goal,[]) ]] ctxt
+    end
+
+  
+  
+  
+
+  val cd_pat_eq = apply2 (Thm.term_of #&gt; Refine_Util.anorm_term) #&gt; op aconv
+
+  structure cd_patterns = Generic_Data (
+    type T = cterm list
+    val empty = []
+    val extend = I
+    val merge = merge cd_pat_eq
+  ) 
+
+  fun prepare_cd_pattern ctxt pat = 
+    case Thm.term_of pat |&gt; fastype_of of
+      @{typ bool} =&gt; 
+        Thm.term_of pat 
+        |&gt; HOLogic.mk_Trueprop 
+        |&gt; Thm.cterm_of ctxt
+    | _ =&gt; pat
+
+  fun add_cd_pattern pat context = 
+    cd_patterns.map (insert cd_pat_eq (prepare_cd_pattern (Context.proof_of context) pat)) context
+
+  fun del_cd_pattern pat context = 
+    cd_patterns.map (remove cd_pat_eq (prepare_cd_pattern (Context.proof_of context) pat)) context
+
+  val get_cd_patterns = cd_patterns.get o Context.Proof
+
+
+    structure rec_thms = Named_Thms ( 
+      val name = @{binding vcs_rec}
+      val description = &quot;VC-Solver: Recursive intro rules&quot;
+    )
+
+    structure solve_thms = Named_Thms ( 
+      val name = @{binding vcs_solve}
+      val description = &quot;VC-Solver: Solve rules&quot;
+    )
+
+    val add_vc_rec_thm = rec_thms.add_thm
+    val del_vc_rec_thm = rec_thms.del_thm
+    val get_vc_rec_thms = rec_thms.get
+
+    val add_vc_solve_thm = solve_thms.add_thm
+    val del_vc_solve_thm = solve_thms.del_thm
+    val get_vc_solve_thms = solve_thms.get
+
+    val rec_modifiers = [
+      Args.$$$ &quot;rec&quot; -- Scan.option Args.add -- Args.colon 
+        &gt;&gt; K (Method.modifier rec_thms.add &#8962;),
+      Args.$$$ &quot;rec&quot; -- Scan.option Args.del -- Args.colon 
+        &gt;&gt; K (Method.modifier rec_thms.del &#8962;)
+    ];
+
+    val solve_modifiers = [
+      Args.$$$ &quot;solve&quot; -- Scan.option Args.add -- Args.colon 
+        &gt;&gt; K (Method.modifier solve_thms.add &#8962;),
+      Args.$$$ &quot;solve&quot; -- Scan.option Args.del -- Args.colon 
+        &gt;&gt; K (Method.modifier solve_thms.del &#8962;)
+    ];
+
+    val vc_solve_modifiers = 
+      clasimp_modifiers @ rec_modifiers @ solve_modifiers;
+
+    fun vc_solve_tac ctxt no_pre = let
+      val rthms = rec_thms.get ctxt
+      val sthms = solve_thms.get ctxt
+      val pre_tac = if no_pre then K all_tac else clarsimp_tac ctxt
+      val tac = SELECT_GOAL (auto_tac ctxt)
+    in
+      TRY o pre_tac
+      THEN_ALL_NEW_FWD (TRY o REPEAT_ALL_NEW_FWD (resolve_tac ctxt rthms))
+      THEN_ALL_NEW_FWD (TRY o SOLVED&#39; (resolve_tac ctxt sthms THEN_ALL_NEW_FWD tac))
+    end
+
+    val setup = I
+      #&gt; rec_thms.setup 
+      #&gt; solve_thms.setup
+
+
+end;
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">setup</span></span><span> </span><span>Definition_Utils.setup</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">setup</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  let
+    fun parse_cpat cxt = let 
+      val (t, (context, tks)) = Scan.lift Args.embedded_inner_syntax cxt 
+      val ctxt = Context.proof_of context
+      val t = Proof_Context.read_term_pattern ctxt t
+           |&gt; Definition_Utils.prepare_pattern
+    in
+      (Thm.cterm_of ctxt t, (context, tks))
+    end
+
+    fun do_p f = Scan.repeat1 parse_cpat &gt;&gt; (fn pats =&gt; 
+        Thm.declaration_attribute (K (fold f pats)))
+  in
+    Attrib.setup @{binding &quot;cd_patterns&quot;} (
+       Scan.lift Args.add |-- do_p Definition_Utils.add_cd_pattern
+    || Scan.lift Args.del |-- do_p Definition_Utils.del_cd_pattern
+    || do_p Definition_Utils.add_cd_pattern
+    )
+      &quot;Add/delete concrete_definition pattern&quot;
+  end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Command setup *)</span></span></span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Folding of .refine-lemma seems not to work, if the function has
+  parameters on which it does not depend *)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; Outer_Syntax.local_theory 
+  @{command_keyword concrete_definition} 
+  &quot;Define constant from theorem&quot;
+  (Parse.binding 
+    -- Parse.opt_attribs
+    -- Scan.optional (@{keyword &quot;for&quot;} |-- Scan.repeat1 Args.var) []
+    --| @{keyword &quot;is&quot;} -- Parse.opt_attribs -- Parse.thm
+    -- Scan.optional (@{keyword &quot;uses&quot;} |-- Scan.repeat1 Args.embedded_inner_syntax) []
+  &gt;&gt; (fn (((((name,attribs_def),params),attribs_ref),raw_thm),pats) =&gt; fn lthy =&gt; let
+    val thm = 
+      case Attrib.eval_thms lthy [raw_thm] of
+        [thm] =&gt; thm
+        | _ =&gt; error &quot;Expecting exactly one theorem&quot;;
+    val pats = case pats of 
+      [] =&gt; Definition_Utils.get_cd_patterns lthy
+    | l =&gt; map (Proof_Context.read_term_pattern lthy #&gt; Definition_Utils.prepare_pattern #&gt; Thm.cterm_of lthy #&gt;
+        Definition_Utils.prepare_cd_pattern lthy) l
+
+  in 
+    Definition_Utils.define_concrete_fun 
+      NONE name attribs_def attribs_ref params thm pats lthy 
+    |&gt; snd
+  end))
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; 
+  Command: 
+    @{text &quot;concrete_definition name [attribs_def] for params is [attribs_ref] thm uses patterns&quot;}
+  where @{text &quot;attribs_...&quot;}, @{text &quot;for&quot;}, and @{text &quot;uses&quot;}-parts are optional.
+
+  Declares a new constant @{text &quot;name&quot;} by matching the theorem @{text &quot;thm&quot;} 
+  against a pattern.
+  
+  The definition theorem of the constant gets the attributes specified in &#8249;attribs_def&#8250;.
+  Moreover, a new theorem is derived from &#8249;thm&#8250;, with the defined constant folded.
+  This is registered as &#8249;name.refine&#8250;, with attributes [attribs_ref].
+  
+  If the @{text &quot;for&quot;} clause is given, it lists variables in the theorem, 
+  and thus determines the order of parameters of the defined constant. Otherwise,
+  parameters will be in order of occurrence.
+
+  If the @{text &quot;uses&quot;} clause is given, it lists patterns. The conclusion of the
+  theorem will be matched against each of these patterns. For the first matching
+  pattern, the constant will be declared to be the term that matches the first
+  non-dummy variable of the pattern. If no @{text &quot;uses&quot;}-clause is specified,
+  the default patterns will be tried.
+
+  Attribute: @{text &quot;cd_patterns pats&quot;}. Declaration attribute. Declares
+    default patterns for the @{text &quot;concrete_definition&quot;} command.
+  
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span> </span><span>cd_patterns</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;_ = &#8977;&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;_ == &#8977;&quot;</span></span></span><span> </span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML_val</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Parse.binding&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML_val</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;val x:binding = Binding.empty&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML_val</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;@{binding foo}&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; 
+  let
+    val modes = (Scan.optional
+     (@{keyword &quot;(&quot;} |-- Parse.list1 (Parse.position Args.name) --| @{keyword &quot;)&quot;}) [])
+  in
+    Outer_Syntax.local_theory 
+    @{command_keyword prepare_code_thms} 
+    &quot;Extract recursive code equations from definition theorem with fixed points&quot;
+    (modes -- Parse.opt_attribs -- Parse.thms1
+      &gt;&gt; (fn ((modes,attribs),raw_thms) =&gt; fn lthy =&gt; let
+        val attribs = map (Attrib.check_src lthy) attribs
+        val thms = Attrib.eval_thms lthy raw_thms
+      in
+        fold (Definition_Utils.prepare_code_thms_cmd modes attribs) thms lthy
+      end)
+    )
+  end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; 
+  Command: 
+    @{text &quot;prepare_code_thms (modes) thm&quot;}
+  where the @{text &quot;(mode)&quot;}-part is optional.
+
+  Set up code-equations for recursions in constant defined by @{text &quot;thm&quot;}.
+  The optional @{text &quot;modes&quot;} is a comma-separated list of extraction modes.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Example setup for option monad fixed points&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>gen_code_thm_option_fixp</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>x</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>D</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8801; option.fixp_fun B&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>M</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8896;x. option.mono_body (&#955;f. B f x))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f x &#8801; B f x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>D</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>option.mono_body_fixp</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>M</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML_val</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Definition_Utils.add_extraction (&quot;option&quot;,&#8962;) {
+    pattern = Logic.varify_global @{term &quot;option.fixp_fun x&quot;},
+    gen_thm = @{thm gen_code_thm_option_fixp},
+    gen_tac = Partial_Function.mono_tac
+  }
+&#8250;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;K (Definition_Utils.declare_extraction_group @{binding option} #&gt; snd)&#8250;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; fn _ =&gt;
+  Definition_Utils.add_extraction (&quot;option&quot;,&#8962;) {
+    pattern = Logic.varify_global @{term &quot;option.fixp_fun x&quot;},
+    gen_thm = @{thm gen_code_thm_option_fixp},
+    gen_tac = Partial_Function.mono_tac
+  }
+&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;option_fixp_extraction_test m n = option.fixp_fun (&#955;D x. 
+    if x&#8804;(0::int) then 
+      Some 0 
+    else 
+      Option.bind (D (x-int m)) (&#955;a.
+      Option.bind (D (x-n)) (&#955;b.
+      Some (a+b)
+    )))&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">prepare_code_thms</span></span><span> </span><span class="delimiter">(</span><span>option</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span>code</span><span class="delimiter">]</span><span> </span><span>option_fixp_extraction_test_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">print_theorems</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">export_code</span></span><span> </span><span>option_fixp_extraction_test</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>SML</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+val _ = Theory.setup
+  (ML_Antiquotation.inline \&lt;^binding&gt;&#8249;extraction_group&#8250;
+    (Args.context -- Scan.lift (Parse.position Args.embedded) &gt;&gt;
+      (fn (ctxt, name) =&gt; ML_Syntax.print_string (Definition_Utils.check_extraction_group ctxt name))));
+&#8250;</span></span></span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; 
+  Command: 
+    @{text &quot;synth_definition binding [def_attrs] is [ref_attrs]: term&quot;}
+  where the @{text &quot;(def_attrs)&quot;} and @{text &quot;(ref_attrs)&quot;} parts are optional.
+
+  Sets up a schematic goal with a hole, proves the schematic goal, and  
+  define what has been inserted into the hole as a new constant. 
+  Moreover, generate a refinement theorem for the proved goal with the hole replaced by 
+  the defined constant.
+  
+  The &#8249;def_attrs&#8250; are applied to the definition theorem, the &#8249;ref_attrs&#8250; to 
+  the refinement theorem.
+&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  local open Definition_Utils in
+    val _ = Outer_Syntax.local_theory_to_proof @{command_keyword &quot;synth_definition&quot;}
+      &quot;Synthesis of constant from schematic goal with hole&quot;
+      (sd_parser &gt;&gt; sd_cmd)
+  
+  end
+&#8250;</span></span></span><span>
+</span><span>  
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

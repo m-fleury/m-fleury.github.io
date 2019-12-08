@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Sep_Value (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Sep_Value</h1>
+
+<span class="command">theory</span> <span class="name">Sep_Value</span><br/>
+<span class="keyword">imports</span> <a href="Monad.html"><span class="name">Monad</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Values&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Sep_Value</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;../../lib/Monad&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Values and Addresses&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">datatype</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span>val</span><span> </span><span class="delimiter">=</span><span> </span><span>PAIR</span><span> </span><span class="delimiter">(</span><span>fst</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a val&quot;</span></span></span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>snd</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a val&quot;</span></span></span><span class="delimiter">)</span><span> </span><span class="delimiter">|</span><span> </span><span>PRIMITIVE</span><span> </span><span class="delimiter">(</span><span>the</span><span class="delimiter">:</span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">hide_const</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">open</span></span><span class="delimiter">)</span><span> </span><span>fst</span><span> </span><span>snd</span><span> </span><span>the</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">define_lenses</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">open</span></span><span class="delimiter">)</span><span> </span><span>val</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">datatype</span></span><span> </span><span>va_item</span><span> </span><span class="delimiter">=</span><span> </span><span>PFST</span><span> </span><span class="delimiter">|</span><span> </span><span>PSND</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>vaddr</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;va_item list&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Focusing on Address&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>lens_of_item</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;lens_of_item PFST = val.fst<span class="hidden">&#8681;</span><sub>L</sub>&quot;</span></span></span><span>  
+</span><span>  </span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens_of_item PSND = val.snd<span class="hidden">&#8681;</span><sub>L</sub>&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lens_of_vaddr vp = foldr (&#955;i L. lens_of_item i &#8729;<span class="hidden">&#8681;</span><sub>L</sub> L) vp id<span class="hidden">&#8681;</span><sub>L</sub>&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_of_vaddr_simps</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;lens_of_vaddr [] = id<span class="hidden">&#8681;</span><sub>L</sub>&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;lens_of_vaddr (i#is) = lens_of_item i &#8729;<span class="hidden">&#8681;</span><sub>L</sub> lens_of_vaddr is&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lens_of_vaddr_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ex_two_vals</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;a b::&#39;a val. a &#8800; b&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_of_item_rnl</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rnlens (lens_of_item i :: &#39;a val &#10233; &#39;a val)&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>A</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_PAIR (PAIR undefined undefined :: &#39;a val)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  
+</span><span>    </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>i</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>rnlensI</span><span> </span><span>A</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_of_item_hlens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens (lens_of_item i :: &#39;a val &#10233; &#39;a val)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>i</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_of_vaddr_rnl</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rnlens (lens_of_vaddr vp)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>vp</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_of_vaddr_hlens</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hlens (lens_of_vaddr vp)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>vp</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lens_of_item_complete</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;complete_lens (lens_of_item i)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>val.discI</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>i</span><span class="delimiter">;</span><span> </span><span>fastforce</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Loading and Storing Address&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;vload err a &#8801; zoom (lift_lens err (lens_of_vaddr a)) Monad.get&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;vstore err x a &#8801; zoom (lift_lens err (lens_of_vaddr a)) (Monad.set x)&quot;</span></span></span><span>
+</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;GEP&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;checked_gep err addr item &#8801; doM {
+    let addr = addr@[item];
+    use (lift_lens err (lens_of_vaddr addr));
+    return addr
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Structure of Value&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">datatype</span></span><span> </span><span class="tfree">&#39;s</span><span> </span><span>vstruct</span><span> </span><span class="delimiter">=</span><span> </span><span>VS_PAIR</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;s vstruct&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;s vstruct&quot;</span></span></span><span> </span><span class="delimiter">|</span><span> </span><span>VS_PRIMITIVE</span><span> </span><span class="tfree">&#39;s</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>structured_value_defs</span><span> </span><span class="delimiter">=</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>struct_of_primval</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;s&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>init_primval</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;s &#8658; &#39;a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>struct_of_val</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a val &#8658; &#39;s vstruct&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;struct_of_val (PAIR a b) = VS_PAIR (struct_of_val a) (struct_of_val b)&quot;</span></span></span><span>
+</span><span>    </span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;struct_of_val (PRIMITIVE x) = VS_PRIMITIVE (struct_of_primval x)&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>init_val</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;s vstruct &#8658; &#39;a val&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;init_val (VS_PAIR sa sb) = PAIR (init_val sa) (init_val sb)&quot;</span></span></span><span>
+</span><span>    </span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;init_val (VS_PRIMITIVE ps) = PRIMITIVE (init_primval ps)&quot;</span></span></span><span>  
+</span><span>      
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>    
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>structured_value_code</span><span class="delimiter">[</span><span>code</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span>
+</span><span>    </span><span>structured_value_defs.struct_of_val.simps</span><span>
+</span><span>    </span><span>structured_value_defs.init_val.simps</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>structured_value</span><span> </span><span class="delimiter">=</span><span> </span><span>structured_value_defs</span><span> </span><span>struct_of_primval</span><span> </span><span>init_primval</span><span> 
+</span><span>    </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>struct_of_primval</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;s&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>init_primval</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;s &#8658; &#39;a&quot;</span></span></span><span> </span><span class="delimiter">+</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>struct_of_init_primval</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;struct_of_primval (init_primval s) = s&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>put_preserves_struct</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pre_get (lens_of_vaddr a) s&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;struct_of_val (get&#39; (lens_of_vaddr a) s) = struct_of_val x&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;struct_of_val (put&#39; (lens_of_vaddr a) x s) = struct_of_val s&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>a</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>s</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>Nil</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>      </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Cons</span><span> </span><span>i</span><span> </span><span>as</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>s</span><span class="delimiter">;</span><span> </span><span>cases</span><span> </span><span>i</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>struct_of_init</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;struct_of_val (init_val s) = s&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>s</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>  
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

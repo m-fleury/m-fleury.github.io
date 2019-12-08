@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory LLVM_Shallow (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory LLVM_Shallow</h1>
+
+<span class="command">theory</span> <span class="name">LLVM_Shallow</span><br/>
+<span class="keyword">imports</span> <a href="LLVM_Memory.html"><span class="name">LLVM_Memory</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Shallow Embedding of LLVM Semantics&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>LLVM_Shallow</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span>  
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;LLVM_Memory&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We define a type synonym for the LLVM monad&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span>llM</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a,unit,llvm_memory,err) M&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">translations</span></span><span>
+</span><span>    </span><span class="delimiter">(</span><span>type</span><span class="delimiter">)</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a llM&quot;</span></span></span><span> </span><span class="delimiter">&#8637;</span><span> </span><span class="delimiter">(</span><span>type</span><span class="delimiter">)</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a, unit, llvm_memory, err) M&quot;</span></span></span><span>
+</span><span>  
+</span><span>    
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Shallow Embedding of Values&#8250;</span></span></span><span>  
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We use a type class to characterize types that can be injected into the value type.
+    We will instantiate this type class to obtain injections from types of shape 
+    &#8249;T = T&#215;T | _ word | _ ptr&#8250;
+  
+    Although, this type class can be instantiated by other types, those will not be accepted 
+    by the code generator.
+    
+    We also define a class &#8249;llvm_repv&#8250;, which additionally contains &#8249;unit&#8250;. 
+    This is required for void functions, and if-the-else statements that produce no result.
+    
+    Again, while this class might be instantiated for other types, those will be rejected
+    by the code generator.
+  &#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">class</span></span><span> </span><span>llvm_repv</span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">class</span></span><span> </span><span>llvm_rep</span><span> </span><span class="delimiter">=</span><span> </span><span>llvm_repv</span><span> </span><span class="delimiter">+</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>to_val</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; llvm_val&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>from_val</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_val &#8658; &#39;a&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>struct_of</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a itself &#8658; llvm_vstruct&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>init</span><span> </span><span class="delimiter">::</span><span> </span><span class="tfree">&#39;a</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>from_to_id</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;from_val o to_val = id&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>to_from_id</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_vstruct v = struct_of TYPE(&#39;a) &#10233; to_val (from_val v) = v&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>struct_of_matches</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_vstruct (to_val x) = (struct_of TYPE(&#39;a))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>init_zero</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_val init = llvm_zero_initializer (struct_of TYPE(&#39;a))&quot;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>from_to_id&#39;</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;from_val (to_val x) = x&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>pointfree_idE</span><span class="delimiter">[</span><span>OF</span><span> </span><span>from_to_id</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_val x = to_val y &#10231; x=y&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>from_to_id&#39;</span><span class="delimiter">)</span><span>
+</span><span>      
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We use a phantom type to attach the type of the pointed to value to a pointer.&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">datatype</span></span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">::</span><span>llvm_rep</span><span> </span><span>ptr</span><span> </span><span class="delimiter">=</span><span> </span><span>PTR</span><span> </span><span class="delimiter">(</span><span>the_raw_ptr</span><span class="delimiter">:</span><span> </span><span>llvm_ptr</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>null</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::llvm_rep ptr&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;null = PTR llvm_null&quot;</span></span></span><span>
+</span><span>  
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We instantiate the type classes for the supported types, 
+    i.e., unit, word, ptr, and prod.&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">instance</span></span><span> </span><span>unit</span><span> </span><span class="delimiter">::</span><span> </span><span>llvm_repv</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>standard</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">instantiation</span></span><span> </span><span>word</span><span> </span><span class="delimiter">::</span><span> </span><span class="delimiter">(</span><span>len</span><span class="delimiter">)</span><span> </span><span>llvm_rep</span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_val w &#8801; llvm_int (lconst (len_of TYPE(&#39;a)) (uint w))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;from_val v &#8801; word_of_int (lint_to_uint (llvm_the_int v))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;struct_of_word (_::&#39;a word itself) &#8801; llvm_s_int (len_of TYPE(&#39;a))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;init_word &#8801; 0::&#39;a word&quot;</span></span></span><span>
+</span><span>    
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>int_inv_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;width i = LENGTH(&#39;a) &#10233; lconst LENGTH(&#39;a) (uint (word_of_int (lint_to_uint i) :: &#39;a word)) = i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>uint_const</span><span> </span><span>uint_eq</span><span> </span><span>uint_lower_bound</span><span> </span><span>uint_upper_bound</span><span> </span><span>width_lconst</span><span> </span><span>word_of_int_inverse</span><span> </span><span>word_ubin.norm_Rep</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">instance</span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>standard</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>from_val_word_def</span><span> </span><span>to_val_word_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>llvm_s_int_def</span><span> </span><span>llvm_zero_initializer_def</span><span> </span><span>llvm_int_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>v</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>v</span><span class="delimiter">)</span><span> 
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>llvm_int_def</span><span> </span><span>llvm_the_int_def</span><span> </span><span>llvm_s_ptr_def</span><span> </span><span>llvm_s_pair_def</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>llvm_vstruct_def</span><span> </span><span>int_inv_aux</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>      
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">instantiation</span></span><span> </span><span>ptr</span><span> </span><span class="delimiter">::</span><span> </span><span class="delimiter">(</span><span>llvm_rep</span><span class="delimiter">)</span><span> </span><span>llvm_rep</span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_val &#8801; llvm_ptr o ptr.the_raw_ptr&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;from_val v &#8801; PTR (llvm_the_ptr v)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;struct_of_ptr (_::&#39;a ptr itself) &#8801; llvm_s_ptr&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;init_ptr::&#39;a ptr &#8801; null&quot;</span></span></span><span>
+</span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">instance</span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>standard</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>from_val_ptr_def</span><span> </span><span>to_val_ptr_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>llvm_zero_initializer_def</span><span> </span><span>llvm_ptr_def</span><span> </span><span>llvm_s_ptr_def</span><span> </span><span>null_def</span><span> </span><span>llvm_null_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>v</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>v</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>llvm_s_int_def</span><span> </span><span>llvm_s_pair_def</span><span> </span><span>llvm_ptr_def</span><span> </span><span>llvm_the_ptr_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>      
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">instantiation</span></span><span> </span><span>prod</span><span> </span><span class="delimiter">::</span><span> </span><span class="delimiter">(</span><span>llvm_rep</span><span class="delimiter">,</span><span> </span><span>llvm_rep</span><span class="delimiter">)</span><span> </span><span>llvm_rep</span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_val_prod &#8801; &#955;(a,b). llvm_pair (to_val a) (to_val b)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;from_val_prod p &#8801; case llvm_the_pair p of (a,b) &#8658; (from_val a, from_val b)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;struct_of_prod (_::(&#39;a&#215;&#39;b) itself) &#8801; llvm_s_pair (struct_of TYPE(&#39;a)) (struct_of TYPE(&#39;b))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;init_prod ::&#39;a&#215;&#39;b &#8801; (init,init)&quot;</span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">instance</span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>standard</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>from_val_prod_def</span><span> </span><span>to_val_prod_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>llvm_pair_def</span><span> </span><span>llvm_s_pair_def</span><span> </span><span>init_zero</span><span> </span><span>llvm_zero_initializer_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>v</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>v</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>llvm_s_int_def</span><span> </span><span>llvm_s_ptr_def</span><span> </span><span>llvm_pair_def</span><span> </span><span>llvm_the_pair_def</span><span> 
+</span><span>          </span><span>llvm_val.the_val_def</span><span> </span><span>llvm_vstruct_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span> </span><span>llvm_val.splits</span><span> </span><span>val.split</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>      
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>to_val_prod_conv</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_val (a,b) = llvm_pair (to_val a) (to_val b)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>to_val_prod_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Checked conversion from value&#8250;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>checked_from_val</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_val &#8658; &#39;a::llvm_rep llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;checked_from_val v &#8801; doM {
+      fcheck (STATIC_ERROR &#39;&#39;Type mismatch&#39;&#39;) (llvm_vstruct v = struct_of TYPE(&#39;a));
+      return (from_val v)
+    }&quot;</span></span></span><span> 
+</span><span>
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Instructions&#8250;</span></span></span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The instructions are arranged in the order as they are described in the 
+    LLVM Language Reference Manual &#127760;&#8249;https://llvm.org/docs/LangRef.html&#8250;.&#8250;</span></span></span><span>
+</span><span>    
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Binary Operations&#8250;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We define a generic lifter for binary arithmetic operations.
+    It is parameterized by an error condition.
+  &#8250;</span></span></span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Use precondition instead of negated precondition! *)</span></span></span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>op_lift_arith2</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;_ &#8658; _ &#8658; &#39;a::len word &#8658; &#39;a word &#8658; &#39;a word llM&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;op_lift_arith2 ovf f a b &#8801; doM {
+    let a = word_to_lint a;
+    let b = word_to_lint b;
+    fcheck (OVERFLOW_ERROR) (&#172;ovf a b);
+    return (lint_to_word (f a b))
+  }&quot;</span></span></span><span>
+</span><span>        
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;op_lift_arith2&#39; &#8801; op_lift_arith2 (&#955;_ _. False)&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>udivrem_is_undef</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lint &#8658; lint &#8658; bool&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;udivrem_is_undef a b &#8801; lint_to_uint b=0&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>sdivrem_is_undef</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lint &#8658; lint &#8658; bool&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sdivrem_is_undef a b &#8801; lint_to_sint b=0 &#8744; sdivrem_ovf a b&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_add &#8801; op_lift_arith2&#39; (+)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_sub &#8801; op_lift_arith2&#39; (-)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_mul &#8801; op_lift_arith2&#39; (*)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_udiv &#8801; op_lift_arith2 udivrem_is_undef (div)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_urem &#8801; op_lift_arith2 udivrem_is_undef (mod)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_sdiv &#8801; op_lift_arith2 sdivrem_is_undef (sdiv)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_srem &#8801; op_lift_arith2 sdivrem_is_undef (smod)&quot;</span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Compare Operations&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>op_lift_cmp</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;_ &#8658; &#39;a::len word &#8658; &#39;a word &#8658; 1 word llM&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;op_lift_cmp f a b &#8801; doM {
+    let a = word_to_lint a;
+    let b = word_to_lint b;
+    return (lint_to_word (bool_to_lint (f a b)))
+  }&quot;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>op_lift_ptr_cmp</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;_ &#8658; &#39;a::llvm_rep ptr &#8658; &#39;a ptr &#8658; 1 word llM&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;op_lift_ptr_cmp f a b &#8801; doM {
+    return (lint_to_word (bool_to_lint (f a b)))
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_icmp_eq &#8801;  op_lift_cmp (=)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_icmp_ne &#8801;  op_lift_cmp (&#8800;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_icmp_sle &#8801; op_lift_cmp (&#8804;<span class="hidden">&#8681;</span><sub>s</sub>)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_icmp_slt &#8801; op_lift_cmp (&lt;<span class="hidden">&#8681;</span><sub>s</sub>)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_icmp_ule &#8801; op_lift_cmp (&#8804;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_icmp_ult &#8801; op_lift_cmp (&lt;)&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Note: There are no pointer compare instructions in LLVM. 
+    To compare pointers in LLVM, they have to be casted to integers first.
+    However, our abstract memory model cannot assign a bit-width to pointers.
+    
+    Thus, we model pointer comparison instructions in our semantics, and let the 
+    code generator translate them to integer comparisons. 
+    
+    Up to now, we only model pointer equality. 
+    For less-than, suitable preconditions are required, which are consistent with the 
+    actual memory layout of LLVM. We could, e.g., adopt the rules from the C standard here.
+  &#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_ptrcmp_eq &#8801; op_lift_ptr_cmp (=)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_ptrcmp_ne &#8801; op_lift_ptr_cmp (&#8800;)&quot;</span></span></span><span>
+</span><span>  
+</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Bitwise Binary Operations&#8250;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;shift_ovf a n &#8801; nat (lint_to_uint n) &#8805; width a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bitSHL&#39; a n &#8801; bitSHL a (nat (lint_to_uint n))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bitASHR&#39; a n &#8801; bitASHR a (nat (lint_to_uint n))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bitLSHR&#39; a n &#8801; bitLSHR a (nat (lint_to_uint n))&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_shl &#8801; op_lift_arith2 shift_ovf bitSHL&#39;&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_lshr &#8801; op_lift_arith2 shift_ovf bitLSHR&#39;&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_ashr &#8801; op_lift_arith2 shift_ovf bitASHR&#39;&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_and &#8801; op_lift_arith2&#39; (AND)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_or &#8801; op_lift_arith2&#39; (OR)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_xor &#8801; op_lift_arith2&#39; (XOR)&quot;</span></span></span><span>
+</span><span>    
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Aggregate Operations&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;In LLVM, there is an &#8249;extractvalue&#8250; and &#8249;insertvalue&#8250; operation.
+    In our shallow embedding, these get instantiated for &#8249;fst&#8250; and &#8249;snd&#8250;.&#8250;</span></span></span><span>
+</span><span>    
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;checked_split_pair v &#8801; doM {
+    fcheck (STATIC_ERROR &#39;&#39;Expected pair&#39;&#39;) (llvm_is_pair v);
+    return (llvm_the_pair v)
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ll_extract_fst</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;t::llvm_rep &#8658; &#39;t<span class="hidden">&#8681;</span><sub>1</sub>::llvm_rep llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_extract_fst p = doM { (a,b) &#8592; checked_split_pair (to_val p); checked_from_val a }&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ll_extract_snd</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;t::llvm_rep &#8658; &#39;t<span class="hidden">&#8681;</span><sub>2</sub>::llvm_rep llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_extract_snd p = doM { (a,b) &#8592; checked_split_pair (to_val p); checked_from_val b }&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ll_insert_fst</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;t::llvm_rep &#8658; &#39;t<span class="hidden">&#8681;</span><sub>1</sub>::llvm_rep &#8658; &#39;t llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_insert_fst p x = doM { (a,b) &#8592; checked_split_pair (to_val p); checked_from_val (llvm_pair (to_val x) b) }&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ll_insert_snd</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;t::llvm_rep &#8658; &#39;t<span class="hidden">&#8681;</span><sub>2</sub>::llvm_rep &#8658; &#39;t llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_insert_snd p x = doM { (a,b) &#8592; checked_split_pair (to_val p); checked_from_val (llvm_pair a (to_val x)) }&quot;</span></span></span><span> 
+</span><span>    
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*  
+  definition ll_extract_fst :: &quot;(&#39;a::llvm_rep &#215; &#39;b::llvm_rep) &#8658; &#39;a llM&quot; where &quot;ll_extract_fst ab &#8801; return (fst ab)&quot;
+  definition ll_extract_snd :: &quot;(&#39;a::llvm_rep &#215; &#39;b::llvm_rep) &#8658; &#39;b llM&quot; where &quot;ll_extract_snd ab &#8801; return (snd ab)&quot;
+  definition ll_insert_fst :: &quot;(&#39;a::llvm_rep &#215; &#39;b::llvm_rep) &#8658; &#39;a &#8658; (&#39;a&#215;&#39;b) llM&quot; where &quot;ll_insert_fst ab a &#8801; return (a,snd ab)&quot;
+  definition ll_insert_snd :: &quot;(&#39;a::llvm_rep &#215; &#39;b::llvm_rep) &#8658; &#39;b &#8658; (&#39;a&#215;&#39;b) llM&quot; where &quot;ll_insert_snd ab b &#8801; return (fst ab,b)&quot;
+  *)</span></span></span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Memory Access and Addressing Operations&#8250;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ll_load</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::llvm_rep ptr &#8658; &#39;a llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;ll_load p &#8801; doM {
+      r &#8592; llvm_load (the_raw_ptr p);
+      checked_from_val r
+    }&quot;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ll_store</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::llvm_rep &#8658; &#39;a ptr &#8658; unit llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;ll_store v p &#8801; llvm_store (to_val v) (the_raw_ptr p)&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Note that LLVM itself does not have malloc and free instructions.
+    However, these are primitive instructions in our abstract memory model, 
+    such that we have to model them in our semantics.
+    
+    The code generator will map them to the C standard library 
+    functions &#8249;calloc&#8250; and &#8249;free&#8250;.
+  &#8250;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ll_malloc</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::llvm_rep itself &#8658; _::len word &#8658; &#39;a ptr llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;ll_malloc TYPE(&#39;a) n = doM {
+      fcheck MEM_ERROR (unat n &gt; 0); &#8213; &#8249;Disallow empty malloc&#8250;
+      r &#8592; llvm_allocn (to_val (init::&#39;a)) (unat n);
+      return (PTR r)
+    }&quot;</span></span></span><span>
+</span><span>        
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ll_free</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::llvm_rep ptr &#8658; unit llM&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_free p &#8801; llvm_free (the_raw_ptr p)&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;As for the aggregate operations, the &#8249;getelementptr&#8250; instruction is instantiated 
+    for pointer indexing, fst, and snd. &#8250;</span></span></span><span>
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ll_ofs_ptr</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::llvm_rep ptr &#8658; _::len word &#8658; &#39;a ptr llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_ofs_ptr p ofs = doM {
+    r &#8592; llvm_checked_idx_ptr (the_raw_ptr p) (sint ofs);
+    return (PTR r)
+  }&quot;</span></span></span><span>  
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ll_gep_fst</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;p::llvm_rep ptr &#8658; &#39;a::llvm_rep ptr llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_gep_fst p = doM {
+    fcheck (STATIC_ERROR &#39;&#39;gep_fst: Expected pair type&#39;&#39;) (llvm_is_s_pair (struct_of TYPE(&#39;p)));
+    r &#8592; llvm_checked_gep (the_raw_ptr p) PFST;
+    return (PTR r)
+  }&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ll_gep_snd</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;p::llvm_rep ptr &#8658; &#39;b::llvm_rep ptr llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_gep_snd p = doM {
+    fcheck (STATIC_ERROR &#39;&#39;gep_snd: Expected pair type&#39;&#39;) (llvm_is_s_pair (struct_of TYPE(&#39;p)));
+    r &#8592; llvm_checked_gep (the_raw_ptr p) PSND;
+    return (PTR r)
+  }&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Conversion Operations&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llb_trunc i w &#8801; doM {
+    fcheck (STATIC_ERROR &#39;&#39;Trunc must go to smaller type&#39;&#39;) (width i &gt; w);
+    return (trunc w i)
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llb_sext i w &#8801; doM {
+    fcheck (STATIC_ERROR &#39;&#39;Sext must go to greater type&#39;&#39;) (width i &lt; w);
+    return (sext w i)
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llb_zext i w &#8801; doM {
+    fcheck (STATIC_ERROR &#39;&#39;Zext must go to greater type&#39;&#39;) (width i &lt; w);
+    return (zext w i)
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>op_lift_iconv</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;_ &#8658; &#39;a::len word &#8658; &#39;b::len word itself  &#8658; &#39;b word llM&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;op_lift_iconv f a _ &#8801; doM {
+    let a = word_to_lint a;
+    let w = LENGTH(&#39;b);
+    r &#8592; f a w;
+    return (lint_to_word r)
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_trunc &#8801; op_lift_iconv llb_trunc&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_sext &#8801; op_lift_iconv llb_sext&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_zext &#8801; op_lift_iconv llb_zext&quot;</span></span></span><span>
+</span><span>  
+</span><span>    
+</span><span>        
+</span><span>        
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Control Flow&#8250;</span></span></span><span>  
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Our shallow embedding uses a structured control flow, which allows
+    only sequential composition, if-then-else, and function calls.
+    
+    The code generator then maps sequential composition to basic blocks, 
+    and if-then-else to a control flow graph with conditional branching.
+    Function calls are mapped to LLVM function calls.  
+   &#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We use the to Boolean conversion from word-lib. We re-state its semantics here.&#8250;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>to_bool_as_lint_to_bool</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;to_bool (w::1 word) = lint_to_bool (word_to_lint w)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>to_bool_def</span><span> </span><span>word_to_lint_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ltrue_def</span><span> </span><span>lfalse_def</span><span> </span><span>lint_to_bool_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>transfer</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>bin_rest_BIT</span><span> </span><span>bin_rest_x2</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>to_bool_eq</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_bool (w::1 word) &#10231; w&#8800;0&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>to_bool_neq_0</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>llc_if</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;1 word &#8658; &#39;a::llvm_repv llM &#8658; &#39;a llM &#8658; &#39;a llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llc_if b t e &#8801; doM {
+      if to_bool b then t else e
+    }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>llc_if_mono</span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span>      
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;monotone orda ordb F; monotone orda ordb G&#10215; &#10233; monotone orda ordb (&#955;f. llc_if b (F f) (G f))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>llc_if_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>pf_mono_prover</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;While-Combinator&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+    Note that we also include the while combinator at this point, as we plan
+    to add direct translation of while to a control flow graph as an optional 
+    feature of the code generator. 
+    
+    In the current state, the code generator will recognize the while combinator, 
+    but refuse to translate it.
+  
+    Note that the standard way of using a while combinator is to translate it to 
+    a tail recursive function call, which the preprocessor can do automatically.
+  &#8250;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>llc_while</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a::llvm_repv &#8658; 1 word llM) &#8658; (&#39;a &#8658; &#39;a llM) &#8658; &#39;a &#8658; &#39;a llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llc_while b f s<span class="hidden">&#8681;</span><sub>0</sub> &#8801; mwhile (&#955;s. b s &#10524; return o to_bool) f s<span class="hidden">&#8681;</span><sub>0</sub>&quot;</span></span></span><span>
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>gen_code_thm_llc_while</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8801; llc_while b body&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f s = doM { ctd &#8592; b s; llc_if ctd (doM { s&#8592;body s; f s}) (return s)}&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>llc_while_def</span><span> </span><span>llc_if_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>mwhile_unfold</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* &#39;Definition&#39; of llc_while for presentation in paper: *)</span></span></span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llc_while b c s &#8801; doM { x &#8592; b s; llc_if x (doM {s&#8592;c s; llc_while b c s}) (return s) }&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>llc_while_def</span><span> </span><span>llc_if_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>mwhile_unfold</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>    
+</span><span>      
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

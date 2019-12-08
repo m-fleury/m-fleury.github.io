@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IICF_Array_List32 (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IICF_Array_List32</h1>
+
+<span class="command">theory</span> <span class="name">IICF_Array_List32</span><br/>
+<span class="keyword">imports</span> <a href="Array_UInt.html"><span class="name">Array_UInt</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IICF_Array_List32</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Refine_Imperative_HOL.IICF_List&quot;</span></span></span><span>
+</span><span>  </span><span>Separation_Logic_Imperative_HOL.Array_Blit</span><span>
+</span><span>  </span><span>Array_UInt</span><span>
+</span><span>  </span><span>WB_Word_Assn</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span>array_list32</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a Heap.array &#215; uint32&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_array_list32 l &#8801; &#955;(a,n). &#8707;<span class="hidden">&#8681;</span><sub>A</sub>l&#39;. a &#8614;<span class="hidden">&#8681;</span><sub>a</sub> l&#39; * &#8593;(nat_of_uint32 n &#8804; length l&#39; &#8743; l = take (nat_of_uint32 n) l&#39; &#8743; length l&#39;&gt;0 &#8743; nat_of_uint32 n &#8804; uint32_max &#8743; length l&#39; &#8804; uint32_max)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_array_list32_prec</span><span class="delimiter">[</span><span>safe_constraint_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;precise is_array_list32&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_array_list32_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span class="delimiter">(</span><span>rule</span><span> </span><span>preciseI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span class="delimiter">(</span><span>simp</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span class="delimiter">)</span><span>
+</span><span>	</span><span class="keyword1"><span class="command">using</span></span><span> </span><span>preciseD</span><span> </span><span>snga_prec</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl32_empty &#8801; do {
+  a &#8592; Array.new initial_capacity default;
+  return (a,0)
+}&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl32_empty_sz init_cap &#8801; do {
+  a &#8592; Array.new (min uint32_max (max init_cap minimum_capacity)) default;
+  return (a,0)
+}&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>uint32_max_uint32</span><span> </span><span class="delimiter">::</span><span> </span><span>uint32</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uint32_max_uint32 = 2 ^32 - 1&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl32_append &#8801; &#955;(a,n) x. do {
+  len &#8592; length_u_code a;
+
+  if n&lt;len then do {
+    a &#8592; Array_upd_u n x a;
+    return (a,n+1)
+  } else do {
+    let newcap = (if len &lt; uint32_max_uint32 &gt;&gt; 1 then 2 * len else uint32_max_uint32);
+    a &#8592; array_grow a (nat_of_uint32 newcap) default;
+    a &#8592; Array_upd_u n x a;
+    return (a,n+1)
+  }
+}&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl32_copy &#8801; &#955;(a,n). do {
+  a &#8592; array_copy a;
+  return (a,n)
+}&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl32_length</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::heap array_list32 &#8658; uint32 Heap&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;arl32_length &#8801; &#955;(a,n). return (n)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl32_is_empty</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::heap array_list32 &#8658; bool Heap&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;arl32_is_empty &#8801; &#955;(a,n). return (n=0)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl32_last</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::heap array_list32 &#8658; &#39;a Heap&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;arl32_last &#8801; &#955;(a,n). do {
+    nth_u_code a (n - 1)
+  }&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl32_butlast</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::heap array_list32 &#8658; &#39;a array_list32 Heap&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;arl32_butlast &#8801; &#955;(a,n). do {
+    let n = n - 1;
+    len &#8592; length_u_code a;
+    if (n*4 &lt; len &#8743; nat_of_uint32 n*2&#8805;minimum_capacity) then do {
+      a &#8592; array_shrink a (nat_of_uint32 n*2);
+      return (a,n)
+    } else
+      return (a,n)
+  }&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl32_get</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::heap array_list32 &#8658; uint32 &#8658; &#39;a Heap&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;arl32_get &#8801; &#955;(a,n) i. nth_u_code a i&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl32_set</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::heap array_list32 &#8658; uint32 &#8658; &#39;a &#8658; &#39;a array_list32 Heap&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;arl32_set &#8801; &#955;(a,n) i x. do { a &#8592; heap_array_set_u a i x; return (a,n)}&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_empty_rule</span><span class="delimiter">[</span><span>sep_heap_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&lt; emp &gt; arl32_empty &lt;is_array_list32 []&gt;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_empty_def</span><span> </span><span>is_array_list32_def</span><span> </span><span>initial_capacity_def</span><span> </span><span>uint32_max_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_empty_sz_rule</span><span class="delimiter">[</span><span>sep_heap_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&lt; emp &gt; arl32_empty_sz N &lt;is_array_list32 []&gt;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_empty_sz_def</span><span> </span><span>is_array_list32_def</span><span> </span><span>minimum_capacity_def</span><span> </span><span>uint32_max_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_copy_rule</span><span class="delimiter">[</span><span>sep_heap_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&lt; is_array_list32 l a &gt; arl32_copy a &lt;&#955;r. is_array_list32 l a * is_array_list32 l r&gt;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_copy_def</span><span> </span><span>is_array_list32_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nat_of_uint32_shiftl</span><span class="delimiter">:</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat_of_uint32 (xs &gt;&gt; a) = nat_of_uint32 xs &gt;&gt; a&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>transfer</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>unat_shiftr</span><span> </span><span>nat_shifl_div</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat_of_uint32 uint32_max_uint32 = uint32_max&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span>  </span><span>nat_of_uint32_mult_le</span><span> </span><span>nat_of_uint32_shiftl</span><span> </span><span>uint32_max_uint32_def</span><span> </span><span>uint32_max_def</span><span class="delimiter">)</span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;2 * (uint32_max div 2) = uint32_max - 1&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span>  </span><span>nat_of_uint32_mult_le</span><span> </span><span>nat_of_uint32_shiftl</span><span> </span><span>uint32_max_uint32_def</span><span> </span><span>uint32_max_def</span><span class="delimiter">)</span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_append_rule</span><span class="delimiter">[</span><span>sep_heap_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length l &lt; uint32_max&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&lt; is_array_list32 l a &gt;
+      arl32_append a x
+    &lt;&#955;a. is_array_list32 (l@[x]) a &gt;<span class="hidden">&#8681;</span><sub>t</sub>&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#8896;x1 x2 y ys.
+       x2 &lt; uint32_of_nat ys &#10233;
+       nat_of_uint32 x2 &#8804; ys &#10233;
+       ys &#8804; uint32_max &#10233; nat_of_uint32 x2 &lt; ys&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>nat_of_uint32_less_iff</span><span> </span><span>nat_of_uint32_uint32_of_nat_id</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#8896;x2 ys. x2 &lt; uint32_of_nat (Suc (ys)) &#10233;
+       Suc (ys) &#8804; uint32_max &#10233;
+       nat_of_uint32 (x2 + 1) = 1 + nat_of_uint32 x2&#8250;</span></span></span><span>
+</span><span>     </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>ab_semigroup_add_class.add.commute</span><span> </span><span>le_neq_implies_less</span><span> </span><span>less_or_eq_imp_le</span><span>
+</span><span>         </span><span>less_trans_Suc</span><span> </span><span>linorder_neqE_nat</span><span> </span><span>nat_of_uint32_012</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>nat_of_uint32_add</span><span>
+</span><span>          </span><span>nat_of_uint32_less_iff</span><span> </span><span>nat_of_uint32_uint32_of_nat_id</span><span> </span><span>not_less_eq</span><span> </span><span>plus_1_eq_Suc</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#8896;x2a x2 ys. x2 &lt; uint32_of_nat (Suc (ys)) &#10233;
+       Suc (ys) &#8804; uint32_max &#10233;
+       nat_of_uint32 x2 = Suc x2a &#10233;Suc x2a &#8804; ys&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>less_Suc_eq_le</span><span> </span><span>nat_of_uint32_less_iff</span><span> </span><span>nat_of_uint32_uint32_of_nat_id</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#8896;ys. ys &#8804; uint32_max &#10233;
+       uint32_of_nat ys &#8804; uint32_max_uint32 &gt;&gt; Suc 0 &#10233;
+       nat_of_uint32 (2 * uint32_of_nat ys) = 2 * ys&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span class="delimiter">(</span><span>asm</span><span class="delimiter">)</span><span> </span><span>nat_of_uint32_le_iff</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>nat_of_uint32_uint32_of_nat_id</span><span> </span><span>uint32_max_uint32_def</span><span> </span><span>uint32_max_def</span><span> </span><span>nat_of_uint32_shiftl</span><span>
+</span><span>       </span><span>nat_of_uint32_mult_le</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#8896;ys. ys &#8804; uint32_max &#10233;
+       uint32_of_nat ys &#8804; uint32_max_uint32 &gt;&gt; Suc 0 &#10231; ys &#8804; uint32_max div 2&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>nat_of_uint32_le_iff</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>nat_of_uint32_uint32_of_nat_id</span><span> </span><span>uint32_max_uint32_def</span><span> </span><span>uint32_max_def</span><span> </span><span>nat_of_uint32_shiftl</span><span>
+</span><span>       </span><span>nat_of_uint32_mult_le</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#8896;ys. ys &#8804; uint32_max &#10233;
+       uint32_of_nat ys &lt; uint32_max_uint32 &gt;&gt; Suc 0 &#10231; ys &lt; uint32_max div 2&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>nat_of_uint32_less_iff</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>nat_of_uint32_uint32_of_nat_id</span><span> </span><span>uint32_max_uint32_def</span><span> </span><span>uint32_max_def</span><span> </span><span>nat_of_uint32_shiftl</span><span>
+</span><span>       </span><span>nat_of_uint32_mult_le</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span>
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_append_def</span><span> </span><span>is_array_list32_def</span><span> </span><span>take_update_last</span><span> </span><span>neq_Nil_conv</span><span> </span><span>nat_of_uint32_mult_le</span><span>
+</span><span>        </span><span>length_u_code_def</span><span>  </span><span>min_def</span><span> </span><span>nat_of_uint32_add</span><span> </span><span>nat_of_uint32_uint32_of_nat_id</span><span>
+</span><span>    </span><span>take_Suc_conv_app_nth</span><span> </span><span>list_update_append</span><span> </span><span>nat_of_uint32_0_iff</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span> </span><span>nat.split</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>Array_upd_u_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span>
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_append_def</span><span> </span><span>is_array_list32_def</span><span> </span><span>take_update_last</span><span> </span><span>neq_Nil_conv</span><span> </span><span>nat_of_uint32_mult_le</span><span>
+</span><span>        </span><span>length_u_code_def</span><span>  </span><span>min_def</span><span> </span><span>nat_of_uint32_add</span><span> </span><span>nat_of_uint32_uint32_of_nat_id</span><span>
+</span><span>        </span><span>take_Suc_conv_app_nth</span><span> </span><span>list_update_append</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span> </span><span>nat.split</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span>
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_append_def</span><span> </span><span>is_array_list32_def</span><span> </span><span>take_update_last</span><span> </span><span>neq_Nil_conv</span><span> </span><span>nat_of_uint32_mult_le</span><span>
+</span><span>        </span><span>length_u_code_def</span><span>  </span><span>min_def</span><span> </span><span>nat_of_uint32_add</span><span> </span><span>nat_of_uint32_uint32_of_nat_id</span><span>
+</span><span>        </span><span>take_Suc_conv_app_nth</span><span> </span><span>list_update_append</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span> </span><span>nat.split</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span>
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_append_def</span><span> </span><span>is_array_list32_def</span><span> </span><span>take_update_last</span><span> </span><span>neq_Nil_conv</span><span> </span><span>nat_of_uint32_mult_le</span><span>
+</span><span>        </span><span>length_u_code_def</span><span>  </span><span>min_def</span><span> </span><span>nat_of_uint32_add</span><span> </span><span>nat_of_uint32_uint32_of_nat_id</span><span>
+</span><span>        </span><span>take_Suc_conv_app_nth</span><span> </span><span>list_update_append</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span> </span><span>nat.split</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>Array_upd_u_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span>
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_append_def</span><span> </span><span>is_array_list32_def</span><span> </span><span>take_update_last</span><span> </span><span>neq_Nil_conv</span><span> </span><span>nat_of_uint32_mult_le</span><span>
+</span><span>        </span><span>length_u_code_def</span><span>  </span><span>min_def</span><span> </span><span>nat_of_uint32_add</span><span> </span><span>nat_of_uint32_uint32_of_nat_id</span><span>
+</span><span>        </span><span>take_Suc_conv_app_nth</span><span> </span><span>list_update_append</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span> </span><span>nat.split</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span>
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_append_def</span><span> </span><span>is_array_list32_def</span><span> </span><span>take_update_last</span><span> </span><span>neq_Nil_conv</span><span> </span><span>nat_of_uint32_mult_le</span><span>
+</span><span>        </span><span>length_u_code_def</span><span>  </span><span>min_def</span><span> </span><span>nat_of_uint32_add</span><span> </span><span>nat_of_uint32_uint32_of_nat_id</span><span>
+</span><span>        </span><span>take_Suc_conv_app_nth</span><span> </span><span>list_update_append</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span> </span><span>nat.split</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span>
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_append_def</span><span> </span><span>is_array_list32_def</span><span> </span><span>take_update_last</span><span> </span><span>neq_Nil_conv</span><span> </span><span>nat_of_uint32_mult_le</span><span>
+</span><span>        </span><span>length_u_code_def</span><span>  </span><span>min_def</span><span> </span><span>nat_of_uint32_add</span><span> </span><span>nat_of_uint32_uint32_of_nat_id</span><span>
+</span><span>        </span><span>take_Suc_conv_app_nth</span><span> </span><span>list_update_append</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span> </span><span>nat.split</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>Array_upd_u_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>frame_rule</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>upd_rule</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span>
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_append_def</span><span> </span><span>is_array_list32_def</span><span> </span><span>take_update_last</span><span> </span><span>neq_Nil_conv</span><span> </span><span>nat_of_uint32_mult_le</span><span>
+</span><span>        </span><span>length_u_code_def</span><span>  </span><span>min_def</span><span> </span><span>nat_of_uint32_add</span><span> </span><span>nat_of_uint32_uint32_of_nat_id</span><span>
+</span><span>        </span><span>take_Suc_conv_app_nth</span><span> </span><span>list_update_append</span><span> </span><span>nat_of_uint32_0_iff</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span> </span><span>nat.split</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span>
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_append_def</span><span> </span><span>is_array_list32_def</span><span> </span><span>take_update_last</span><span> </span><span>neq_Nil_conv</span><span> </span><span>nat_of_uint32_mult_le</span><span>
+</span><span>        </span><span>length_u_code_def</span><span>  </span><span>min_def</span><span> </span><span>nat_of_uint32_add</span><span> </span><span>nat_of_uint32_uint32_of_nat_id</span><span>
+</span><span>        </span><span>take_Suc_conv_app_nth</span><span> </span><span>list_update_append</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span>
+</span><span>    </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span> </span><span>nat.split</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_length_rule</span><span class="delimiter">[</span><span>sep_heap_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;
+  &lt;is_array_list32 l a&gt;
+    arl32_length a
+  &lt;&#955;r. is_array_list32 l a * &#8593;(nat_of_uint32 r=length l)&gt;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_length_def</span><span> </span><span>is_array_list32_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_is_empty_rule</span><span class="delimiter">[</span><span>sep_heap_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;
+  &lt;is_array_list32 l a&gt;
+    arl32_is_empty a
+  &lt;&#955;r. is_array_list32 l a * &#8593;(r&#10231;(l=[]))&gt;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_is_empty_def</span><span> </span><span>nat_of_uint32_0_iff</span><span> </span><span>is_array_list32_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nat_of_uint32_ge_minus</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;ai &#8805; bi &#10233;
+       nat_of_uint32 (ai - bi) = nat_of_uint32 ai - nat_of_uint32 bi&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>transfer</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>unat_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>uint_sub_lem</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>iffD1</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>unat_def</span><span> </span><span>uint_nonnegative</span><span> </span><span>nat_diff_distrib</span><span> </span><span>word_le_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>leI</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_last_rule</span><span class="delimiter">[</span><span>sep_heap_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;
+  l&#8800;[] &#10233;
+  &lt;is_array_list32 l a&gt;
+    arl32_last a
+  &lt;&#955;r. is_array_list32 l a * &#8593;(r=last l)&gt;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_last_def</span><span> </span><span>is_array_list32_def</span><span> </span><span>nth_u_code_def</span><span> </span><span>Array.nth&#39;_def</span><span> </span><span>last_take_nth_conv</span><span>
+</span><span>    </span><span>nat_of_integer_integer_of_nat</span><span> </span><span>nat_of_uint32_ge_minus</span><span>  </span><span>nat_of_uint32_le_iff</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>simp</span><span> </span><span>flip</span><span class="delimiter">:</span><span> </span><span>nat_of_uint32_code</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_get_rule</span><span class="delimiter">[</span><span>sep_heap_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;
+  i&lt;length l &#10233; (i&#39;, i) &#8712; uint32_nat_rel &#10233;
+  &lt;is_array_list32 l a&gt;
+    arl32_get a i&#39;
+  &lt;&#955;r. is_array_list32 l a * &#8593;(r=l!i)&gt;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_get_def</span><span> </span><span>nth_u_code_def</span><span> </span><span>is_array_list32_def</span><span> </span><span>uint32_nat_rel_def</span><span>
+</span><span>   </span><span>Array.nth&#39;_def</span><span> </span><span>br_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.split</span><span> </span><span>simp</span><span> </span><span>flip</span><span class="delimiter">:</span><span> </span><span>nat_of_uint32_code</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_set_rule</span><span class="delimiter">[</span><span>sep_heap_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;
+  i&lt;length l &#10233; (i&#39;, i) &#8712; uint32_nat_rel &#10233;
+  &lt;is_array_list32 l a&gt;
+    arl32_set a i&#39; x
+  &lt;is_array_list32 (l[i:=x])&gt;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_set_def</span><span> </span><span>is_array_list32_def</span><span> </span><span>heap_array_set_u_def</span><span>  </span><span>uint32_nat_rel_def</span><span>
+</span><span>   </span><span>heap_array_set&#39;_u_def</span><span> </span><span>br_def</span><span> </span><span>Array.upd&#39;_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.split</span><span> </span><span>simp</span><span> </span><span>flip</span><span class="delimiter">:</span><span> </span><span>nat_of_uint32_code</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl32_assn A &#8801; hr_comp is_array_list32 (&#10216;the_pure A&#10217;list_rel)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>safe_constraint_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>CN_FALSEI</span><span class="delimiter">[</span><span>of</span><span> </span><span>is_pure</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl32_assn A&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>A</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_assn_comp</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_pure A &#10233; hr_comp (arl32_assn A) (&#10216;B&#10217;list_rel) = arl32_assn (hr_comp A B)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arl32_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>hr_comp_the_pure</span><span> </span><span>hr_comp_assoc</span><span> </span><span>list_rel_compp</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_assn_comp&#39;</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hr_comp (arl32_assn id_assn) (&#10216;B&#10217;list_rel) = arl32_assn (pure B)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>arl32_assn_comp</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">notes</span></span><span> </span><span class="delimiter">[</span><span>fcomp_norm_unfold</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>arl32_assn_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>arl32_assn_comp&#39;</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">notes</span></span><span> </span><span class="delimiter">[</span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>hfrefI</span><span> </span><span>hn_refineI</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>hn_refine_preI</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">notes</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>pure_def</span><span> </span><span>hn_ctxt_def</span><span> </span><span>invalid_assn_def</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_empty_hnr_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(uncurry0 arl32_empty,uncurry0 (RETURN op_list_empty)) &#8712; unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> is_array_list32&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sep_auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>no_register</span><span class="delimiter">)</span><span> </span><span>arl32_empty</span><span class="delimiter">:</span><span> </span><span>arl32_empty_hnr_aux</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_empty_sz_hnr_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(uncurry0 (arl32_empty_sz N),uncurry0 (RETURN op_list_empty)) &#8712; unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> is_array_list32&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sep_auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>no_register</span><span class="delimiter">)</span><span> </span><span>arl32_empty_sz</span><span class="delimiter">:</span><span> </span><span>arl32_empty_sz_hnr_aux</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;op_arl32_empty &#8801; op_list_empty&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;op_arl32_empty_sz (N::nat) &#8801; op_list_empty&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_copy_hnr_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(arl32_copy,RETURN o op_list_copy) &#8712; is_array_list32<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> is_array_list32&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sep_auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span>arl32_copy</span><span class="delimiter">:</span><span> </span><span>arl32_copy_hnr_aux</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_append_hnr_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(uncurry arl32_append,uncurry (RETURN oo op_list_append)) &#8712; [&#955;(xs, x). length xs &lt; uint32_max]<span class="hidden">&#8681;</span><sub>a</sub> (is_array_list32<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> id_assn<span class="hidden">&#8679;</span><sup>k</sup>) &#8594; is_array_list32&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sep_auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span>arl32_append</span><span class="delimiter">:</span><span> </span><span>arl32_append_hnr_aux</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fref_param1</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>list_rel_imp_same_length</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_length_hnr_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(arl32_length,RETURN o op_list_length) &#8712; is_array_list32<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>uint32_nat_rel_def</span><span> </span><span>br_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span>arl32_length</span><span class="delimiter">:</span><span> </span><span>arl32_length_hnr_aux</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_is_empty_hnr_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(arl32_is_empty,RETURN o op_list_is_empty) &#8712; is_array_list32<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool_assn&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sep_auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span>arl32_is_empty</span><span class="delimiter">:</span><span> </span><span>arl32_is_empty_hnr_aux</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_last_hnr_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(arl32_last,RETURN o op_list_last) &#8712; [pre_list_last]<span class="hidden">&#8681;</span><sub>a</sub> is_array_list32<span class="hidden">&#8679;</span><sup>k</sup> &#8594; id_assn&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sep_auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span>arl32_last</span><span class="delimiter">:</span><span> </span><span>arl32_last_hnr_aux</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*  lemma arl32_butlast_hnr_aux: &quot;(arl32_butlast,RETURN o op_list_butlast) &#8712; [pre_list_butlast]<span class="hidden">&#8681;</span><sub>a</sub> is_array_list32<span class="hidden">&#8679;</span><sup>d</sup> &#8594; is_array_list32&quot;
+    by sep_auto
+  sepref_decl_impl arl32_butlast: arl32_butlast_hnr_aux . *)</span></span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_get_hnr_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(uncurry arl32_get,uncurry (RETURN oo op_list_get)) &#8712; [&#955;(l,i). i&lt;length l]<span class="hidden">&#8681;</span><sub>a</sub> (is_array_list32<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup>) &#8594; id_assn&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sep_auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span>arl32_get</span><span class="delimiter">:</span><span> </span><span>arl32_get_hnr_aux</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_set_hnr_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(uncurry2 arl32_set,uncurry2 (RETURN ooo op_list_set)) &#8712; [&#955;((l,i),_). i&lt;length l]<span class="hidden">&#8681;</span><sub>a</sub> (is_array_list32<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> id_assn<span class="hidden">&#8679;</span><sup>k</sup>) &#8594; is_array_list32&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sep_auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span>arl32_set</span><span class="delimiter">:</span><span> </span><span>arl32_set_hnr_aux</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>arl32_swap</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry2 mop_list_swap&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;((arl32_assn id_assn)<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> arl32_assn id_assn)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>gen_mop_list_swap</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>ismop</span><span class="delimiter">)</span><span> </span><span>arl32_swap</span><span class="delimiter">:</span><span> </span><span>arl32_swap.refine</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>arl32</span><span class="delimiter">:</span><span> </span><span>list_custom_empty</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl32_assn A&quot;</span></span></span><span> </span><span>arl32_empty</span><span> </span><span>op_arl32_empty</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>unfold_locales</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>arl32_empty_hnr</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>op_arl32_empty_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>def_pat_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;op_arl32_empty_sz$N &#8801; UNPROTECT (op_arl32_empty_sz N)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>arl32_sz</span><span class="delimiter">:</span><span> </span><span>list_custom_empty</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl32_assn A&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl32_empty_sz N&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PR_CONST (op_arl32_empty_sz N)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>unfold_locales</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>arl32_empty_sz_hnr</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>op_arl32_empty_sz_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl32_to_arl_conv</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;arl32_to_arl_conv S = S&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl32_to_arl</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#39;a array_list32 &#8658; &#39;a array_list&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;arl32_to_arl = (&#955;(xs, n). (xs, nat_of_uint32 n))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_to_arl_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(return o arl32_to_arl, RETURN o arl32_to_arl_conv) &#8712; (arl32_assn R)<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> arl_assn R&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sepref_to_hoare</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_to_arl_def</span><span> </span><span>arl32_to_arl_conv_def</span><span> </span><span>arl_assn_def</span><span> </span><span>arl32_assn_def</span><span> </span><span>is_array_list32_def</span><span>
+</span><span>     </span><span>is_array_list_def</span><span> </span><span>hr_comp_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl32_take</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;arl32_take n = (&#955;(xs, _). (xs, n))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arl32_take</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry (return oo arl32_take), uncurry (RETURN oo take)) &#8712;
+    [&#955;(n, xs). n &#8804; length xs]<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (arl32_assn R)<span class="hidden">&#8679;</span><sup>d</sup> &#8594; arl32_assn R&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sepref_to_hoare</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_assn_def</span><span> </span><span>arl32_take_def</span><span> </span><span>is_array_list32_def</span><span> </span><span>hr_comp_def</span><span>
+</span><span>      </span><span>uint32_nat_rel_def</span><span> </span><span>br_def</span><span> </span><span>list_rel_def</span><span> </span><span>list_all2_conv_all_nth</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>arl32_butlast_nonresizing</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#39;a array_list32 &#8658; &#39;a array_list32&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;arl32_butlast_nonresizing = (&#955;(xs, a). (xs, a - 1))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>butlast32_nonresizing_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(return o arl32_butlast_nonresizing, RETURN o butlast_nonresizing) &#8712;
+    [&#955;xs. xs &#8800; []]<span class="hidden">&#8681;</span><sub>a</sub> (arl32_assn R)<span class="hidden">&#8679;</span><sup>d</sup> &#8594; arl32_assn R&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat_of_uint32 (b - 1) = nat_of_uint32 b - 1&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">if</span></span><span>
+</span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;x &#8800; []&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(take (nat_of_uint32 b) l&#39;, x) &#8712; &#10216;the_pure R&#10217;list_rel&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#39;b list&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>a</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#39;a array&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>b</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uint32&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>l&#39;</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#39;a list&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>aa</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Heap.heap&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>ba</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat set&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>less_one</span><span> </span><span>list_rel_pres_neq_nil</span><span> </span><span>nat_of_uint32_012</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>nat_of_uint32_less_iff</span><span>
+</span><span>    </span><span>nat_of_uint32_notle_minus</span><span> </span><span>take_eq_Nil</span><span> </span><span>that</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>     </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arl32_butlast_nonresizing_def</span><span> </span><span>arl32_assn_def</span><span> </span><span>hr_comp_def</span><span>
+</span><span>       </span><span>is_array_list32_def</span><span>  </span><span>butlast_take</span><span> </span><span>list_rel_imp_same_length</span><span> </span><span>nat_of_uint32_ge_minus</span><span>
+</span><span>      </span><span>dest</span><span class="delimiter">:</span><span>
+</span><span>        </span><span>list_rel_butlast</span><span class="delimiter">[</span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;take _ _&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>      </span><span>simp</span><span> </span><span>flip</span><span class="delimiter">:</span><span> </span><span>nat_of_uint32_le_iff</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

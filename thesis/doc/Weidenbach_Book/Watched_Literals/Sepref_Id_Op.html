@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Sepref_Id_Op (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Sepref_Id_Op</h1>
+
+<span class="command">theory</span> <span class="name">Sepref_Id_Op</span><br/>
+<span class="keyword">imports</span> <a href="../../AFP/Automatic_Refinement/Autoref_Tagging.html"><span class="name">Autoref_Tagging</span></a> <a href="../../AFP/Sepref_Basic/Named_Theorems_Rev.html"><span class="name">Named_Theorems_Rev</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Operation Identification Phase&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Sepref_Id_Op</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> 
+</span><span>  </span><span>Main</span><span> 
+</span><span>  </span><span>Automatic_Refinement.Refine_Lib</span><span>
+</span><span>  </span><span>Automatic_Refinement.Autoref_Tagging</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Refine_Imperative_HOL.Named_Theorems_Rev&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  The operation identification phase is adapted from the Autoref tool.
+  The basic idea is to have a type system, which works on so called 
+  interface types (also called conceptual types). Each conceptual type
+  denotes an abstract data type, e.g., set, map, priority queue.
+  
+  Each abstract operation, which must be a constant applied to its arguments,
+  is assigned a conceptual type. Additionally, there is a set of 
+  {\emph pattern rewrite rules},
+  which are applied to subterms before type inference takes place, and 
+  which may be backtracked over. 
+  This way, encodings of abstract operations in Isabelle/HOL, like 
+  @{term [source] &quot;&#955;_. None&quot;} for the empty map, 
+  or @{term [source] &quot;fun_upd m k (Some v)&quot;} for map update, can be rewritten
+  to abstract operations, and get properly typed.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Proper Protection of Term&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; The following constants are meant to encode abstraction and 
+  application as proper HOL-constants, and thus avoid strange effects with
+  HOL&#39;s higher-order unification heuristics and automatic 
+  beta and eta-contraction.
+
+  The first step of operation identification is to protect the term
+  by replacing all function applications and abstractions be 
+  the constants defined below.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PROTECT2 x (y::prop) &#8801; x&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">consts</span></span><span> </span><span>DUMMY</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prop&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>PROTECT2_syn</span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;&#39;(#_#&#39;)&quot;</span></span></span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PROTECT2_syn t &#8801; PROTECT2 t DUMMY&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="delimiter">(</span><span>input</span><span class="delimiter">)</span><span>ABS2</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a&#8658;&#39;b)&#8658;&#39;a&#8658;&#39;b&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">binder</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#955;<span class="hidden">&#8681;</span><sub>2</sub>&quot;</span></span></span><span> </span><span>10</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ABS2 f &#8801; (&#955;x. PROTECT2 (f x) DUMMY)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>beta</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#955;<span class="hidden">&#8681;</span><sub>2</sub>x. f x)$x &#8801; f x&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Another version of @{const &quot;APP&quot;}. Treated like @{const APP} by our tool.
+  Required to avoid infinite pattern rewriting in some cases, e.g., map-lookup.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>APP&#39;</span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infixl</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;$&#39;&#39;&quot;</span></span></span><span> </span><span>900</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>autoref_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f$&#39;a &#8801; f a&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Sometimes, whole terms should be protected from being processed by our tool.
+  For example, our tool should not look into numerals. For this reason,
+  the @{text &quot;PR_CONST&quot;} tag indicates terms that our tool shall handle as
+  atomic constants, an never look into them.
+
+  The special form @{text &quot;UNPROTECT&quot;} can be used inside pattern rewrite rules.
+  It has the effect to revert the protection from its argument, and then wrap
+  it into a @{text &quot;PR_CONST&quot;}.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>autoref_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PR_CONST x &#8801; x&quot;</span></span></span><span> </span><span class="comment">&#8213; &#8249;Tag to protect constant&#8250;</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>autoref_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;UNPROTECT x &#8801; x&quot;</span></span></span><span> </span><span class="comment">&#8213; &#8249;Gets 
+  converted to @{term PR_CONST}, after unprotecting its content&#8250;</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="verbatim"><span class="delete"><span class="delete"><span class="delete"><span class="delete">{* Operation Identification *}</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; Indicator predicate for conceptual typing of a constant &#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>intf_type</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;b itself &#8658; bool&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infix</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;::<span class="hidden">&#8681;</span><sub>i</sub>&quot;</span></span></span><span> </span><span>10</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;c::<span class="hidden">&#8681;</span><sub>i</sub>I &#8801; True&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>itypeI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;c::<span class="hidden">&#8681;</span><sub>i</sub>I&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>itypeI&#39;</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;intf_type c TYPE(&#39;T)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>itypeI</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>itype_self</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(c::&#39;a) ::<span class="hidden">&#8681;</span><sub>i</sub> TYPE(&#39;a)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>CTYPE_ANNOT</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;b &#8658; &#39;a itself &#8658; &#39;b&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infix</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;:::<span class="hidden">&#8681;</span><sub>i</sub>&quot;</span></span></span><span> </span><span>10</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;c:::<span class="hidden">&#8681;</span><sub>i</sub>I &#8801; c&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; Wrapper predicate for an conceptual type inference &#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ID</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;a &#8658; &#39;c itself &#8658; bool&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ID t t&#39; T &#8801; t=t&#39;&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="verbatim"><span class="delete"><span class="delete"><span class="delete"><span class="delete">{* Conceptual Typing Rules *}</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ID_unfold_vars</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ID x y T &#10233; x&#8801;y&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ID_PR_CONST_trigger</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ID (PR_CONST x) y T &#10233; ID (PR_CONST x) y T&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pat_rule</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; p&#8801;p&#39;; ID p&#39; t&#39; T &#10215; &#10233; ID p t&#39; T&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>app_rule</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; ID f f&#39; TYPE(&#39;a&#8658;&#39;b); ID x x&#39; TYPE(&#39;a)&#10215; &#10233; ID (f$x) (f&#39;$x&#39;) TYPE(&#39;b)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>app&#39;_rule</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; ID f f&#39; TYPE(&#39;a&#8658;&#39;b); ID x x&#39; TYPE(&#39;a)&#10215; &#10233; ID (f$&#39;x) (f&#39;$x&#39;) TYPE(&#39;b)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>abs_rule</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; &#8896;x x&#39;. ID x x&#39; TYPE(&#39;a) &#10233; ID (t x) (t&#39; x x&#39;) TYPE(&#39;b) &#10215; &#10233;
+    ID (&#955;<span class="hidden">&#8681;</span><sub>2</sub>x. t x) (&#955;<span class="hidden">&#8681;</span><sub>2</sub>x&#39;. t&#39; x&#39; x&#39;) TYPE(&#39;a&#8658;&#39;b)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>id_rule</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;c::<span class="hidden">&#8681;</span><sub>i</sub>I &#10233; ID c c I&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>annot_rule</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ID t t&#39; I &#10233; ID (t:::<span class="hidden">&#8681;</span><sub>i</sub>I) t&#39; I&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fallback_rule</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;ID (c::&#39;a) c TYPE(&#39;c)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>unprotect_rl1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ID (PR_CONST x) t T &#10233; ID (UNPROTECT x) t T&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; ML-Level code &#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+infix 0 THEN_ELSE_COMB&#39;
+
+signature ID_OP_TACTICAL = sig
+  val SOLVE_FWD: tactic&#39; -&gt; tactic&#39;
+  val DF_SOLVE_FWD: bool -&gt; tactic&#39; -&gt; tactic&#39;
+end
+
+structure Id_Op_Tactical :ID_OP_TACTICAL = struct
+
+  fun SOLVE_FWD tac i st = SOLVED&#39; (
+    tac 
+    THEN_ALL_NEW_FWD (SOLVE_FWD tac)) i st
+
+
+  (* Search for solution with DFS-strategy. If dbg-flag is given,
+    return sequence of stuck states if no solution is found.
+  *)
+  fun DF_SOLVE_FWD dbg tac = let
+    val stuck_list_ref = Unsynchronized.ref []
+
+    fun stuck_tac _ st = if dbg then (
+      stuck_list_ref := st :: !stuck_list_ref;
+      Seq.empty
+    ) else Seq.empty
+
+    fun rec_tac i st = (
+        (tac THEN_ALL_NEW_FWD (SOLVED&#39; rec_tac))
+        ORELSE&#39; stuck_tac
+      ) i st
+
+    fun fail_tac _ _ = if dbg then
+      Seq.of_list (rev (!stuck_list_ref))
+    else Seq.empty
+  in
+    rec_tac ORELSE&#39; fail_tac    
+  end
+
+end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">named_theorems_rev</span></span><span> </span><span>id_rules</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Operation identification rules&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">named_theorems_rev</span></span><span> </span><span>pat_rules</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Operation pattern rules&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">named_theorems_rev</span></span><span> </span><span>def_pat_rules</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Definite operation pattern rules (not backtracked over)&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+
+  structure Id_Op = struct
+
+    fun id_a_conv cnv ct = case Thm.term_of ct of
+      @{mpat &quot;ID _ _ _&quot;} =&gt; Conv.fun_conv (Conv.fun_conv (Conv.arg_conv cnv)) ct
+    | _ =&gt; raise CTERM(&quot;id_a_conv&quot;,[ct])
+
+    fun 
+      protect env (@{mpat &quot;?t:::<span class="hidden">&#8681;</span><sub>i</sub>?I&quot;}) = let
+        val t = protect env t
+      in 
+        @{mk_term env: &quot;?t:::<span class="hidden">&#8681;</span><sub>i</sub>?I&quot;}
+      end
+    | protect _ (t as @{mpat &quot;PR_CONST _&quot;}) = t
+    | protect env (t1$t2) = let
+        val t1 = protect env t1
+        val t2 = protect env t2
+      in
+        @{mk_term env: &quot;?t1.0 $ ?t2.0&quot;}
+      end
+    | protect env (Abs (x,T,t)) = let
+        val env&#39; = T::env
+        val t = protect env&#39; t
+        val t = @{mk_term env&#39;: &quot;PROTECT2 ?t DUMMY&quot;}
+      in
+        Abs (x,T,t)
+      end
+    (* TODO: Avoiding mk_term with loose vars under &#955;! Fix that!
+    | protect env (Abs (x,T,t)) = let
+        val t = protect (T::env) t
+      in
+        @{mk_term env: &quot;&#955;v_x::?&#39;v_T. PROTECT2 ?t DUMMY&quot;}
+      end
+    *)  
+    | protect _ t = t
+
+    fun protect_conv ctxt = Refine_Util.f_tac_conv ctxt
+      (protect []) 
+      (simp_tac 
+        (put_simpset HOL_basic_ss ctxt addsimps @{thms PROTECT2_def APP_def}) 1)
+
+    fun unprotect_conv ctxt
+      = Simplifier.rewrite (put_simpset HOL_basic_ss ctxt 
+        addsimps @{thms PROTECT2_def APP_def})
+
+    fun do_unprotect_tac ctxt =
+      resolve_tac ctxt @{thms unprotect_rl1} THEN&#39;
+      CONVERSION (Refine_Util.HOL_concl_conv (fn ctxt =&gt; id_a_conv (unprotect_conv ctxt)) ctxt)
+
+    val cfg_id_debug = 
+      Attrib.setup_config_bool @{binding id_debug} (K false)
+
+    val cfg_id_trace_fallback = 
+      Attrib.setup_config_bool @{binding id_trace_fallback} (K false)
+
+    fun dest_id_rl thm = case Thm.concl_of thm of
+      @{mpat (typs) &quot;Trueprop (?c::<span class="hidden">&#8681;</span><sub>i</sub>TYPE(?&#39;v_T))&quot;} =&gt; (c,T)
+    | _ =&gt; raise THM(&quot;dest_id_rl&quot;,~1,[thm])
+
+    
+    val add_id_rule = snd oo Thm.proof_attributes [Named_Theorems_Rev.add @{named_theorems_rev id_rules}]
+
+    datatype id_tac_mode = Init | Step | Normal | Solve
+
+    fun id_tac ss ctxt = let
+      open Id_Op_Tactical
+      val certT = Thm.ctyp_of ctxt
+      val cert = Thm.cterm_of ctxt
+
+      val thy = Proof_Context.theory_of ctxt
+
+      val id_rules = Named_Theorems_Rev.get ctxt @{named_theorems_rev id_rules}
+      val pat_rules = Named_Theorems_Rev.get ctxt @{named_theorems_rev pat_rules}
+      val def_pat_rules = Named_Theorems_Rev.get ctxt @{named_theorems_rev def_pat_rules}
+
+      val rl_net = Tactic.build_net (
+        (pat_rules |&gt; map (fn thm =&gt; thm RS @{thm pat_rule})) 
+        @ @{thms annot_rule app_rule app&#39;_rule abs_rule} 
+        @ (id_rules |&gt; map (fn thm =&gt; thm RS @{thm id_rule}))
+      )
+
+      val def_rl_net = Tactic.build_net (
+        (def_pat_rules |&gt; map (fn thm =&gt; thm RS @{thm pat_rule}))
+      )  
+
+      val id_pr_const_rename_tac = 
+          resolve_tac ctxt @{thms ID_PR_CONST_trigger} THEN&#39;
+          Subgoal.FOCUS (fn { context=ctxt, prems, ... } =&gt; 
+            let
+              fun is_ID @{mpat &quot;Trueprop (ID _ _ _)&quot;} = true | is_ID _ = false
+              val prems = filter (Thm.prop_of #&gt; is_ID) prems
+              val eqs = map (fn thm =&gt; thm RS @{thm ID_unfold_vars}) prems
+              val conv = Conv.rewrs_conv eqs
+              val conv = fn ctxt =&gt; (Conv.top_sweep_conv (K conv) ctxt)
+              val conv = fn ctxt =&gt; Conv.fun2_conv (Conv.arg_conv (conv ctxt))
+              val conv = Refine_Util.HOL_concl_conv conv ctxt
+            in CONVERSION conv 1 end 
+          ) ctxt THEN&#39;
+          resolve_tac ctxt @{thms id_rule} THEN&#39;
+          resolve_tac ctxt id_rules 
+
+      val ityping = id_rules 
+        |&gt; map dest_id_rl
+        |&gt; filter (is_Const o #1)
+        |&gt; map (apfst (#1 o dest_Const))
+        |&gt; Symtab.make_list
+
+      val has_type = Symtab.defined ityping
+
+      fun mk_fallback name cT =
+        case try (Sign.the_const_constraint thy) name of
+          SOME T =&gt; try (Thm.instantiate&#39; 
+                          [SOME (certT cT), SOME (certT T)] [SOME (cert (Const (name,cT)))])
+                        @{thm fallback_rule} 
+        | NONE =&gt; NONE
+
+      fun trace_fallback thm = 
+        Config.get ctxt cfg_id_trace_fallback       
+        andalso let 
+          open Pretty
+          val p = block [str &quot;ID_OP: Applying fallback rule: &quot;, Thm.pretty_thm ctxt thm]
+        in 
+          string_of p |&gt; tracing; 
+          false
+        end  
+
+      val fallback_tac = CONVERSION Thm.eta_conversion THEN&#39; IF_EXGOAL (fn i =&gt; fn st =&gt;
+        case Logic.concl_of_goal (Thm.prop_of st) i of
+          @{mpat &quot;Trueprop (ID (mpaq_STRUCT (mpaq_Const ?name ?cT)) _ _)&quot;} =&gt; (
+            if not (has_type name) then 
+              case mk_fallback name cT of
+                SOME thm =&gt; (trace_fallback thm; resolve_tac ctxt [thm] i st)
+              | NONE =&gt; Seq.empty  
+            else Seq.empty
+          )
+        | _ =&gt; Seq.empty)
+
+      val init_tac = CONVERSION (
+        Refine_Util.HOL_concl_conv (fn ctxt =&gt; (id_a_conv (protect_conv ctxt))) 
+          ctxt
+      )
+
+      val step_tac = (FIRST&#39; [
+        assume_tac ctxt, 
+        eresolve_tac ctxt @{thms id_rule},
+        resolve_from_net_tac ctxt def_rl_net, 
+        resolve_from_net_tac ctxt rl_net, 
+        id_pr_const_rename_tac,
+        do_unprotect_tac ctxt, 
+        fallback_tac])
+
+      val solve_tac = DF_SOLVE_FWD (Config.get ctxt cfg_id_debug) step_tac  
+
+    in
+      case ss of
+        Init =&gt; init_tac 
+      | Step =&gt; step_tac 
+      | Normal =&gt; init_tac THEN&#39; solve_tac
+      | Solve =&gt; solve_tac
+
+    end
+
+  end
+
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Default Setup&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Numerals&#8250;</span></span></span><span> 
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Either remove, or also add numerals 0 and 1! *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pat_numeral</span><span class="delimiter">[</span><span>def_pat_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;numeral$x &#8801; UNPROTECT (numeral$x)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>id_nat_const</span><span class="delimiter">[</span><span>id_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(PR_CONST (a::nat)) ::<span class="hidden">&#8681;</span><sub>i</sub> TYPE(nat)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>id_int_const</span><span class="delimiter">[</span><span>id_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(PR_CONST (a::int)) ::<span class="hidden">&#8681;</span><sub>i</sub> TYPE(int)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*subsection &#8249;Example&#8250;
+schematic_lemma 
+  &quot;ID (&#955;a b. (b(1::int&#8614;2::nat) |`(-{3})) a, Map.empty, &#955;a. case a of None &#8658; Some a | Some _ &#8658; None) (?c) (?T::?&#39;d itself)&quot;
+  (*&quot;TERM (?c,?T)&quot;*)
+  using [[id_debug]]
+  apply (tactic {* Id_Op.id_tac Id_Op.Normal @{context} 1  *})  
+  done
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Monadify (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Monadify</h1>
+
+<span class="command">theory</span> <span class="name">Monadify</span><br/>
+<span class="keyword">imports</span> <a href="../../AFP/Automatic_Refinement/Refine_Util.html"><span class="name">Refine_Util</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Move to lib/ *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Monadify</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Automatic_Refinement.Refine_Util&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Move *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+    (* Simplified output of rough term structure, for debugging purposes *)
+    structure Simplified_Term_Struct : sig
+      val tstruct: term -&gt; string
+    end = struct
+      fun par b s = if b then &quot;(&quot;^s^&quot;)&quot; else s
+    
+      fun psi_aux p env = let
+        fun r (Const (n,_)) = Long_Name.base_name n
+          | r (Var (n,_)) = Term.string_of_vname n
+          | r (Free (n,_)) = n
+          | r (Bound i) = nth env i
+          | r (Abs (x,_,t)) = par p (let val x = singleton (Name.variant_list env) x in &quot;&#955;&quot;^x^&quot;. &quot;^psi_aux false (x::env) t end)
+          | r (t as _$_) = let
+              val (f,args) = strip_comb t
+              val f = psi_aux true env f
+              val args = map (psi_aux true env) args |&gt; space_implode &quot; &quot;
+              val s = f^&quot; &quot;^args
+            in par p s end    
+      in
+        r
+      end
+      
+      val tstruct = psi_aux false []
+    end
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>eta_expand</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8801; &#955;x. f x&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>reflexive</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+    functor Gen_Monadify (
+      (*
+        Assumes that the monad combinators have the form return$x and bind$m$f
+      *)
+    
+      val mk_return: term -&gt; term
+      val mk_bind: term -&gt; term -&gt; term
+      val dest_return: term -&gt; term option
+      val dest_bind: term -&gt; (term * term) option
+      val dest_monadT: typ -&gt; typ option
+      val strip_op: Proof.context -&gt; term -&gt; term * term list
+
+      (* TODO: Probably can derive mk and dest functions from these theorems! *)
+      val bind_return_thm : thm  (* bind m return = m *)
+      val return_bind_thm : thm  (* bind (return x) f = f x  *)
+      val bind_bind_thm : thm    (* bind (bind m f) g = bind m (&#955;x. bind (f x) g) *)
+          
+    ) = struct
+
+      
+    
+      val monad_laws = [bind_return_thm, return_bind_thm, bind_bind_thm]
+      
+      
+      val is_return = is_some o dest_return
+      val is_bind = is_some o dest_bind
+    
+      val dest_monadT&#39; = the o dest_monadT
+      val is_monadT = is_some o dest_monadT
+      val is_monadic = is_monadT o fastype_of
+      
+      
+      local open Conv in
+
+        (* TODO: Move, generally useful *)
+        (* Apply conversion to direct subterms, fail if conversion fails for a subterm *)
+        fun sub_conv&#39; conv ctxt ct = (case Thm.term_of ct of
+          Abs _ =&gt; abs_conv (conv o snd) ctxt
+        | _$_ =&gt; comb_conv (conv ctxt)  
+        | _ =&gt; all_conv
+        ) ct
+
+      end          
+              
+      local 
+        open Conv 
+        
+        fun ensure_eta_conv ct = 
+          (case Thm.term_of ct of 
+            Abs _ =&gt; all_conv
+          | _ =&gt; rewr_conv @{thm eta_expand}
+          ) ct
+          
+        fun expand_return_thm ctxt =
+          Local_Defs.meta_rewrite_rule ctxt bind_return_thm
+          RS @{thm Pure.symmetric}
+          
+      in  
+        
+        fun eta_ret_conv ctxt ct = (let 
+          val t = Thm.term_of ct 
+          val bnd_conv = 
+            arg_conv ensure_eta_conv 
+            then_conv arg1_conv (sub_conv&#39; eta_ret_conv ctxt)
+            then_conv arg_conv (abs_conv (eta_ret_conv o snd) ctxt)
+            
+        in
+          if is_monadic t then
+            if is_bind t then bnd_conv
+            else if is_return t then arg_conv (eta_ret_conv ctxt)
+            else rewr_conv (expand_return_thm ctxt) then_conv bnd_conv
+          else
+            sub_conv&#39; eta_ret_conv ctxt
+        end) ct
+        
+      end  
+      
+      
+      (* Generate a bind, the second term is created by F x, where x is the bound variable *)
+      fun BIND M F ctxt = let
+        val m = M ctxt
+        val T = fastype_of m |&gt; dest_monadT&#39;
+        val (n,ctxt) = yield_singleton Variable.variant_fixes &quot;tmp&quot; ctxt
+        val x = Free (n,T)
+        
+        val f = Term.lambda x (F x ctxt)
+      in 
+        mk_bind m f
+      end
+
+      fun ABS_CNV (x,T,t) cnv ctxt = let
+        val (n,ctxt) = yield_singleton Variable.variant_fixes x ctxt
+        val t = subst_bound (Free (n,T), t)
+        val t = cnv t ctxt
+        val t = Term.absfree (n,T) t
+      in t end  
+          
+      fun mk_return&#39; t _ = mk_return t
+      
+      fun is_operand (Free _) = true
+        | is_operand (Var _) = true
+        | is_operand (Bound _) = true
+        | is_operand _ = false
+
+      val is_ho_operand = fastype_of #&gt; body_type #&gt; is_monadT
+             
+      fun process_ho_operand t = let
+        val (argTs,T) = fastype_of t |&gt; strip_type
+      in
+        is_monadT T andalso length (strip_abs_vars t) = length argTs
+      end  
+      
+       
+      fun mk_operand t F = 
+        if is_operand t then F t 
+        else if is_ho_operand t then fn ctxt =&gt; F (mk_monadify_all t ctxt) ctxt
+        else BIND (mk_operation t mk_return&#39;) F
+      and mk_operation t F ctxt = let
+            val (f,xs) = strip_op ctxt t
+            fun R t [] = F t | R t (x::xs) = mk_operand x (fn x =&gt; R (t$x) xs)
+          in
+            R f xs ctxt
+          end
+      and mk_monadify (Abs xTt) = ABS_CNV xTt mk_monadify
+        | mk_monadify t = case dest_return t of
+            SOME x =&gt; mk_operation x mk_return&#39;
+          | NONE =&gt; mk_operation t (fn t =&gt; K t)
+      and mk_monadify_all (Abs xTt) = ABS_CNV xTt mk_monadify_all
+        | mk_monadify_all t = 
+            if is_monadT (fastype_of t) then mk_monadify t 
+            else fn ctxt =&gt;
+              strip_comb t |&gt; apsnd (map (fn t =&gt; mk_monadify_all t ctxt)) |&gt; list_comb
+            
+      
+      fun monadify ctxt t = mk_monadify t (Variable.declare_term t ctxt |&gt; Variable.set_body false)
+          
+      fun monadify_conv ctxt ct = let
+          val _ = is_monadT (Thm.typ_of_cterm ct |&gt; body_type) 
+            orelse raise TYPE(&quot;No monad type&quot;,[Thm.typ_of_cterm ct],[Thm.term_of ct])
+      
+          val ctxt = put_simpset HOL_basic_ss ctxt addsimps monad_laws
+          val tac = ALLGOALS (simp_tac ctxt)
+        in 
+          (* TODO: f_tac_conv will choke on beta-redexes! *)
+          Thm.beta_conversion true then_conv Refine_Util.f_tac_conv ctxt (monadify ctxt) tac then_conv eta_ret_conv ctxt 
+        end ct
+        
+      val monadify_all_conv = Conv.top_sweep_conv monadify_conv
+        
+      val monadify_all_tac = CONVERSION o monadify_all_conv
+        
+    end
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+    functor Gen_Monadify_Cong (
+      val mk_return: term -&gt; term
+      val mk_bind: term -&gt; term -&gt; term
+      val dest_return: term -&gt; term option
+      val dest_bind: term -&gt; (term * term) option
+      val dest_monadT: typ -&gt; typ option
+      
+      val bind_return_thm : thm  (* bind m return = m *)
+      val return_bind_thm : thm  (* bind (return x) f = f x  *)
+      val bind_bind_thm : thm    (* bind (bind m f) g = bind m (&#955;x. bind (f x) g) *)
+    
+    ) = struct
+          
+      structure Consts = Generic_Data (
+        type T = term Item_Net.T
+        val empty = Item_Net.init (op aconv) single
+        val merge = Item_Net.merge
+        val extend = I
+      )    
+  
+      val add_const_decl = Consts.map o Item_Net.update
+      val remove_const_decl = Consts.map o Item_Net.remove
+      val get_const_decls = Context.Proof #&gt; Consts.get #&gt; Item_Net.content
+      
+      fun prepare_const_decl t ctxt = let
+        val t = singleton (Variable.export_terms (Variable.auto_fixes t ctxt) ctxt) t
+        
+        val _ = is_Var (head_of t) andalso 
+          (Pretty.block [
+            Pretty.str &quot;Head of const is variable: &quot;, 
+            Syntax.pretty_term ctxt t
+           ]) |&gt; Pretty.string_of |&gt; error
+        
+      in
+        t
+      end
+      
+      fun prepare_add_const_decl t context = add_const_decl (prepare_const_decl t (Context.proof_of context)) context
+      
+      
+      fun is_const ctxt t = 
+        Item_Net.retrieve_matching (Consts.get (Context.Proof ctxt)) t 
+        |&gt; exists (K true)
+            
+      fun strip_op ctxt t = let
+        fun stripc (t as f$x, xs) = if is_const ctxt t then (t,xs) else stripc (f,x::xs) 
+          | stripc tt = tt
+      in stripc (t,[]) end
+
+      structure T = Gen_Monadify (
+        val mk_return = mk_return
+        val mk_bind = mk_bind
+        val dest_return = dest_return
+        val dest_bind = dest_bind
+        val dest_monadT = dest_monadT
+        val strip_op = strip_op
+        val bind_return_thm = bind_return_thm
+        val return_bind_thm = return_bind_thm
+        val bind_bind_thm = bind_bind_thm
+      )
+      open T
+  
+    end
+  &#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+  (* Test Monad *)
+  
+  datatype &#39;a M = return &#39;a
+  definition &quot;bind &#8801; &#955;return x &#8658; &#955;f. f x&quot;
+  
+  lemma monad_laws: 
+    &quot;bind m return = m&quot;
+    &quot;bind (return x) f = f x&quot;
+    &quot;bind (bind m (&#955;x. f x)) g = bind m (&#955;x. bind (f x) g)&quot;
+    unfolding bind_def by (auto split: M.split)
+  
+  ML &#8249;
+  
+    structure Monadify = Gen_Monadify_Cong (
+    
+      fun mk_return x = @{mk_term &quot;return ?x&quot;}
+      fun mk_bind m f = @{mk_term &quot;bind ?m ?f&quot;}
+    
+      fun dest_return @{mpat &quot;return ?x&quot;} = SOME x | dest_return _ = NONE
+      fun dest_monadT (Type (@{type_name M},[T])) = SOME T | dest_monadT _ = NONE
+      
+      val monad_laws = @{thms monad_laws}
+    )
+  &#8250;
+    
+  
+  ML_val &#8249;
+    val t1 = @{term &quot;let (x,y) = p in (return (x+y+y))&quot;} |&gt; Simplified_Term_Struct.tstruct
+    val t2 = @{term &quot;case p of (x,y) &#8658; (return (x+y+y))&quot;} |&gt; Simplified_Term_Struct.tstruct
+  &#8250; 
+  
+  
+  ML_val &#8249;
+    val ctxt = @{context}
+    val ts = [
+      @{term &quot;case p of (x,y) &#8658; return (x+y+y)&quot;},
+      @{term &quot;let (x,y) = p in return (x+y+y)&quot;}
+    ]
+    
+    val ts = map (Monadify.monadify ctxt #&gt; Simplified_Term_Struct.tstruct) ts
+  &#8250;  
+  
+  lemma &quot;P (let (x,y) = p in return (x+y+y))&quot;
+    apply (tactic &#8249;CONVERSION (HOLogic.Trueprop_conv (Conv.arg_conv (Monadify.monadify_conv @{context}))) 1&#8250;)
+    oops
+  
+  
+  
+  context
+    fixes a :: &quot;&#39;a list&quot;
+   begin
+  
+  ML_val &#8249;
+    val ctxt = @{context}
+    val t = @{term &quot;a @ b&quot;}
+    val ctxt&#39; = Variable.auto_fixes t ctxt
+    
+    
+    val t = singleton (Variable.export_terms ctxt&#39; ctxt) t
+    
+    
+  &#8250;
+  end
+  
+  ML_val &#8249;
+    let
+      open Monadify
+      val ctxt = @{context}
+      
+      val ctxt = add_const_decl (prepare_const_decl ctxt @{term &quot;hd f&quot;}) ctxt
+      
+      val t = @{cterm &#8249;return (hd ([a,b,c]) (g x y))&#8250;}
+      val t = monadify_conv ctxt t
+    
+    in 
+      t
+    end  
+  
+  &#8250;
+  *)</span></span></span></span></span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

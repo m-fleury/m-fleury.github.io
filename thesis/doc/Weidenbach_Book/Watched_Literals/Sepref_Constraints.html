@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Sepref_Constraints (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Sepref_Constraints</h1>
+
+<span class="command">theory</span> <span class="name">Sepref_Constraints</span><br/>
+<span class="keyword">imports</span> <a href="Sepref_Basic.html"><span class="name">Sepref_Basic</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Redundancy with Defer-Slot from llvm-lib!  *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Sepref_Constraints</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span> </span><span>Automatic_Refinement.Refine_Lib</span><span> </span><span>Sepref_Basic</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CONSTRAINT_SLOT (x::prop) &#8801; x&quot;</span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Find something better than True to put in empty slot! Perhaps &quot;A&#10233;A&quot; *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>insert_slot_rl1</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PROP P &#10233; PROP (CONSTRAINT_SLOT (Trueprop True)) &#10233; PROP Q&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PROP (CONSTRAINT_SLOT (PROP P)) &#10233; PROP Q&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>CONSTRAINT_SLOT_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>insert_slot_rl2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PROP P &#10233; PROP (CONSTRAINT_SLOT S) &#10233; PROP Q&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PROP (CONSTRAINT_SLOT (PROP S &amp;&amp;&amp; PROP P)) &#10233; PROP Q&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>CONSTRAINT_SLOT_def</span><span> </span><span>conjunction_def</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>remove_slot</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PROP (CONSTRAINT_SLOT (Trueprop True))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>CONSTRAINT_SLOT_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>TrueI</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>CONSTRAINT</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CONSTRAINT P x &#8801; P x&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>CONSTRAINT_D</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CONSTRAINT (P::&#39;a =&gt; bool) x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>CONSTRAINT_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>CONSTRAINT_I</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CONSTRAINT (P::&#39;a =&gt; bool) x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>CONSTRAINT_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Special predicate to indicate unsolvable constraint.
+  The constraint solver refuses to put those into slot.
+  Thus, adding safe rules introducing this can be used to indicate 
+  unsolvable constraints early.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>CN_FALSE</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a&#8658;bool) &#8658; &#39;a &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CN_FALSE P x &#8801; False&quot;</span></span></span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>CN_FALSEI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CN_FALSE P x &#10233; P x&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>constraint_simps</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Simplification of constraints&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>constraint_abbrevs</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Constraint Solver: Abbreviations&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>split_constraint_rls</span><span> 
+</span><span>    </span><span class="delimiter">=</span><span> </span><span>atomize_conj</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>imp_conjunction</span><span> </span><span>all_conjunction</span><span> </span><span>conjunction_imp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  signature SEPREF_CONSTRAINTS = sig
+    (******** Constraint Slot *)
+    (* Tactic with slot subgoal *)
+    val WITH_SLOT: tactic&#39; -&gt; tactic
+    (* Process all goals in slot *)
+    val ON_SLOT: tactic -&gt; tactic
+    (* Create slot as last subgoal. Fail if slot already present. *)
+    val create_slot_tac: tactic
+    (* Create slot if there isn&#39;t one already *)
+    val ensure_slot_tac: tactic
+    (* Remove empty slot *)
+    val remove_slot_tac: tactic
+    (* Move slot to first subgoal *)
+    val prefer_slot_tac: tactic
+    (* Destruct slot *)
+    val dest_slot_tac: tactic&#39;
+    (* Check if goal state has slot *)
+    val has_slot: thm -&gt; bool
+    (* Defer subgoal to slot *)
+    val to_slot_tac: tactic&#39;
+    (* Print slot constraints *)
+    val print_slot_tac: Proof.context -&gt; tactic
+
+    (* Focus on goals in slot *)
+    val focus: tactic
+    (* Unfocus goals in slot *)
+    val unfocus: tactic
+    (* Unfocus goals, and insert them as first subgoals *)
+    val unfocus_ins:tactic
+
+    (* Focus on some goals in slot *)
+    val cond_focus: (term -&gt; bool) -&gt; tactic
+    (* Move some goals to slot *)
+    val some_to_slot_tac: (term -&gt; bool) -&gt; tactic
+
+
+    (******** Constraints *)
+    (* Check if subgoal is a constraint. To be used with COND&#39; *)
+    val is_constraint_goal: term -&gt; bool
+    (* Identity on constraint subgoal, no_tac otherwise *)
+    val is_constraint_tac: tactic&#39;
+    (* Defer constraint to slot *)
+    val slot_constraint_tac: int -&gt; tactic
+
+    (******** Constraint solving *)
+
+    val add_constraint_rule: thm -&gt; Context.generic -&gt; Context.generic
+    val del_constraint_rule: thm -&gt; Context.generic -&gt; Context.generic
+    val get_constraint_rules: Proof.context -&gt; thm list
+
+    val add_safe_constraint_rule: thm -&gt; Context.generic -&gt; Context.generic
+    val del_safe_constraint_rule: thm -&gt; Context.generic -&gt; Context.generic
+    val get_safe_constraint_rules: Proof.context -&gt; thm list
+
+    (* Solve constraint subgoal *)
+    val solve_constraint_tac: Proof.context -&gt; tactic&#39;
+    (* Solve constraint subgoal if solvable, fail if definitely unsolvable, 
+      apply simplification and unique rules otherwise. *)
+    val safe_constraint_tac: Proof.context -&gt; tactic&#39;
+
+    (* CONSTRAINT tag on goal is optional *)
+    val solve_constraint&#39;_tac: Proof.context -&gt; tactic&#39;
+    (* CONSTRAINT tag on goal is optional *)
+    val safe_constraint&#39;_tac: Proof.context -&gt; tactic&#39;
+    
+    (* Solve, or apply safe-rules and defer to constraint slot *)
+    val constraint_tac: Proof.context -&gt; tactic&#39;
+
+    (* Apply safe rules to all constraint goals in slot *)
+    val process_constraint_slot: Proof.context -&gt; tactic
+
+    (* Solve all constraint goals in slot, insert unsolved ones as first subgoals *)
+    val solve_constraint_slot: Proof.context -&gt; tactic
+
+
+    val setup: theory -&gt; theory
+
+  end
+
+
+  structure Sepref_Constraints: SEPREF_CONSTRAINTS  = struct
+    fun is_slot_goal @{mpat &quot;CONSTRAINT_SLOT _&quot;} = true | is_slot_goal _ = false
+
+    fun slot_goal_num st = let
+      val i = find_index is_slot_goal (Thm.prems_of st) + 1
+    in
+      i
+    end
+
+    fun has_slot st = slot_goal_num st &gt; 0
+
+    fun WITH_SLOT tac st = let
+      val si = slot_goal_num st
+    in
+      if si&gt;0 then tac si st else (warning &quot;Constraints: No slot&quot;; Seq.empty)
+    end
+
+    val to_slot_tac = IF_EXGOAL (fn i =&gt; WITH_SLOT (fn si =&gt; 
+      if i&lt;si then
+        prefer_tac si THEN prefer_tac (i+1)
+        THEN (
+          PRIMITIVE (fn st =&gt; Drule.comp_no_flatten (st, 0) 1 @{thm insert_slot_rl1}) 
+          ORELSE PRIMITIVE (fn st =&gt; Drule.comp_no_flatten (st, 0) 1 @{thm insert_slot_rl2})
+        )
+        THEN defer_tac 1
+      else no_tac))
+
+    val create_slot_tac = 
+      COND (has_slot) no_tac
+        (PRIMITIVE (Thm.implies_intr @{cterm &quot;CONSTRAINT_SLOT (Trueprop True)&quot;}) 
+        THEN defer_tac 1)
+        
+    val ensure_slot_tac = TRY create_slot_tac
+          
+      
+    val prefer_slot_tac = WITH_SLOT prefer_tac
+
+    val dest_slot_tac = SELECT_GOAL (
+      ALLGOALS (
+        CONVERSION (Conv.rewr_conv @{thm CONSTRAINT_SLOT_def}) 
+        THEN&#39; Goal.conjunction_tac
+        THEN&#39; TRY o resolve0_tac @{thms TrueI})
+      THEN distinct_subgoals_tac
+    )
+
+    val remove_slot_tac = WITH_SLOT (resolve0_tac @{thms remove_slot})
+
+    val focus = WITH_SLOT (fn i =&gt; 
+      PRIMITIVE (Goal.restrict i 1) 
+      THEN ALLGOALS dest_slot_tac
+      THEN create_slot_tac)
+
+    val unfocus_ins = 
+      PRIMITIVE (Goal.unrestrict 1)
+      THEN WITH_SLOT defer_tac
+
+    fun some_to_slot_tac cond = (ALLGOALS (COND&#39; (fn t =&gt; is_slot_goal t orelse not (cond t)) ORELSE&#39; to_slot_tac))
+
+    val unfocus = 
+      some_to_slot_tac (K true)
+      THEN unfocus_ins
+
+    fun cond_focus cond =
+      focus 
+      THEN some_to_slot_tac (not o cond)
+
+
+    fun ON_SLOT tac = focus THEN tac THEN unfocus
+
+    fun print_slot_tac ctxt = ON_SLOT (print_tac ctxt &quot;SLOT:&quot;)
+
+    local
+      (*fun prepare_constraint_conv ctxt = let
+        open Conv 
+        fun CONSTRAINT_conv ct = case Thm.term_of ct of
+          @{mpat &quot;Trueprop (_ _)&quot;} =&gt; 
+            HOLogic.Trueprop_conv 
+              (rewr_conv @{thm CONSTRAINT_def[symmetric]}) ct
+          | _ =&gt; raise CTERM (&quot;CONSTRAINT_conv&quot;, [ct])
+
+        fun rec_conv ctxt ct = (
+          CONSTRAINT_conv
+          else_conv 
+          implies_conv (rec_conv ctxt) (rec_conv ctxt)
+          else_conv
+          forall_conv (rec_conv o #2) ctxt
+        ) ct
+      in
+        rec_conv ctxt
+      end*)
+
+      fun unfold_abbrevs ctxt = 
+        Local_Defs.unfold0 ctxt (
+          @{thms split_constraint_rls CONSTRAINT_def} 
+          @ Named_Theorems.get ctxt @{named_theorems constraint_abbrevs}
+          @ Named_Theorems.get ctxt @{named_theorems constraint_simps})
+        #&gt; Conjunction.elim_conjunctions
+  
+      fun check_constraint_rl thm = let
+        fun ck (t as @{mpat &quot;Trueprop (?C _)&quot;}) = 
+              if is_Var (Term.head_of C) then
+                raise TERM (&quot;Schematic head in constraint rule&quot;,[t,Thm.prop_of thm])
+              else ()
+          | ck @{mpat &quot;&#8896;_. PROP ?t&quot;} = ck t
+          | ck @{mpat &quot;PROP ?s &#10233; PROP ?t&quot;} = (ck s; ck t)
+          | ck t = raise TERM (&quot;Invalid part of constraint rule&quot;,[t,Thm.prop_of thm])
+  
+      in
+        ck (Thm.prop_of thm); thm
+      end
+
+      fun check_unsafe_constraint_rl thm = let
+        val _ = Thm.nprems_of thm = 0 
+          andalso raise TERM(&quot;Unconditional constraint rule must be safe (register this as safe rule)&quot;,[Thm.prop_of thm])
+      in
+        thm
+      end
+
+    in
+      structure constraint_rules = Named_Sorted_Thms (
+        val name = @{binding constraint_rules}
+        val description = &quot;Constraint rules&quot;
+        val sort = K I
+        fun transform context = let
+          open Conv
+          val ctxt = Context.proof_of context
+        in
+          unfold_abbrevs ctxt #&gt; map (check_constraint_rl o check_unsafe_constraint_rl)
+        end
+      )
+
+      structure safe_constraint_rules = Named_Sorted_Thms (
+        val name = @{binding safe_constraint_rules}
+        val description = &quot;Safe Constraint rules&quot;
+        val sort = K I
+        fun transform context = let
+          open Conv
+          val ctxt = Context.proof_of context
+        in
+          unfold_abbrevs ctxt #&gt; map check_constraint_rl
+        end
+      )
+
+    end  
+
+    val add_constraint_rule = constraint_rules.add_thm
+    val del_constraint_rule = constraint_rules.del_thm
+    val get_constraint_rules = constraint_rules.get
+
+    val add_safe_constraint_rule = safe_constraint_rules.add_thm
+    val del_safe_constraint_rule = safe_constraint_rules.del_thm
+    val get_safe_constraint_rules = safe_constraint_rules.get
+
+    fun is_constraint_goal t = case Logic.strip_assums_concl t of
+      @{mpat &quot;Trueprop (CONSTRAINT _ _)&quot;} =&gt; true
+    | _ =&gt; false
+
+    val is_constraint_tac = COND&#39; is_constraint_goal
+
+    fun is_slottable_constraint_goal t = case Logic.strip_assums_concl t of
+      @{mpat &quot;Trueprop (CONSTRAINT (CN_FALSE _) _)&quot;} =&gt; false
+    | @{mpat &quot;Trueprop (CONSTRAINT _ _)&quot;} =&gt; true
+    | _ =&gt; false
+
+    val slot_constraint_tac = COND&#39; is_slottable_constraint_goal THEN&#39; to_slot_tac
+
+    datatype &#39;a seq_cases = SC_NONE | SC_SINGLE of &#39;a Seq.seq | SC_MULTIPLE of &#39;a Seq.seq
+
+    fun seq_cases seq = 
+      case Seq.pull seq of
+        NONE =&gt; SC_NONE
+      | SOME (st1,seq) =&gt; case Seq.pull seq of
+          NONE =&gt; SC_SINGLE (Seq.single st1)
+        | SOME (st2,seq) =&gt; SC_MULTIPLE (Seq.cons st1 (Seq.cons st2 seq))  
+
+    fun SEQ_CASES tac (single_tac, multiple_tac) st = let
+      val res = tac st
+    in
+      case seq_cases res of
+        SC_NONE =&gt; Seq.empty
+      | SC_SINGLE res =&gt; Seq.maps single_tac res
+      | SC_MULTIPLE res =&gt; Seq.maps multiple_tac res
+    end
+
+    fun SAFE tac = SEQ_CASES tac (all_tac, no_tac)
+    fun SAFE&#39; tac = SAFE o tac
+
+    local
+      fun simp_constraints_tac ctxt = let
+        val ctxt = put_simpset HOL_basic_ss ctxt 
+          addsimps (Named_Theorems.get ctxt @{named_theorems constraint_simps})
+      in
+        simp_tac ctxt
+      end
+
+      fun unfold_abbrevs_tac ctxt =  let
+        val ctxt = put_simpset HOL_basic_ss ctxt 
+          addsimps (Named_Theorems.get ctxt @{named_theorems constraint_abbrevs})
+        val ethms = @{thms conjE}  
+        val ithms = @{thms conjI}  
+      in
+        full_simp_tac ctxt 
+        THEN_ALL_NEW TRY o REPEAT_ALL_NEW (ematch_tac ctxt ethms)
+        THEN_ALL_NEW TRY o REPEAT_ALL_NEW (match_tac ctxt ithms)
+      end
+  
+      fun WITH_RULE_NETS tac ctxt = let
+        val scn_net = safe_constraint_rules.get ctxt |&gt; Tactic.build_net
+        val cn_net = constraint_rules.get ctxt |&gt; Tactic.build_net
+      in
+        tac (scn_net,cn_net) ctxt
+      end
+
+      fun wrap_tac step_tac ctxt = REPEAT_ALL_NEW (
+        simp_constraints_tac ctxt 
+        THEN_ALL_NEW unfold_abbrevs_tac ctxt
+        THEN_ALL_NEW step_tac ctxt
+      )
+
+      fun solve_step_tac (scn_net,cn_net) ctxt = REPEAT_ALL_NEW (
+        DETERM o resolve_from_net_tac ctxt scn_net
+        ORELSE&#39; resolve_from_net_tac ctxt cn_net
+      )
+
+      fun safe_step_tac (scn_net,cn_net) ctxt = REPEAT_ALL_NEW (
+        DETERM o resolve_from_net_tac ctxt scn_net
+        ORELSE&#39; SAFE&#39; (resolve_from_net_tac ctxt cn_net)
+      )
+
+      fun solve_tac cn_nets ctxt = SOLVED&#39; (wrap_tac (solve_step_tac cn_nets) ctxt)
+      fun safe_tac cn_nets ctxt =  
+        simp_constraints_tac ctxt
+        THEN_ALL_NEW unfold_abbrevs_tac ctxt
+        THEN_ALL_NEW (solve_tac cn_nets ctxt ORELSE&#39; TRY o wrap_tac (safe_step_tac cn_nets) ctxt)
+
+    in
+      val solve_constraint_tac = TRADE (fn ctxt =&gt;
+        is_constraint_tac
+        THEN&#39; resolve_tac ctxt @{thms CONSTRAINT_I}
+        THEN&#39; WITH_RULE_NETS solve_tac ctxt)
+
+      val safe_constraint_tac = TRADE (fn ctxt =&gt;
+        is_constraint_tac
+        THEN&#39; resolve_tac ctxt @{thms CONSTRAINT_I}
+        THEN&#39; WITH_RULE_NETS safe_tac ctxt
+        THEN_ALL_NEW fo_resolve_tac @{thms CONSTRAINT_D} ctxt) (* TODO/FIXME: fo_resolve_tac has non-canonical parameter order *)
+
+      val solve_constraint&#39;_tac = TRADE (fn ctxt =&gt;
+        TRY o resolve_tac ctxt @{thms CONSTRAINT_I}
+        THEN&#39; WITH_RULE_NETS solve_tac ctxt)
+
+      val safe_constraint&#39;_tac = TRADE (fn ctxt =&gt;
+        TRY o resolve_tac ctxt @{thms CONSTRAINT_I}
+        THEN&#39; WITH_RULE_NETS safe_tac ctxt)
+
+
+    end  
+
+    fun constraint_tac ctxt = 
+      safe_constraint_tac ctxt THEN_ALL_NEW slot_constraint_tac
+
+    fun process_constraint_slot ctxt = ON_SLOT (ALLGOALS (TRY o safe_constraint_tac ctxt))
+
+    fun solve_constraint_slot ctxt = 
+      cond_focus is_constraint_goal 
+        THEN ALLGOALS (
+          COND&#39; is_slot_goal
+          ORELSE&#39; (
+            solve_constraint_tac ctxt
+            ORELSE&#39; TRY o safe_constraint_tac ctxt
+          )
+        )
+      THEN unfocus_ins
+
+
+    val setup = I
+      #&gt; constraint_rules.setup
+      #&gt; safe_constraint_rules.setup
+
+  end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">setup</span></span><span> </span><span>Sepref_Constraints.setup</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>print_slot</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; SIMPLE_METHOD (Sepref_Constraints.print_slot_tac ctxt))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>solve_constraint</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; SIMPLE_METHOD&#39; (Sepref_Constraints.solve_constraint&#39;_tac ctxt))&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>safe_constraint</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; SIMPLE_METHOD&#39; (Sepref_Constraints.safe_constraint&#39;_tac ctxt))&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

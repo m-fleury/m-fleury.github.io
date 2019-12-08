@@ -1,0 +1,565 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Sepref_Frame (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Sepref_Frame</h1>
+
+<span class="command">theory</span> <span class="name">Sepref_Frame</span><br/>
+<span class="keyword">imports</span> <a href="Sepref_Constraints.html"><span class="name">Sepref_Constraints</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Frame Inference&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Sepref_Frame</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Sepref_Basic</span><span> </span><span>Sepref_Constraints</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; In this theory, we provide a specific frame inference tactic
+    for Sepref.
+
+    The first tactic, @{text frame_tac}, is a standard frame inference tactic, 
+    based on the assumption that only @{const hn_ctxt}-assertions need to be
+    matched.
+
+    The second tactic, @{text merge_tac}, resolves entailments of the form
+      @{text &quot;F1 &#8744;<span class="hidden">&#8681;</span><sub>A</sub> F2 &#10233;<span class="hidden">&#8681;</span><sub>t</sub> ?F&quot;}
+    that occur during translation of if and case statements.
+    It synthesizes a new frame ?F, where refinements of variables 
+    with equal refinements in @{text F1} and @{text F2} are preserved,
+    and the others are set to @{const hn_invalid}.
+    &#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>recover_pure_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CONSTRAINT is_pure R &#10233; hn_invalid R x y &#8866; hn_ctxt R x y&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>is_pure_conv</span><span> </span><span>invalid_pure_recover</span><span> </span><span>hn_ctxt_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>frame_thms</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;P &#8866; P&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;P&#8866;P&#39; &#10233; F&#8866;F&#39; &#10233; P**F &#8866; P&#39;**F&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;CONSTRAINT is_pure R &#10233; hn_invalid R x y &#8866; hn_ctxt R x y&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;CONSTRAINT is_pure R &#10233; hn_ctxt R x y &#8866; hn_val UNIV x y&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;CONSTRAINT is_pure A &#10233; hn_ctxt A x y &#8866; hn_invalid A x y&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">applyS</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">applyS</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>conj_entails_mono</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">applyS</span></span></span></span><span> </span><span class="delimiter">(</span><span>erule</span><span> </span><span>recover_pure_aux</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">applyS</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span class="delimiter">,</span><span> </span><span>smt</span><span> </span><span>entails_def</span><span> </span><span>eq_UNIV_iff</span><span> </span><span>hn_ctxt_def</span><span> </span><span>is_pureE</span><span> </span><span>pred_lift_def</span><span> </span><span>pure_app_eq</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">applyS</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>hn_ctxt_def</span><span> </span><span>invalid_assn_def</span><span> </span><span>is_pure_iff_pure_assn</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">named_theorems_rev</span></span><span> </span><span>sepref_frame_match_rules</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref: Additional frame rules&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Rules to discharge unmatched stuff&#8250;</span></span></span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*lemma frame_rem_thms:
+  &quot;P &#10233;<span class="hidden">&#8681;</span><sub>t</sub> P&quot;
+  &quot;P &#10233;<span class="hidden">&#8681;</span><sub>t</sub> emp&quot;
+  by sep_auto+
+*)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>frame_rem1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P&#8866;P&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>frame_rem2</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;F &#8866; F&#39; &#10233; hn_ctxt A x y ** F &#8866; hn_ctxt A x y ** F&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>conj_entails_mono</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>frame_rem_thms</span><span> </span><span class="delimiter">=</span><span> </span><span>frame_rem1</span><span> </span><span>frame_rem2</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">named_theorems_rev</span></span><span> </span><span>sepref_frame_rem_rules</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref: Additional rules to resolve remainder of frame-pairing&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>merge_thms</span><span> </span><span class="delimiter">=</span><span> </span><span>MERGE_END</span><span> </span><span>MERGE_STAR</span><span> </span><span>MERGE1_eq</span><span> </span><span>MERGE1_invalids</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>sepref_frame_merge_rules</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref: Additional merge rules&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>free_thms</span><span> </span><span class="delimiter">=</span><span> </span><span>mk_free_invalid</span><span> </span><span>mk_free_pure</span><span> </span><span>mk_free_pair</span><span>
+</span><span class="keyword1"><span class="command">named_theorems_rev</span></span><span> </span><span>sepref_frame_free_rules</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref: Additional free rules&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;These rules are applied to recover pure values that have been destroyed by rule application&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;RECOVER_PURE P Q &#8801; P &#8866; Q&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>recover_pure</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;RECOVER_PURE &#9633; &#9633;&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;RECOVER_PURE P1 Q1; RECOVER_PURE P2 Q2&#10215; &#10233; RECOVER_PURE (P1**P2) (Q1**Q2)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;CONSTRAINT is_pure R &#10233; RECOVER_PURE (hn_invalid R x y) (hn_ctxt R x y)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;RECOVER_PURE (hn_ctxt R x y) (hn_ctxt R x y)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>RECOVER_PURE_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>drule</span><span> </span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>conj_entails_mono</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>recover_pure_aux</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>recover_pure_triv</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;RECOVER_PURE P P&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>RECOVER_PURE_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Weakening the postcondition by converting @{const invalid_assn} to @{term &quot;&#955;_ _. &#9633;&quot;}&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;WEAKEN_HNR_POST &#915; &#915;&#39; &#915;&#39;&#39; &#8801; (&#8707;h. &#915; h) &#10230; (&#915;&#39;&#39; &#8866; &#915;&#39;)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>weaken_hnr_postI</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;WEAKEN_HNR_POST &#915; &#915;&#39;&#39; &#915;&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine &#915; c &#915;&#39; R a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine &#915; c &#915;&#39;&#39; R a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hn_refine_preI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hn_refine_cons_post</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>assms</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>WEAKEN_HNR_POST_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>weaken_hnr_post_triv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;WEAKEN_HNR_POST &#915; P P&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>WEAKEN_HNR_POST_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>weaken_hnr_post</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;WEAKEN_HNR_POST &#915; P P&#39;; WEAKEN_HNR_POST &#915;&#39; Q Q&#39;&#10215; &#10233; WEAKEN_HNR_POST (&#915;**&#915;&#39;) (P**Q) (P&#39;**Q&#39;)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;WEAKEN_HNR_POST (hn_ctxt R x y) (hn_ctxt R x y) (hn_ctxt R x y)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;WEAKEN_HNR_POST (hn_ctxt R x y) (hn_invalid R x y) (hn_val UNIV x y)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>goal_cases</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>1</span><span> </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?case</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>WEAKEN_HNR_POST_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarsimp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>conj_entails_mono</span><span class="delimiter">)</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_conj_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>2</span><span> </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>weaken_hnr_post_triv</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>3</span><span> </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?case</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>WEAKEN_HNR_POST_def</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>invalid_assn_def</span><span> </span><span>hn_ctxt_def</span><span> </span><span>pure_def</span><span> </span><span>pure_partI</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>reorder_enttI</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;A = C&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;B = D&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(A&#8866;B) &#8801; (C&#8866;D)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>eq_reflection</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>assms</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+lemma merge_sat1: &quot;(A&#8744;<span class="hidden">&#8681;</span><sub>A</sub>A&#39; &#10233;<span class="hidden">&#8681;</span><sub>t</sub> Am) &#10233; (A&#8744;<span class="hidden">&#8681;</span><sub>A</sub>Am &#10233;<span class="hidden">&#8681;</span><sub>t</sub> Am)&quot;
+  using entt_disjD1 entt_disjE by blast
+lemma merge_sat2: &quot;(A&#8744;<span class="hidden">&#8681;</span><sub>A</sub>A&#39; &#10233;<span class="hidden">&#8681;</span><sub>t</sub> Am) &#10233; (Am&#8744;<span class="hidden">&#8681;</span><sub>A</sub>A&#39; &#10233;<span class="hidden">&#8681;</span><sub>t</sub> Am)&quot;
+  using entt_disjD2 entt_disjE by blast
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>merge_left_assn_cong</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;L&#8801;L&#39; &#10233; MERGE L frl R frr Q &#8801; MERGE L&#39; frl R frr Q&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>merge_right_assn_cong</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;R&#8801;R&#39; &#10233; MERGE L frl R frr Q &#8801; MERGE L frl R&#39; frr Q&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>MERGE_append_END</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;MERGE L frl R frr Q &#8801; MERGE (L**FRI_END) frl (R**FRI_END) frr Q&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>FRI_END_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FR_SOLVE_SIMPLE P Q P&#39; Q&#39; &#8801; P**P&#39; &#8866; Q**Q&#39;&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fr_solve_simple_init</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FR_SOLVE_SIMPLE (Ps**&#9633;) (Qs**&#9633;) &#9633; &#9633; &#10233; Ps &#8866; Qs&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>fr_solve_simple_match</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FR_SOLVE_SIMPLE Ps Qs Ps&#39; Qs&#39; &#10233; FR_SOLVE_SIMPLE (P**Ps) (P**Qs) Ps&#39; Qs&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>fr_solve_simple_nomatch</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FR_SOLVE_SIMPLE Ps Qs (Ps&#39;**P) (Qs&#39;**Q) &#10233; FR_SOLVE_SIMPLE (P**Ps) (Q**Qs) Ps&#39; Qs&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>fr_solve_simple_finalize</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Ps&#39; &#8866; Qs&#39; &#10233; FR_SOLVE_SIMPLE &#9633; &#9633; Ps&#39; Qs&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>FR_SOLVE_SIMPLE_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>conj_entails_mono</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>sep.mult_commute</span><span> </span><span>sep_conj_left_commute</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+signature SEPREF_FRAME = sig
+
+
+  (* Check if subgoal is a frame obligation *)
+  (*val is_frame : term -&gt; bool *)
+  (* Check if subgoal is a merge obligation *)
+  val is_merge: term -&gt; bool
+  (* Perform frame inference *)
+  val frame_tac: (Proof.context -&gt; tactic&#39;) -&gt; Proof.context -&gt; tactic&#39;
+  (* Perform merging *)
+  val merge_tac: (Proof.context -&gt; tactic&#39;) -&gt; Proof.context -&gt; tactic&#39;
+
+  (* Perform free synthesis *)
+  val free_tac: (Proof.context -&gt; tactic&#39;) -&gt; Proof.context -&gt; tactic&#39;
+  
+  
+  val frame_step_tac: (Proof.context -&gt; tactic&#39;) -&gt; bool -&gt; Proof.context -&gt; tactic&#39;
+
+  (* Reorder frame *)
+  val prepare_frame_tac : Proof.context -&gt; tactic&#39;
+  (* Solve a RECOVER_PURE goal, inserting constraints as necessary *)
+  val recover_pure_tac: Proof.context -&gt; tactic&#39;
+
+  (* Split precondition of hnr-goal into frame and arguments *)
+  val align_goal_tac: Proof.context -&gt; tactic&#39;
+  (* Normalize goal&#39;s precondition *)
+  val norm_goal_pre_tac: Proof.context -&gt; tactic&#39;
+  (* Rearrange precondition of hnr-term according to parameter order, normalize all relations *)
+  val align_rl_conv: Proof.context -&gt; conv
+
+  (* Convert hn_invalid to hn_val UNIV in postcondition of hnr-goal. Makes proving the goal easier.*)
+  val weaken_post_tac: Proof.context -&gt; tactic&#39;
+
+  val add_normrel_eq : thm -&gt; Context.generic -&gt; Context.generic
+  val del_normrel_eq : thm -&gt; Context.generic -&gt; Context.generic
+  val get_normrel_eqs : Proof.context -&gt; thm list
+
+  val cfg_debug: bool Config.T
+
+  val setup: theory -&gt; theory
+end
+
+
+structure Sepref_Frame : SEPREF_FRAME = struct
+
+  val cfg_debug = 
+    Attrib.setup_config_bool @{binding sepref_debug_frame} (K false)
+
+  val DCONVERSION = Sepref_Debugging.DBG_CONVERSION cfg_debug
+  val dbg_msg_tac = Sepref_Debugging.dbg_msg_tac cfg_debug
+
+
+  structure normrel_eqs = Named_Thms (
+    val name = @{binding sepref_frame_normrel_eqs}
+    val description = &quot;Equations to normalize relations for frame matching&quot;
+  )
+
+  val add_normrel_eq = normrel_eqs.add_thm
+  val del_normrel_eq = normrel_eqs.del_thm
+  val get_normrel_eqs = normrel_eqs.get
+
+  (*val mk_entails = HOLogic.mk_binrel @{const_name &quot;entails&quot;}*)
+
+
+  local
+    open Sepref_Basic Refine_Util Conv
+  
+    fun assn_ord p = case apply2 dest_hn_ctxt_opt p of
+        (NONE,NONE) =&gt; EQUAL
+      | (SOME _, NONE) =&gt; LESS
+      | (NONE, SOME _) =&gt; GREATER
+      | (SOME (_,a,_), SOME (_,a&#39;,_)) =&gt; Term_Ord.fast_term_ord (a,a&#39;)
+
+  in
+    fun reorder_ctxt_conv ctxt ct = let
+      val cert = Thm.cterm_of ctxt
+
+      val new_ct = Thm.term_of ct 
+        |&gt; strip_star
+        |&gt; sort assn_ord
+        |&gt; list_star
+        |&gt; cert
+
+      val thm = Goal.prove_internal ctxt [] (mk_cequals (ct,new_ct)) 
+        (fn _ =&gt; VCG_Lib.simp_only_tac @{thms sep_conj_aci} ctxt 1)
+
+    in
+      thm
+    end
+  
+    fun prepare_fi_conv ctxt ct = case Thm.term_of ct of
+      @{mpat &quot;?P &#8866; ?Q&quot;} =&gt; let
+        val cert = Thm.cterm_of ctxt
+  
+        (* Build table from abs-vars to ctxt *)
+        val (Qm, Qum) = strip_star Q |&gt; filter_out is_true |&gt; List.partition is_hn_ctxt
+
+        val Qtab = (
+          Qm |&gt; map (fn x =&gt; (#2 (dest_hn_ctxt x),(NONE,x))) 
+          |&gt; Termtab.make
+        ) handle
+            e as (Termtab.DUP _) =&gt; (
+              tracing (&quot;Dup heap: &quot; ^ @{make_string} ct); raise e)
+        
+        (* Go over entries in P and try to find a partner *)
+        val (Qtab,Pum) = fold (fn a =&gt; fn (Qtab,Pum) =&gt; 
+          case dest_hn_ctxt_opt a of
+            NONE =&gt; (Qtab,a::Pum)
+          | SOME (_,p,_) =&gt; ( case Termtab.lookup Qtab p of
+              SOME (NONE,tg) =&gt; (Termtab.update (p,(SOME a,tg)) Qtab, Pum)
+            | _ =&gt; (Qtab,a::Pum)
+            )
+        ) (strip_star P) (Qtab,[])
+
+        val Pum = filter_out is_true Pum
+
+        (* Read out information from Qtab *)
+        val (pairs,Qum2) = Termtab.dest Qtab |&gt; map #2 
+          |&gt; List.partition (is_some o #1)
+          |&gt; apfst (map (apfst the))
+          |&gt; apsnd (map #2)
+  
+        (* Build reordered terms: P&#39; = fst pairs * Pum, Q&#39; = snd pairs * (Qum2*Qum) *)
+        val P&#39; = mk_star (list_star (map fst pairs), list_star Pum)
+        val Q&#39; = mk_star (list_star (map snd pairs), list_star (Qum2@Qum))
+        
+        val new_ct = mk_entails (P&#39;, Q&#39;) |&gt; cert
+  
+        val msg_tac = dbg_msg_tac (Sepref_Debugging.msg_allgoals &quot;Solving frame permutation&quot;) ctxt 1
+        val tac = msg_tac THEN ALLGOALS (resolve_tac ctxt @{thms reorder_enttI}) THEN star_permute_tac ctxt
+
+        val thm = Goal.prove_internal ctxt [] (mk_cequals (ct,new_ct)) (fn _ =&gt; tac)
+  
+      in 
+        thm
+      end
+    | _ =&gt; no_conv ct
+  
+  end
+
+  
+  fun 
+    is_merge @{mpat &quot;Trueprop (MERGE _ _ _ _ _)&quot;} = true 
+  | is_merge @{mpat &quot;Trueprop (MERGE1 _ _ _ _ _)&quot;} = true 
+  | is_merge _ = false
+
+  fun is_frame @{mpat &quot;Trueprop (_ &#8866; _)&quot;} = true | is_frame _ = false
+
+  fun is_free @{mpat &quot;Trueprop (MK_FREE _ _)&quot;} = true | is_free _ = false
+    
+
+    
+
+  fun prepare_frame_tac ctxt = let
+    open Refine_Util Conv
+  in
+    CONVERSION Thm.eta_conversion THEN&#39;
+    (*CONCL_COND&#39; is_frame THEN&#39;*)
+    Frame_Infer.simp_ai_tac ctxt THEN&#39;
+    CONVERSION (HOL_concl_conv (fn _ =&gt; prepare_fi_conv ctxt) ctxt)
+  end    
+
+
+  fun mk_free_tac ctxt side_tac dbg = let
+    val free_thms = @{thms free_thms} @
+      Named_Theorems_Rev.get ctxt @{named_theorems_rev sepref_frame_free_rules} 
+  in
+    REPEAT&#39; (resolve_tac ctxt free_thms THEN_ALL_NEW_FWD (
+      CONCL_COND&#39; is_free ORELSE&#39; (if dbg then TRY_SOLVED&#39; else SOLVED&#39;) side_tac  
+    ))
+  end
+  
+  local
+    fun wrap_side_tac ctxt side_tac dbg tac = tac THEN_ALL_NEW_FWD (
+      CASES&#39; [
+        (CONCL_COND&#39; is_frame, all_tac),
+        (CONCL_COND&#39; is_merge, all_tac),
+        (CONCL_COND&#39; is_free, HEADGOAL ((if dbg then TRY_SOLVED&#39; else SOLVED&#39;) (mk_free_tac ctxt side_tac dbg))),
+        (K all_tac, HEADGOAL ((if dbg then TRY_SOLVED&#39; else SOLVED&#39;) side_tac))
+      ]
+    )
+  in  
+    fun frame_step_tac side_tac dbg ctxt = let
+      open Refine_Util Conv
+
+      (* Constraint solving is built-in *)
+      val side_tac = Sepref_Constraints.constraint_tac ctxt ORELSE&#39; side_tac ctxt
+
+      val frame_thms = @{thms frame_thms} @
+        Named_Theorems_Rev.get ctxt @{named_theorems_rev sepref_frame_match_rules} 
+      val merge_thms = @{thms merge_thms} @
+        Named_Theorems.get ctxt @{named_theorems sepref_frame_merge_rules}
+      val ss = put_simpset HOL_basic_ss ctxt addsimps normrel_eqs.get ctxt
+      fun frame_thm_tac dbg = wrap_side_tac ctxt side_tac dbg (resolve_tac ctxt frame_thms)
+      fun merge_thm_tac dbg = wrap_side_tac ctxt side_tac dbg (resolve_tac ctxt merge_thms)
+  
+      fun thm_tac dbg = CONCL_COND&#39; is_merge THEN_ELSE&#39; (merge_thm_tac dbg, frame_thm_tac dbg)
+    in
+      full_simp_tac ss THEN&#39; thm_tac dbg
+    end
+  end  
+
+  fun frame_solve_simple_tac ctxt = 
+    resolve_tac ctxt @{thms fr_solve_simple_init}
+    THEN&#39; Frame_Infer.simp_a_tac ctxt
+    THEN&#39; REPEAT_DETERM&#39; (resolve_tac ctxt @{thms fr_solve_simple_match fr_solve_simple_nomatch})
+    THEN&#39; resolve_tac ctxt @{thms fr_solve_simple_finalize}
+    THEN&#39; Frame_Infer.simp_ai_tac ctxt
+  
+  
+  fun frame_loop_tac side_tac ctxt = let
+
+  in
+    (CONCL_COND&#39; is_merge THEN_ELSE&#39; (K all_tac, frame_solve_simple_tac ctxt)) 
+    THEN&#39; TRY o (REPEAT_ALL_NEW (DETERM o frame_step_tac side_tac false ctxt))
+  end
+
+
+  fun frame_tac side_tac ctxt = let
+    open Refine_Util Conv
+    val frame_rem_thms = @{thms frame_rem_thms}
+      @ Named_Theorems_Rev.get ctxt @{named_theorems_rev sepref_frame_rem_rules}
+    val solve_remainder_tac = TRY o REPEAT_ALL_NEW (DETERM o resolve_tac ctxt frame_rem_thms)
+  in
+    (prepare_frame_tac ctxt
+      THEN&#39; resolve_tac ctxt @{thms conj_entails_mono})
+    THEN_ALL_NEW_LIST [
+      frame_loop_tac side_tac ctxt,
+      solve_remainder_tac
+    ]  
+  end
+
+  fun merge_tac side_tac ctxt = let
+    open Refine_Util Conv
+    val reord_conv = Fri_Extract.cong_rl_conv (reorder_ctxt_conv ctxt) @{thm merge_left_assn_cong} 
+           then_conv Fri_Extract.cong_rl_conv (reorder_ctxt_conv ctxt) @{thm merge_right_assn_cong}
+           
+    val merge_conv = 
+      Frame_Infer.rewrite_a_conv ctxt
+      then_conv reord_conv 
+      then_conv Conv.rewr_conv @{thm MERGE_append_END}
+      then_conv Frame_Infer.rewrite_a_conv ctxt
+           
+  in
+    CONVERSION Thm.eta_conversion THEN&#39;
+    CONCL_COND&#39; is_merge THEN&#39;
+    CONVERSION (HOL_concl_conv (fn _ =&gt; merge_conv) ctxt) THEN&#39;
+    frame_loop_tac side_tac ctxt
+  end
+
+  fun free_tac side_tac ctxt = 
+    CONVERSION Thm.eta_conversion THEN&#39;
+    CONCL_COND&#39; is_free THEN&#39;
+    mk_free_tac ctxt (side_tac ctxt) false
+  
+  val setup = normrel_eqs.setup
+
+  local
+    open Sepref_Basic
+    fun is_invalid @{mpat &quot;hn_invalid _ _ _ :: assn&quot;} = true | is_invalid _ = false
+    fun contains_invalid @{mpat &quot;Trueprop (RECOVER_PURE ?Q _)&quot;} = exists is_invalid (strip_star Q)
+      | contains_invalid _ = false
+
+  in
+    fun recover_pure_tac ctxt = 
+      CONCL_COND&#39; contains_invalid THEN_ELSE&#39; (
+        REPEAT_ALL_NEW (DETERM o (resolve_tac ctxt @{thms recover_pure} ORELSE&#39; Sepref_Constraints.constraint_tac ctxt)),
+        resolve_tac ctxt @{thms recover_pure_triv}
+      )
+  end
+
+  local
+    open Sepref_Basic Refine_Util
+    datatype cte = Other of term | Hn of term * term * term
+    fun dest_ctxt_elem @{mpat &quot;hn_ctxt ?R ?a ?c&quot;} = Hn (R,a,c)
+      | dest_ctxt_elem t = Other t
+
+    fun mk_ctxt_elem (Other t) = t 
+      | mk_ctxt_elem (Hn (R,a,c)) = @{mk_term &quot;hn_ctxt ?R ?a ?c&quot;}
+
+    fun match x (Hn (_,y,_)) = x aconv y
+      | match _ _ = false
+
+    fun dest_with_frame (*ctxt*) _ t = let
+      val (P,c,Q,R,a) = dest_hn_refine t
+  
+      val (_,(_,args)) = dest_hnr_absfun a
+      val pre_ctes = strip_star P |&gt; map dest_ctxt_elem
+
+        
+      val (pre_args,frame) = 
+        (case split_matching match args pre_ctes of
+            NONE =&gt; raise TERM(&quot;align_conv: Could not match all arguments&quot;,[P,a])
+          | SOME x =&gt; x)
+
+    in
+      ((pre_args,frame),c,Q,R,a)
+    end
+  
+    fun align_goal_conv_aux ctxt t = let
+      val ((pre_args,frame),c,Q,R,a) = dest_with_frame ctxt t
+      
+      val P&#39; = apply2 (list_star o map mk_ctxt_elem) (pre_args,frame) |&gt; mk_star
+      val t&#39; = mk_hn_refine (P&#39;,c,Q,R,a)
+    in t&#39; end  
+
+    fun align_rl_conv_aux ctxt t = let
+      val ((pre_args,frame),c,Q,R,a) = dest_with_frame ctxt t
+
+      val _ = frame = [] orelse raise TERM (&quot;align_rl_conv: Extra preconditions in rule&quot;,[t,list_star (map mk_ctxt_elem frame)])
+
+      val P&#39; = list_star (map mk_ctxt_elem pre_args)
+      val t&#39; = mk_hn_refine (P&#39;,c,Q,R,a)
+    in t&#39; end  
+
+
+    fun normrel_conv ctxt = let
+      val ss = put_simpset HOL_basic_ss ctxt addsimps normrel_eqs.get ctxt
+    in
+      Simplifier.rewrite ss
+    end
+
+  in
+    fun align_goal_conv ctxt = f_tac_conv ctxt (align_goal_conv_aux ctxt) (star_permute_tac ctxt)
+
+    fun norm_goal_pre_conv ctxt = let
+      open Conv
+      val nr_conv = normrel_conv ctxt
+    in
+      HOL_concl_conv (fn _ =&gt; hn_refine_conv nr_conv all_conv all_conv all_conv all_conv) ctxt
+    end  
+
+    fun norm_goal_pre_tac ctxt = CONVERSION (norm_goal_pre_conv ctxt)
+
+    fun align_rl_conv ctxt = let
+      open Conv
+      val nr_conv = normrel_conv ctxt
+    in
+      HOL_concl_conv (fn ctxt =&gt; f_tac_conv ctxt (align_rl_conv_aux ctxt) (star_permute_tac ctxt)) ctxt
+      then_conv HOL_concl_conv (K (hn_refine_conv nr_conv all_conv nr_conv nr_conv all_conv)) ctxt
+    end
+
+    fun align_goal_tac ctxt = 
+      CONCL_COND&#39; is_hn_refine_concl 
+      THEN&#39; DCONVERSION ctxt (HOL_concl_conv align_goal_conv ctxt)
+  end
+
+
+  fun weaken_post_tac ctxt = TRADE (fn ctxt =&gt;
+    resolve_tac ctxt @{thms weaken_hnr_postI} 
+    THEN&#39; SOLVED&#39; (REPEAT_ALL_NEW (DETERM o resolve_tac ctxt @{thms weaken_hnr_post weaken_hnr_post_triv}))
+  ) ctxt
+
+end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">setup</span></span><span> </span><span>Sepref_Frame.setup</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>weaken_hnr_post</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; SIMPLE_METHOD&#39; (Sepref_Frame.weaken_post_tac ctxt))&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Convert &quot;hn_invalid&quot; to &quot;hn_ctxt (&#955;_ _. true)&quot; in postcondition of hn_refine goal&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mod_starD</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(A**B) h &#10233; (&#8707;h1 h2. A h1 &#8743; B h2)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_conj_def</span><span class="delimiter">)</span><span> 
+</span><span>  
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Improper, modifies all h&#8872;_ premises that happen to be there. Use tagging to protect! *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">method</span></span><span> </span><span>extract_hnr_invalids</span><span> </span><span class="delimiter">=</span><span> </span><span class="delimiter">(</span><span>
+</span><span>  </span><span>rule</span><span> </span><span>hn_refine_preI</span><span class="delimiter">,</span><span>
+</span><span>  </span><span class="delimiter">(</span><span class="delimiter">(</span><span>determ</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;drule mod_starD hn_invalidI | elim conjE exE&#8250;</span></span></span><span class="delimiter">)</span><span class="delimiter">+</span><span class="delimiter">)</span><span class="delimiter">?</span><span>
+</span><span class="delimiter">)</span><span> </span><span class="comment">&#8213; &#8249;Extract &#8249;hn_invalid _ _ _ = true&#8250; preconditions from &#8249;hn_refine&#8250; goal.&#8250;</span><span>
+</span><span>  
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_frame_normrel_eqs</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>the_pure_pure</span><span> </span><span>pure_the_pure</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

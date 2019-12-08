@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Norm_Words (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Norm_Words</h1>
+
+<span class="command">theory</span> <span class="name">Norm_Words</span><br/>
+<span class="keyword">imports</span> <a href="Signed_Words.html"><span class="name">Signed_Words</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+ * Copyright 2014, NICTA
+ *
+ * This software may be distributed and modified according to the terms of
+ * the BSD 2-Clause license. Note that NO WARRANTY is provided.
+ * See &quot;LICENSE_BSD2.txt&quot; for details.
+ *
+ * @TAG(NICTA_BSD)
+ *)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Normalising Word Numerals&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Norm_Words</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Signed_Words&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Normalise word numerals, including negative ones apart from @{term &quot;-1&quot;}, to the
+  interval &#8249;[0..2^len_of &#39;a)&#8250;. Only for concrete word lengths.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>neg_num_bintr</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(- numeral x :: &#39;a::len word) =
+  word_of_int (bintrunc (LENGTH(&#39;a)) (-numeral x))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>word_ubin.Abs_norm</span><span> </span><span>word_neg_numeral_alt</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  fun is_refl (Const (@{const_name Pure.eq}, _) $ x $ y) = (x = y)
+    | is_refl _ = false;
+
+  fun signed_dest_wordT (Type (@{type_name word}, [Type (@{type_name signed}, [T])])) = Word_Lib.dest_binT T
+    | signed_dest_wordT T = Word_Lib.dest_wordT T
+
+  fun typ_size_of t = signed_dest_wordT (type_of (Thm.term_of t));
+
+  fun num_len (Const (@{const_name Num.Bit0}, _) $ n) = num_len n + 1
+    | num_len (Const (@{const_name Num.Bit1}, _) $ n) = num_len n + 1
+    | num_len (Const (@{const_name Num.One}, _)) = 1
+    | num_len (Const (@{const_name numeral}, _) $ t) = num_len t
+    | num_len (Const (@{const_name uminus}, _) $ t) = num_len t
+    | num_len t = raise TERM (&quot;num_len&quot;, [t])
+
+  fun unsigned_norm is_neg _ ctxt ct =
+  (if is_neg orelse num_len (Thm.term_of ct) &gt; typ_size_of ct then let
+      val btr = if is_neg
+                then @{thm neg_num_bintr} else @{thm num_abs_bintr}
+      val th = [Thm.reflexive ct, mk_eq btr] MRS transitive_thm
+
+      (* will work in context of theory Word as well *)
+      val ss = simpset_of (@{context} addsimps @{thms bintrunc_numeral})
+      val cnv = simplify (put_simpset ss ctxt) th
+    in if is_refl (Thm.prop_of cnv) then NONE else SOME cnv end
+    else NONE)
+  handle TERM (&quot;num_len&quot;, _) =&gt; NONE
+       | TYPE (&quot;dest_binT&quot;, _, _) =&gt; NONE
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">simproc_setup</span></span><span>
+</span><span>  </span><span>unsigned_norm</span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;numeral n::&#39;a::len word&quot;</span></span></span><span class="delimiter">)</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unsigned_norm false&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">simproc_setup</span></span><span>
+</span><span>  </span><span>unsigned_norm_neg0</span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;-numeral (num.Bit0 num)::&#39;a::len word&quot;</span></span></span><span class="delimiter">)</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unsigned_norm true&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">simproc_setup</span></span><span>
+</span><span>  </span><span>unsigned_norm_neg1</span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;-numeral (num.Bit1 num)::&#39;a::len word&quot;</span></span></span><span class="delimiter">)</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unsigned_norm true&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>word_pow_0</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>minus_one_norm</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(-1 :: &#39;a :: len word) = of_nat (2 ^ LENGTH(&#39;a) - 1)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span>of_nat_diff</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>minus_one_norm_num</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span>minus_one_norm</span><span> </span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;&#39;b::len bit0&quot;</span></span></span><span class="delimiter">]</span><span> </span><span>minus_one_norm</span><span> </span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;&#39;b::len0 bit1&quot;</span></span></span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f (7 :: 2 word) = f 3&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f 7 = f (3 :: 2 word)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f (-2) = f (21 + 1 :: 3 word)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f (-2) = f (13 + 1 :: &#39;a::len word)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* does not touch generic word length *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">oops</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f (-2) = f (0xFFFFFFFE :: 32 word)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(-1 :: 2 word) = 3&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f (-2) = f (0xFFFFFFFE :: 32 signed word)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  We leave @{term &quot;-1&quot;} untouched by default, because it is often useful
+  and its normal form can be large.
+  To include it in the normalisation, add @{thm [source] minus_one_norm_num}.
+  The additional normalisation is restricted to concrete numeral word lengths,
+  like the rest.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">notes</span></span><span> </span><span>minus_one_norm_num</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f (-1) = f (15 :: 4 word)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f (-1) = f (7 :: 3 word)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f (-1) = f (0xFFFF :: 16 word)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f (-1) = f (0xFFFF + 1 :: &#39;a::len word)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* does not touch generic -1 *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">oops</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

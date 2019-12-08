@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IsaSAT_Watch_List_SML (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IsaSAT_Watch_List_SML</h1>
+
+<span class="command">theory</span> <span class="name">IsaSAT_Watch_List_SML</span><br/>
+<span class="keyword">imports</span> <a href="../Watched_Literals/Array_Array_List64.html"><span class="name">Array_Array_List64</span></a> <a href="IsaSAT_Watch_List.html"><span class="name">IsaSAT_Watch_List</span></a> <a href="IsaSAT_Literals_SML.html"><span class="name">IsaSAT_Literals_SML</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IsaSAT_Watch_List_SML</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Watched_Literals.Array_Array_List64</span><span> </span><span>IsaSAT_Watch_List</span><span> </span><span>IsaSAT_Literals_SML</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>watched_wl</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((nat &#215; uint64) array_list) array&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>watched_wl_uint32</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((uint64 &#215; uint64) array_list64) array&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>watcher_enc_assn</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;watcher_enc_assn &#8801; pure watcher_enc&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>watcher_assn</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;watcher_assn &#8801; nat_assn *a watcher_enc_assn&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>watcher_fast_assn</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;watcher_fast_assn &#8801; uint64_nat_assn *a watcher_enc_assn&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_marked_binary_code_hnr</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(return o is_marked_binary_code, RETURN o is_marked_binary) &#8712; watcher_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>watcher_enc_extract_bool</span><span> </span><span>watcher_enc_extract_bool_True</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span>
+</span><span>  </span><span>pair_nat_ann_lit_assn_Decided_Some</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;pair_nat_ann_lit_assn (Decided x1) (aba, Some x2) = false&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>pair_nat_ann_lit_assn_Propagated_None</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;pair_nat_ann_lit_assn (Propagated x21 x22) (aba, None) = false&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>nat_ann_lit_rel_def</span><span> </span><span>pure_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>blit_of_code_hnr</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(return o blit_of_code, RETURN o blit_of) &#8712; watcher_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>watcher_enc_extract_blit</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>watcher_of_code_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(return o watcher_of_code, RETURN o watcher_of) &#8712;
+    watcher_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> (nat_assn *a unat_lit_assn *a bool_assn)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>watcher_enc_extract_bool</span><span> </span><span>watcher_enc_extract_bool_True</span><span> </span><span>watcher_enc_extract_blit</span><span>
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>watcher_of_code_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>watcher_of_fast_code_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(return o watcher_of_fast_code, RETURN o watcher_of) &#8712;
+    watcher_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> (uint64_nat_assn *a unat_lit_assn *a bool_assn)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>watcher_enc_extract_bool</span><span> </span><span>watcher_enc_extract_bool_True</span><span> </span><span>watcher_enc_extract_blit</span><span>
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>watcher_of_fast_code_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>to_watcher_code_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry2 (return ooo to_watcher_code), uncurry2 (RETURN ooo to_watcher)) &#8712;
+    nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> bool_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> watcher_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>watcher_enc_extract_bool</span><span> </span><span>watcher_enc_extract_bool_True</span><span> </span><span>watcher_enc_extract_blit</span><span>
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>to_watcher_code_def</span><span> </span><span>watcher_enc_def</span><span> </span><span>OR_132_is_sum</span><span> </span><span>nat_of_uint64_uint64_of_uint32</span><span>
+</span><span>       </span><span>nat_of_uint32_le_uint32_max</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>to_watcher_fast_code_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry2 (return ooo to_watcher_fast_code), uncurry2 (RETURN ooo to_watcher_fast)) &#8712;
+    uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> bool_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> watcher_fast_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>watcher_enc_extract_bool</span><span> </span><span>watcher_enc_extract_bool_True</span><span> </span><span>watcher_enc_extract_blit</span><span>
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>to_watcher_fast_code_def</span><span> </span><span>watcher_enc_def</span><span> </span><span>OR_132_is_sum</span><span> </span><span>nat_of_uint64_uint64_of_uint32</span><span>
+</span><span>       </span><span>nat_of_uint32_le_uint32_max</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

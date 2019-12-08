@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory HOL_Lemmas (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory HOL_Lemmas</h1>
+
+<span class="command">theory</span> <span class="name">HOL_Lemmas</span><br/>
+<span class="keyword">imports</span> <a href="../../HOL/HOL/Main.html"><span class="name">Main</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+ * Copyright 2014, NICTA
+ *
+ * This software may be distributed and modified according to the terms of
+ * the BSD 2-Clause license. Note that NO WARRANTY is provided.
+ * See &quot;LICENSE_BSD2.txt&quot; for details.
+ *
+ * @TAG(NICTA_BSD)
+ *)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Generic Lemmas used in the Word Library&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>HOL_Lemmas</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>
+</span><span>  </span><span>strict_part_mono</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a set &#8658; (&#39;a :: order &#8658; &#39;b :: order) &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;strict_part_mono S f &#8801; &#8704;A&#8712;S. &#8704;B&#8712;S. A &lt; B &#10230; f A &lt; f B&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>strict_part_mono_by_steps</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;strict_part_mono {..n :: nat} f = (n &#8800; 0 &#10230; f (n - 1) &lt; f n &#8743; strict_part_mono {.. n - 1} f)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>n</span><span class="delimiter">;</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>strict_part_mono_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>safe</span><span class="delimiter">;</span><span> </span><span>clarsimp</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;B = Suc nat&quot;</span></span></span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;A = nat&quot;</span></span></span><span class="delimiter">;</span><span> </span><span>clarsimp</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>erule</span><span> </span><span>order_less_trans</span><span> </span><span class="delimiter">[</span><span>rotated</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>strict_part_mono_singleton</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;strict_part_mono {x} f&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>strict_part_mono_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>strict_part_mono_lt</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; x &lt; f 0; strict_part_mono {.. n :: nat} f &#10215; &#10233; &#8704;m &#8804; n. x &lt; f m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>atMost_iff</span><span> </span><span>le_0_eq</span><span> </span><span>le_cases</span><span> </span><span>neq0_conv</span><span> </span><span>order.strict_trans</span><span> </span><span>strict_part_mono_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>strict_part_mono_reverseE</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; f n &#8804; f m; strict_part_mono {.. N :: nat} f; n &#8804; N &#10215; &#10233; n &#8804; m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ccontr</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>linorder_not_le</span><span> </span><span>strict_part_mono_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>takeWhile_take_has_property</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;n &#8804; length (takeWhile P xs) &#10233; &#8704;x &#8712; set (take n xs). P x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>xs</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>n</span><span class="delimiter">;</span><span> </span><span>simp</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split_asm</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span>n</span><span class="delimiter">,</span><span> </span><span>simp_all</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>takeWhile_take_has_property_nth</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; n &lt; length (takeWhile P xs) &#10215; &#10233; P (xs ! n)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>xs</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>n</span><span class="delimiter">;</span><span> </span><span>simp</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split_asm</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span>n</span><span class="delimiter">,</span><span> </span><span>simp_all</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>takeWhile_replicate</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;takeWhile f (replicate len x) = (if f x then replicate len x else [])&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induct_tac</span><span> </span><span>len</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>takeWhile_replicate_empty</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#172; f x &#10233; takeWhile f (replicate len x) = []&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>takeWhile_replicate</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>takeWhile_replicate_id</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;f x &#10233; takeWhile f (replicate len x) = replicate len x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>takeWhile_replicate</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>power_sub</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>a</span><span> </span><span class="delimiter">::</span><span> </span><span>nat</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>lt</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;n &#8804; m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span>     </span><span>av</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;0 &lt; a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;a ^ (m - n) = a ^ m div a ^ n&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>nat_mult_eq_cancel1</span><span> </span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(0::nat) &lt; a ^ n&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>av</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>lt</span><span> </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>q</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>mv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;n + q = m&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>le_iff_add</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;a ^ n * (a ^ m div a ^ n) = a ^ m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>mult.commute</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;a ^ m = (a ^ m div a ^ n) * a ^ n + a ^ m mod a ^ n&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span>  </span><span>div_mult_mod_eq</span><span> </span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;a ^ m mod a ^ n = 0&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>mod_eq_0_iff_dvd</span><span class="delimiter">,</span><span> </span><span>subst</span><span> </span><span>dvd_def</span><span class="delimiter">,</span><span> </span><span>rule</span><span> </span><span>exI</span><span> </span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>x</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;a ^ q&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">,</span><span>
+</span><span>      </span><span class="delimiter">(</span><span>subst</span><span> </span><span>power_add</span><span> </span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>mv</span><span class="delimiter">)</span><span class="delimiter">+</span><span class="delimiter">,</span><span> </span><span>rule</span><span> </span><span>refl</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(a ^ m div a ^ n) * a ^ n = a ^ m&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;a ^ n * a ^ (m - n) = a ^ n * (a ^ m div a ^ n)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>lt</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>power_add</span><span> </span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>union_sub</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;B &#8838; A; C &#8838; B&#10215; &#10233; (A - B) &#8746; (B - C) = (A - C)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>insert_sub</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8712; xs &#10233; (insert x (xs - ys)) = (xs - (ys - {x}))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ran_upd</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; inj_on f (dom f); f y = Some z &#10215; &#10233; ran (&#955;x. if x = y then None else f x) = ran f - {z}&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ran_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>set_eqI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>domI</span><span> </span><span>inj_on_eq_iff</span><span> </span><span>option.sel</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nat_less_power_trans</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>n</span><span> </span><span class="delimiter">::</span><span> </span><span>nat</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>nv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;n &lt; 2 ^ (m - k)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span>     </span><span>kv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;k &#8804; m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;2 ^ k * n &lt; 2 ^ m&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>order_less_le_trans</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;2 ^ k * n &lt; 2 ^ k * 2 ^ (m - k)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>mult_less_mono2</span><span> </span><span class="delimiter">[</span><span>OF</span><span> </span><span>nv</span><span> </span><span>zero_less_power</span><span class="delimiter">]</span><span class="delimiter">)</span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(2::nat) ^ k * 2 ^ (m - k) &#8804; 2 ^ m&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>nv</span><span> </span><span>kv</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>power_add</span><span> </span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nat_le_power_trans</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>n</span><span> </span><span class="delimiter">::</span><span> </span><span>nat</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;n &#8804; 2 ^ (m - k); k &#8804; m&#10215; &#10233; 2 ^ k * n &#8804; 2 ^ m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>le_add_diff_inverse</span><span> </span><span>mult_le_mono2</span><span> </span><span>semiring_normalization_rules</span><span class="delimiter">(</span><span>26</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>x_power_minus_1</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>x</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a :: {ab_group_add, power, numeral, one}&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x + (2::&#39;a) ^ n - (1::&#39;a) = x + (2 ^ n - 1)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nat_diff_add</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>i</span><span> </span><span class="delimiter">::</span><span> </span><span>nat</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; i + j = k &#10215; &#10233; i = k - j&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>arith</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pow_2_gt</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;n &#8805; 2 &#10233; (2::int) &lt; 2 ^ n&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>n</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>if_apply_def2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(if P then F else G) = (&#955;x. (P &#10230; F x) &#8743; (&#172; P &#10230; G x))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>case_bool_If</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;case_bool P Q b = (if b then P else Q)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sum_to_zero</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(a :: &#39;a :: ring) + b = 0 &#10233; a = (- b)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>drule</span><span> </span><span>arg_cong</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>f</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;&#955; x. x - a&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">,</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arith_is_1</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; x &#8804; Suc 0; x &gt; 0 &#10215; &#10233; x = 1&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>arith</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>if_f</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(if a then f b else f c) = f (if a then b else c)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>upt_add_eq_append&#39;</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i &#8804; j&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;j &#8804; k&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[i..&lt;k] = [i..&lt;j] @ [j..&lt;k]&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span>le_Suc_ex</span><span> </span><span>upt_add_eq_append</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>split_upt_on_n</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;n &lt; m &#10233; [0 ..&lt; m] = [0 ..&lt; n] @ [n] @ [Suc n ..&lt; m]&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>append_Cons</span><span> </span><span>append_Nil</span><span> </span><span>less_Suc_eq_le</span><span> </span><span>less_imp_le_nat</span><span> </span><span>upt_add_eq_append&#39;</span><span>
+</span><span>            </span><span>upt_rec</span><span> </span><span>zero_less_Suc</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>drop_Suc_nth</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;n &lt; length xs &#10233; drop n xs = xs!n # drop (Suc n) xs&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>Cons_nth_drop_Suc</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>n_less_equal_power_2</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;n &lt; 2 ^ n&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>n</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nat_min_simps</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(a::nat) &#8804; b &#10233; min b a = a&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;a &#8804; b &#10233; min a b = a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>power_sub_int</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; m &#8804; n; 0 &lt; b &#10215; &#10233; b ^ n div b ^ m = (b ^ (n - m) :: int)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subgoal_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;n&#39;. n = m + n&#39;&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>power_add</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>exI</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>x</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;n - m&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>suc_le_pow_2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;1 &lt; (n::nat) &#10233; Suc n &lt; 2 ^ n&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>n</span><span class="delimiter">;</span><span> </span><span>clarsimp</span><span class="delimiter">)</span><span>
+</span><span>     </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;n = 1&quot;</span></span></span><span class="delimiter">;</span><span> </span><span>clarsimp</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nat_le_Suc_less_imp</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;x &lt; y &#10233; x &#8804; y - Suc 0&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>arith</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>length_takeWhile_less</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;x&#8712;set xs. &#172; P x &#10233; length (takeWhile P xs) &lt; length xs&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>xs</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>drop_eq_mono</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>le</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;m &#8804; n&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>drop</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;drop m xs = drop m ys&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;drop n xs = drop n ys&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>ex</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;p. n = p + m&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>exI</span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;n - m&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>le</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>p</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>p</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;n = p + m&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>p</span><span> </span><span>drop_drop</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>drop</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nat_Suc_less_le_imp</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(k::nat) &lt; Suc n &#10233; k &#8804; n&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nat_add_less_by_max</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; (x::nat) &#8804; xmax ; y &lt; k - xmax &#10215; &#10233; x + y &lt; k&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mod_lemma</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[| (0::nat) &lt; c; r &lt; b |] ==&gt; b * (q mod c) + r &lt; b * c&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cut_tac</span><span> </span><span>m</span><span> </span><span class="delimiter">=</span><span> </span><span>q</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>n</span><span> </span><span class="delimiter">=</span><span> </span><span>c</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>mod_less_divisor</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>drule_tac</span><span> </span><span class="delimiter">[</span><span>2</span><span class="delimiter">]</span><span> </span><span>m</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;q mod c&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>less_imp_Suc_add</span><span class="delimiter">,</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>erule_tac</span><span> </span><span>P</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;%x. lhs &lt; rhs x&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>lhs</span><span> </span><span>rhs</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>ssubst</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>add_mult_distrib2</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

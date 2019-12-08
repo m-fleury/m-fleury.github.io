@@ -1,0 +1,966 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory LLVM_Shallow_RS (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory LLVM_Shallow_RS</h1>
+
+<span class="command">theory</span> <span class="name">LLVM_Shallow_RS</span><br/>
+<span class="keyword">imports</span> <a href="LLVM_Memory_RS.html"><span class="name">LLVM_Memory_RS</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;LLVM Shallow Embedding --- Reasoning Setup&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>LLVM_Shallow_RS</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;../basic/LLVM_Basic_Main&quot;</span></span></span><span>
+</span><span>  </span><span>LLVM_Memory_RS</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Monadification Setup for VCG&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  structure LLVM_VCG_Monadify = struct
+    structure Monadify = Gen_Monadify_Cong (
+    
+      fun mk_return x = @{mk_term &quot;return ?x ::_ llM&quot;}
+      fun mk_bind m f = @{mk_term &quot;bind ?m ?f ::_ llM&quot;}
+    
+      fun dest_return @{mpat &quot;return ?x ::_ llM&quot;} = SOME x | dest_return _ = NONE
+      fun dest_bind @{mpat &quot;bind ?m ?f ::_ llM&quot;} = SOME (m,f) | dest_bind _ = NONE
+      
+      fun dest_monadT (Type (@{type_name M},[T,@{typ unit},@{typ llvm_memory},@{typ err}])) = SOME T | dest_monadT _ = NONE
+      val bind_return_thm = @{lemma &quot;bind m return = m&quot; by simp}
+      val return_bind_thm = @{lemma &quot;bind (return x) f = f x&quot; by simp}
+      val bind_bind_thm = @{lemma &quot;bind (bind m (&#955;x. f x)) g = bind m (&#955;x. bind (f x) g)&quot; by simp}
+      
+    )
+    
+    val _ = Theory.setup
+     (Attrib.setup \&lt;^binding&gt;&#8249;vcg_const&#8250;
+      (Args.term &gt;&gt; (fn t =&gt; Thm.declaration_attribute (K (Monadify.prepare_add_const_decl t))))
+      &quot;declaration of new vcg-constant&quot;)
+
+    fun monadify_all_tac ctxt = CONVERSION (Conv.top_sweep_conv (Monadify.monadify_conv) ctxt)
+      
+  end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>vcg_monadify_xforms</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>vcg_monadify_raw</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (SIMPLE_METHOD&#39; o LLVM_VCG_Monadify.monadify_all_tac)&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method</span></span><span> </span><span>vcg_monadify_xform_raw</span><span> </span><span class="delimiter">=</span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>vcg_monadify_xforms</span><span class="delimiter">)</span><span class="delimiter">?</span><span>
+</span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* xform (monadify xform)+ *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">method</span></span><span> </span><span>vcg_monadify</span><span> </span><span class="keyword2"><span class="keyword">uses</span></span><span> </span><span>simp</span><span> </span><span class="delimiter">=</span><span> 
+</span><span>  </span><span>vcg_monadify_xform_raw</span><span class="delimiter">;</span><span> </span><span class="delimiter">(</span><span class="delimiter">(</span><span>changed</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;vcg_monadify_raw; vcg_monadify_xform_raw&#8250;</span></span></span><span class="delimiter">)</span><span class="delimiter">+</span><span class="delimiter">)</span><span class="delimiter">?</span><span>
+</span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Automatically do monadification when preparing Hoare triple! *)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>llvm_inline_bind_laws</span><span class="delimiter">[</span><span>vcg_monadify_xforms</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Abbreviations for VCG&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>ll_assn</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(llvm_amemory &#8658; bool)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>llvm_htriple</span><span> 
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_assn &#8658; &#39;a llM &#8658; (&#39;a &#8658; ll_assn) &#8658; bool&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple &#8801; htriple llvm_&#945;&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>llvm_htripleF</span><span> 
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_assn &#8658; ll_assn &#8658; &#39;a llM &#8658; (&#39;a &#8658; ll_assn) &#8658; bool&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htripleF &#8801; htripleF llvm_&#945;&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llSTATE &#8801; STATE llvm_&#945;&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llPOST &#8801; POSTCOND llvm_&#945;&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>llvm_prim_setup</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Locale to contain primitive VCG setup, without data refinement *)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;General VCG Setup&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fri_extract_prod_case</span><span class="delimiter">[</span><span>fri_extract_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(case p of (a,b) &#8658; (P a b :: ll_assn)) = (EXS a b. &#8593;(p=(a,b)) ** P a b)&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>p</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span> </span><span>pred_lift_extract_simps</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>norm_prod_case</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;wp (case p of (a,b) &#8658; f a b) Q s &#10231; (&#8704;a b. p=(a,b) &#10230; wp (f a b) Q s)&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.split</span><span class="delimiter">)</span><span> 
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Assertions&#8250;</span></span></span><span>
+</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">typedef</span></span><span> </span><span class="delimiter">(</span><span class="tfree">&#39;a</span><span class="delimiter">,</span><span class="tfree">&#39;c</span><span class="delimiter">)</span><span> </span><span>dr_assn</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;UNIV :: (&#39;a &#8658; &#39;c &#8658; ll_assn) set&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">setup_lifting</span></span><span> </span><span>type_definition_dr_assn</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>dr_assn_inverses</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Abs_dr_assn (Rep_dr_assn A) = A&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Rep_dr_assn (Abs_dr_assn B) = B&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>Rep_dr_assn_inverse</span><span> </span><span>Abs_dr_assn_inverse</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>dr_assn_prefix</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a, &#39;b) dr_assn &#8658; &#39;a &#8658; &#39;b &#8658; ll_assn&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;&#8639;_&quot;</span></span></span><span> </span><span class="delimiter">[</span><span>1000</span><span class="delimiter">]</span><span> </span><span>1000</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8639;A a c &#8801; Rep_dr_assn A a c&quot;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_pure A &#8801; &#8704;a c. sep_is_pure_assn (&#8639;A a c)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>dr_assn_pure_prefix</span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;&#8639;<span class="hidden">&#8681;</span><sub>p</sub>_&quot;</span></span></span><span> </span><span class="delimiter">[</span><span>1000</span><span class="delimiter">]</span><span> </span><span>1000</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>  
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8639;<span class="hidden">&#8681;</span><sub>p</sub>A a c &#8801; &#8593;pure_part (&#8639;A a c)&quot;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>dr_assn_pure_asm_prefix</span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;&#9837;<span class="hidden">&#8681;</span><sub>p</sub>_&quot;</span></span></span><span> </span><span class="delimiter">[</span><span>1000</span><span class="delimiter">]</span><span> </span><span>1000</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>  
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#9837;<span class="hidden">&#8681;</span><sub>p</sub>A a c &#8801; pure_part (&#8639;A a c) &#8743; is_pure A&quot;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pure_fri_rule</span><span class="delimiter">[</span><span>fri_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PRECOND (SOLVE_ASM (&#9837;<span class="hidden">&#8681;</span><sub>p</sub>A a c)) &#10233; &#9633; &#8866; &#8639;<span class="hidden">&#8681;</span><sub>p</sub>A a c&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span> </span><span>entails_def</span><span> </span><span>dr_assn_pure_prefix_def</span><span> </span><span>dr_assn_pure_asm_prefix_def</span><span>
+</span><span>    </span><span>is_pure_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarsimp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>pure_part_pure_eq</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>prepare_pure_assn</span><span class="delimiter">[</span><span>fri_prepare_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8639;A a c = &#8639;<span class="hidden">&#8681;</span><sub>p</sub>A a c&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">if</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_pure A&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>that</span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>dr_assn_pure_prefix_def</span><span> </span><span>is_pure_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>extract_pure_assn</span><span class="delimiter">[</span><span>fri_extract_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8639;A a c = &#8593;&#9837;<span class="hidden">&#8681;</span><sub>p</sub>A a c&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">if</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_pure A&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>that</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span> </span><span>entails_def</span><span> </span><span>dr_assn_pure_asm_prefix_def</span><span> </span><span>is_pure_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">attribute_setup</span></span><span> </span><span>is_pure_rule</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Attrib.add_del 
+    (VCG_Lib.chained_decl_attr @{context} @{attributes [fri_prepare_simps, fri_extract_simps]})
+    (VCG_Lib.chained_decl_attr @{context} @{attributes [fri_prepare_simps del, fri_extract_simps del]})
+  &#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Rules to introduce pure assertions&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*lemmas [vcg_prep_ext_start_rules] = 
+  rev_mp[of &quot;pure_part _&quot;]
+  rev_mp[of &quot;llSTATE _ _&quot;]
+  rev_mp[of &quot;&#9837;<span class="hidden">&#8681;</span><sub>p</sub> _ _ _&quot;]
+*)</span></span></span></span></span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;This rule is to be overloaded by later rules&#8250;</span></span></span><span>  
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*lemma thin_pure[vcg_prep_ext_rules]: &quot;pure_part A &#10233; True&quot; ..*)</span></span></span></span></span><span>
+</span><span>    
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pure_part_pureD</span><span class="delimiter">[</span><span>vcg_prep_ext_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pure_part (&#8593;&#934;) &#10233; &#934;&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>prep_ext_state</span><span class="delimiter">[</span><span>vcg_prep_ext_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;llSTATE P s &#10233; pure_part P&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>STATE_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>blast</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>pure_partI</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>prep_ext_pure_part_pure</span><span class="delimiter">[</span><span>vcg_prep_ext_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;pure_part (&#8639;<span class="hidden">&#8681;</span><sub>p</sub>A a c) &#10233; pure_part (&#8639;A a c)&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>dr_assn_pure_prefix_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>    
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>thin_dr_pure_asm</span><span class="delimiter">[</span><span>vcg_prep_ext_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#9837;<span class="hidden">&#8681;</span><sub>p</sub>A a c) &#10233; pure_part (&#8639;A a c)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>dr_assn_pure_asm_prefix_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mk_assn &#8801; Abs_dr_assn&quot;</span></span></span><span>  
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mk_pure_assn A &#8801; mk_assn (&#955;a c. &#8593;A a c)&quot;</span></span></span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_pure_mk_pure</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_pure (mk_pure_assn A)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_pure_def</span><span> </span><span>mk_pure_assn_def</span><span> </span><span>mk_assn_def</span><span> </span><span>dr_assn_prefix_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sel_mk_assn</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8639;(mk_assn A) a c = A a c&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>mk_assn_def</span><span> </span><span>dr_assn_prefix_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sel_mk_pure_assn</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8639;(mk_pure_assn A) a c = &#8593;(A a c)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8639;<span class="hidden">&#8681;</span><sub>p</sub>(mk_pure_assn A) a c = &#8593;(A a c)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#9837;<span class="hidden">&#8681;</span><sub>p</sub>(mk_pure_assn A) a c = A a c&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>mk_pure_assn_def</span><span> </span><span>dr_assn_pure_prefix_def</span><span> </span><span>dr_assn_pure_asm_prefix_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>mk_assn_def</span><span> </span><span>is_pure_def</span><span> </span><span>dr_assn_prefix_def</span><span> </span><span>sep_algebra_simps</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mk_pure_assn_extractI</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pure_part (&#8639;(mk_pure_assn A) a c)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;A a c &#10233; &#934; a c&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#934; a c&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mk_assn_extractI</span><span class="delimiter">:</span><span>  
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pure_part (&#8639;(mk_assn A) a c)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;A a c &#8866; &#8593;&#934; a c ** sep_true&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#934; a c&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>entails_def</span><span> </span><span>sep_conj_def</span><span> </span><span>pred_lift_def</span><span> </span><span>sep_algebra_simps</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mk_assn_extractI&#39;</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pure_part (&#8639;(mk_assn A) a c)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FRAME (A a c) (&#8593;&#934; a c) F&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#934; a c&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>mk_assn_extractI</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>FRAME_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>no_types</span><span class="delimiter">,</span><span> </span><span>lifting</span><span class="delimiter">)</span><span> </span><span>entails_def</span><span> </span><span>entails_mp</span><span> </span><span>sep_conj_commute</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pure_part_mk_assnD</span><span class="delimiter">[</span><span>vcg_prep_ext_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;pure_part (&#8639;(mk_assn f) a c) &#10233; pure_part (f a c)&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  
+</span><span>  
+</span><span>    
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Use as [fri_rules] to for &#39;matching&#39; of abstract values by auto during frame inference *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fri_abs_cong_rl</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PRECOND (SOLVE_AUTO (a=a&#39;)) &#10233; &#8639;A a c &#8866; &#8639;A a&#39; c&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Memory Reasoning&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>llvm_prim_mem_setup</span><span>
+</span><span class="keyword1"><span class="command">sublocale</span></span><span> </span><span>llvm_prim_setup</span><span> </span><span class="delimiter">&lt;</span><span> </span><span>llvm_prim_mem_setup</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Pointers&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Assertion for pointer to single value&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ll_pto</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a::llvm_rep, &#39;a ptr) dr_assn&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_pto &#8801; mk_assn (&#955;v p. llvm_pto (to_val v) (the_raw_ptr p))&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instantiation</span></span><span> </span><span>ptr</span><span> </span><span class="delimiter">::</span><span> </span><span class="delimiter">(</span><span>llvm_rep</span><span class="delimiter">)</span><span> </span><span>addr_algebra</span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;abase &#8801; abase o the_raw_ptr&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;acompat a b &#8801; acompat (the_raw_ptr a) (the_raw_ptr b)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;adiff a b &#8801; adiff (the_raw_ptr a) (the_raw_ptr b)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>aidx_ptr</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a ptr &#8658; int &#8658; &#39;a ptr&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;aidx a i &#8801; PTR (aidx (the_raw_ptr a) i)&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">instance</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>standard</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>part_equivpI</span><span> </span><span>sympI</span><span> </span><span>transpI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>abase_ptr_def</span><span> </span><span>acompat_ptr_def</span><span> </span><span>adiff_ptr_def</span><span> </span><span>aidx_ptr_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>acompat_equiv</span><span> </span><span>part_equivp_def</span><span> </span><span>ptr.sel</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>acompat_sym</span><span> </span><span>acompat_trans</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>acompat_dom</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Assertion to range of array&#8250;</span></span></span><span>  
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_range I &#8801; mk_assn (&#955;f p. &#8593;(abase p) ** (&#8899;*i&#8712;I. &#8639;ll_pto (f i) (p +<span class="hidden">&#8681;</span><sub>a</sub> i)))&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_range_preep_pure</span><span class="delimiter">[</span><span>vcg_prep_ext_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;pure_part (&#8639;(ll_range I) f p) &#10233; abase p&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ll_range_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>erule</span><span> </span><span>mk_assn_extractI&#39;</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg_try_solve</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_range_not_base</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;abase p &#10233; &#8639;(ll_range I) f p = sep_false&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ll_range_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>null_not_base</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;abase null&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>abase_ptr_def</span><span> </span><span>null_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>abase_llvm_ptr_def</span><span> </span><span>llvm_null_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_range_not_null</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8639;(ll_range I) f null = sep_false&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>ll_range_not_base</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>    
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_pto_not_same</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8639;ll_pto x p ** &#8639;ll_pto y p) = sep_false&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_pto_def</span><span> </span><span>llvm_pto_def</span><span> </span><span>ab.ba.pto_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>rptr.splits</span><span> </span><span>addr.splits</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span> </span><span>sep_conj_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_disj_llvm_amemory_def</span><span> </span><span>sep_algebra_simps</span><span> </span><span>ab.pto_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>baddr.splits</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>vpto_assn_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_range_merge</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;I<span class="hidden">&#8681;</span><sub>1</sub>&#8745;I<span class="hidden">&#8681;</span><sub>2</sub>={} &#10233; (&#8639;(ll_range I<span class="hidden">&#8681;</span><sub>1</sub>) f p ** &#8639;(ll_range I<span class="hidden">&#8681;</span><sub>2</sub>) f p) = &#8639;(ll_range (I<span class="hidden">&#8681;</span><sub>1</sub>&#8746;I<span class="hidden">&#8681;</span><sub>2</sub>)) f p&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ll_range_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_range_bogus_upd</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x&#8713;I &#10233; &#8639;(ll_range I) (f(x:=v)) p = &#8639;(ll_range I) f p&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ll_range_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;abase p&quot;</span></span></span><span class="delimiter">;</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>sep_set_img_cong</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>open_ll_range</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i&#8712;I &#10233; &#8639;(ll_range I) f p = (&#8593;abase p ** &#8639;ll_pto (f i) (p +<span class="hidden">&#8681;</span><sub>a</sub> i) ** &#8639;(ll_range (I-{i})) f p)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ll_range_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;abase p&quot;</span></span></span><span class="delimiter">;</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span>  </span><span>sep_set_img_remove</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;I&#8745;I&#39;&#8800;{}&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;F &#8866; &#8639;(ll_range (I&#39;-I)) f p ** F&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8639;(ll_range I) f p ** F &#8866; &#8639;(ll_range I&#39;) f p ** &#8639;(ll_range (I-I&#39;)) f p ** F&#39;&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8639;(ll_range I) f p ** F &#8866; &#8639;(ll_range I) f p ** &#8639;(ll_range (I&#39;-I)) f p ** F&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>conj_entails_mono</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">also</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8230; = (&#8639;(ll_range (I &#8746; (I&#39;-I))) f p ** F&#39;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>ll_range_merge</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">also</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8230; = ((&#8639;(ll_range I&#39;) f p ** &#8639;(ll_range (I-I&#39;)) f p) ** F&#39;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;_=&#8977;&quot;</span></span></span><span> </span><span>ll_range_merge</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>Un_commute</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">finally</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>  
+</span><span class="keyword1"><span class="command">qed</span></span><span>    
+</span><span>    
+</span><span>  
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Load and Store&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span> </span><span>llvm_prim_mem_setup</span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>checked_from_val_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple &#9633; (checked_from_val (to_val x)) (&#955;r. &#8593;(r=x))&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>checked_from_val_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Standard rules for load and store from pointer&#8250;</span></span></span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_load_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;ll_pto x p) (ll_load p) (&#955;r. &#8593;(r=x) ** &#8639;ll_pto x p)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ll_load_def</span><span> </span><span>ll_pto_def</span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_store_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;ll_pto xx p) (ll_store x p) (&#955;_. &#8639;ll_pto x p)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ll_store_def</span><span> </span><span>ll_pto_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Rules for load and store from indexed pointer, wrt. range&#8250;</span></span></span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>fri_extract_simps</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>sep_conj_assoc</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">find_theorems</span></span><span> </span><span>htriple</span><span> </span><span>EXTRACT</span><span>
+</span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>vcg_decomp_rules</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_load_rule_range</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;(ll_range I) a p ** &#8593;<span class="hidden">&#8681;</span><sub>!</sub>( p&#39; ~<span class="hidden">&#8681;</span><sub>a</sub> p &#8743; p&#39; -<span class="hidden">&#8681;</span><sub>a</sub> p &#8712; I )) (ll_load p&#39;) (&#955;r. &#8593;(r = a (p&#39; -<span class="hidden">&#8681;</span><sub>a</sub> p)) ** &#8639;(ll_range I) a p)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>htriple_vcgI&#39;</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>fri_extract_basic</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>open_ll_range</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>fri_extract</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_store_rule_range</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;(ll_range I) a p ** &#8593;<span class="hidden">&#8681;</span><sub>!</sub>( p&#39; ~<span class="hidden">&#8681;</span><sub>a</sub> p &#8743; p&#39; -<span class="hidden">&#8681;</span><sub>a</sub> p &#8712; I )) (ll_store x p&#39;) (&#955;_. &#8639;(ll_range I) (a(p&#39; -<span class="hidden">&#8681;</span><sub>a</sub> p := x)) p)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>htriple_vcgI&#39;</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>fri_extract_basic</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>open_ll_range</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>fri_extract</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Offsetting Pointers&#8250;</span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: The LLVM semantics also allows pointers one past the end of a range, 
+  which is not supported by these rules yet.
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Rule for indexing pointer. Note, the new target address must exist&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_ofs_ptr_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;ll_pto v (p +<span class="hidden">&#8681;</span><sub>a</sub> (sint i)) ** &#8593;<span class="hidden">&#8681;</span><sub>!</sub>(abase p))
+    (ll_ofs_ptr p i) 
+    (&#955;r. &#8593;(r= p +<span class="hidden">&#8681;</span><sub>a</sub> (sint i)) ** &#8639;ll_pto v (p +<span class="hidden">&#8681;</span><sub>a</sub> (sint i)))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ll_ofs_ptr_def</span><span> </span><span>ll_pto_def</span><span> </span><span>abase_ptr_def</span><span> </span><span>aidx_ptr_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Rule for indexing pointer into range. Note, the new target address must exist&#8250;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_ofs_ptr_rule&#39;</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;(ll_range I) x p ** &#8593;<span class="hidden">&#8681;</span><sub>!</sub>(p ~<span class="hidden">&#8681;</span><sub>a</sub> p&#39; &#8743; (p&#39; +<span class="hidden">&#8681;</span><sub>a</sub> sint i) -<span class="hidden">&#8681;</span><sub>a</sub> p &#8712; I)) 
+    (ll_ofs_ptr p&#39; i) 
+    (&#955;r. &#8593;(r= p&#39; +<span class="hidden">&#8681;</span><sub>a</sub> sint i) ** &#8639;(ll_range I) x p)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>htriple_vcgI&#39;</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>fri_extract_basic</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>open_ll_range</span><span> </span><span>vcg_tag_defs</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>fri_extract</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Allocate and Free&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Memory allocation tag, which expresses ownership of an allocated block.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ll_malloc_tag</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;int &#8658; &#39;a::llvm_rep ptr &#8658; _&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_malloc_tag n p &#8801; &#8593;(n&#8805;0) ** llvm_malloc_tag n (the_raw_ptr p)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Allocation returns an array-base pointer to an initialized range, 
+  as well as an allocation tag&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_malloc_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8593;(n&#8800;0)) 
+    (ll_malloc TYPE(&#39;a::llvm_rep) n) 
+    (&#955;r. &#8639;(ll_range {0..&lt; uint n}) (&#955;_. init) r ** ll_malloc_tag (uint n) r)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ll_malloc_def</span><span> </span><span>ll_pto_def</span><span> </span><span>ll_malloc_tag_def</span><span> </span><span>ll_range_def</span><span> 
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>list_conj_eq_sep_set_img</span><span> </span><span>uint_nat</span><span> </span><span>abase_ptr_def</span><span> </span><span>aidx_ptr_def</span><span> </span><span>unat_gt_0</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Free takes a range and the matching allocation tag&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_free_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;(ll_range {0..&lt;n}) blk p ** ll_malloc_tag n p)
+    (ll_free p)
+    (&#955;_. &#9633;)
+  &quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ll_free_def</span><span> </span><span>ll_pto_def</span><span> </span><span>ll_malloc_tag_def</span><span> </span><span>ll_range_def</span><span> </span><span>vcg_tag_defs</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>list_conj_eq_sep_set_img</span><span> </span><span>abase_ptr_def</span><span> </span><span>aidx_ptr_def</span><span> 
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>fri_prepare_simps</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>sep_set_img_pull_EXS</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>  
+</span><span class="keyword2"><span class="keyword">end</span></span><span>  
+</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Arithmetic Instructions&#8250;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Tag for arithmetic bounds check proof obligations&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>vcg_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;WBOUNDS &#934; &#10231; &#934;&quot;</span></span></span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>WBOUNDSI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#934; &#10233; WBOUNDS &#934;&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>WBOUNDS_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>WBOUNDSD</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;WBOUNDS &#934; &#10233; &#934;&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>WBOUNDS_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;K (Basic_VCG.add_solver (@{thms WBOUNDSI},@{binding solve_wbounds},fn ctxt =&gt; SELECT_GOAL (auto_tac ctxt)))&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;in_srange op (a::&#39;a::len word) (b::&#39;a word) &#8801; op (sint a) (sint b) &#8712; sints (LENGTH (&#39;a))&quot;</span></span></span><span>
+</span><span>      
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>udivrem_is_undef_word_conv</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>a</span><span> </span><span>b</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::len word&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;udivrem_is_undef (word_to_lint a) (word_to_lint b) &#10231; b=0&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>udivrem_is_undef_def</span><span> </span><span>word_to_lint_to_uint_0_iff</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sdivrem_is_undef_word_conv</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>a</span><span> </span><span>b</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::len word&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sdivrem_is_undef (word_to_lint a) (word_to_lint b) &#10231; b=0 &#8744; &#172;in_srange (sdiv) a b&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sdivrem_is_undef_def</span><span> </span><span>sdivrem_ovf_def</span><span> </span><span>word_to_lint_to_sint_conv</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;VCG Simplifications and Rules&#8250;</span></span></span><span>  
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Most of the rules for arithmetic are set up as simplifications.
+  For operations with side-conditions, we have both, 
+  a conditional simplification rule and a Hoare-rule. 
+  Note that the Hoare-rule will only be tried if the simplification rule did not 
+  succeed.
+&#8250;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>cond_llvm_htripleI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x = return y &#10233; llvm_htriple &#9633; x (&#955;r. &#8593;(r=y))&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>llvm_prim_arith_setup</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sublocale</span></span><span> </span><span>llvm_prim_setup</span><span> </span><span class="delimiter">&lt;</span><span> </span><span>llvm_prim_arith_setup</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">context</span></span><span> </span><span>llvm_prim_arith_setup</span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">notes</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>op_lift_arith2&#39;_def</span><span> </span><span>op_lift_arith2_def</span><span> 
+</span><span>                  </span><span>op_lift_cmp_def</span><span> </span><span>op_lift_ptr_cmp_def</span><span> </span><span>op_lift_iconv_def</span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">notes</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>word_to_lint_convs</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">notes</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>from_bool_lint_conv</span><span> </span><span>udivrem_is_undef_word_conv</span><span> </span><span>sdivrem_is_undef_word_conv</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">notes</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>word_to_lint_to_uint_conv</span><span> </span><span>word_to_lint_to_sint_conv</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Arithmetic&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_add_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_add a b = return (a + b)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_add_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_sub_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_sub a b = return (a - b)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_sub_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_mul_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_mul a b = return (a * b)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_mul_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_udiv_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;b&#8800;0 &#10233; ll_udiv a b = return (a div b)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_udiv_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_urem_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;b&#8800;0 &#10233; ll_urem a b = return (a mod b)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_urem_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_sdiv_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;b&#8800;0; in_srange (sdiv) a b&#10215; &#10233; ll_sdiv a b = return (a sdiv b)&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_sdiv_def</span><span> </span><span>Let_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_srem_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;b&#8800;0; in_srange (sdiv) a b&#10215; &#10233; ll_srem a b = return (a smod b)&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_srem_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_udiv_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;WBOUNDS (b&#8800;0) &#10233; llvm_htriple &#9633; (ll_udiv a b) (&#955;r. &#8593;(r = a div b))&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_urem_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;WBOUNDS (b&#8800;0) &#10233; llvm_htriple &#9633; (ll_urem a b) (&#955;r. &#8593;(r = a mod b))&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_sdiv_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;WBOUNDS (b&#8800;0); WBOUNDS (in_srange (sdiv) a b)&#10215; &#10233; llvm_htriple &#9633; (ll_sdiv a b) (&#955;r. &#8593;(r = a sdiv b))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_srem_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;WBOUNDS (b&#8800;0); WBOUNDS (in_srange (sdiv) a b)&#10215; &#10233; llvm_htriple &#9633; (ll_srem a b) (&#955;r. &#8593;(r = a smod b))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Comparison&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_icmp_simps</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;ll_icmp_eq a b = return (from_bool (a = b))&quot;</span></span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;ll_icmp_ne a b = return (from_bool (a &#8800; b))&quot;</span></span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;ll_icmp_sle a b = return (from_bool (a &lt;=s b))&quot;</span></span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;ll_icmp_slt a b = return (from_bool (a &lt;s b))&quot;</span></span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;ll_icmp_ule a b = return (from_bool (a &#8804; b))&quot;</span></span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;ll_icmp_ult a b = return (from_bool (a &lt; b))&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ll_icmp_eq_def</span><span> </span><span>ll_icmp_ne_def</span><span> </span><span>ll_icmp_sle_def</span><span> </span><span>ll_icmp_slt_def</span><span> </span><span>ll_icmp_ule_def</span><span> </span><span>ll_icmp_ult_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_ptrcmp_simps</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;ll_ptrcmp_eq a b = return (from_bool (a = b))&quot;</span></span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;ll_ptrcmp_ne a b = return (from_bool (a &#8800; b))&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ll_ptrcmp_eq_def</span><span> </span><span>ll_ptrcmp_ne_def</span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Bitwise&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_and_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_and a b = return (a AND b)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_and_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_or_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_or a b = return (a OR b)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_or_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_xor_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_xor a b = return (a XOR b)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_xor_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_shl_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;unat b &lt; LENGTH (&#39;a) &#10233; ll_shl (a::&#39;a::len word) b = return (a &lt;&lt; unat b)&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_shl_def</span><span> </span><span>Let_def</span><span> </span><span>shift_ovf_def</span><span> </span><span>unat_def</span><span> </span><span>bitSHL&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_lshr_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;unat b &lt; LENGTH (&#39;a) &#10233; ll_lshr (a::&#39;a::len word) b = return (a &gt;&gt; unat b)&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_lshr_def</span><span> </span><span>Let_def</span><span> </span><span>shift_ovf_def</span><span> </span><span>unat_def</span><span> </span><span>bitLSHR&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_ashr_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;unat b &lt; LENGTH (&#39;a) &#10233; ll_ashr (a::&#39;a::len word) b = return (a &gt;&gt;&gt; unat b)&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_ashr_def</span><span> </span><span>Let_def</span><span> </span><span>shift_ovf_def</span><span> </span><span>unat_def</span><span> </span><span>bitASHR&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>a</span><span> </span><span>b</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::len word&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;WBOUNDS (unat b &lt; LENGTH (&#39;a))&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span>ll_shl_rule</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple &#9633; (ll_shl a b) (&#955;r. &#8593;(r=a&lt;&lt;unat b))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>ll_lshr_rule</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple &#9633; (ll_lshr a b) (&#955;r. &#8593;(r=a&gt;&gt;unat b))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>ll_ashr_rule</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple &#9633; (ll_ashr a b) (&#955;r. &#8593;(r=a&gt;&gt;&gt;unat b))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Conversion&#8250;</span></span></span><span>
+</span><span>    
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_trunc_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_down&#39; UCAST (&#39;a&#8594;&#39;b) &#10233; ll_trunc (a::&#39;a::len word) TYPE(&#39;b::len word) = return (UCAST (&#39;a&#8594;&#39;b) a)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_trunc_def</span><span> </span><span>llb_trunc_def</span><span> </span><span>Let_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_zext_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_up&#39; UCAST (&#39;a&#8594;&#39;b) &#10233; ll_zext (a::&#39;a::len word) TYPE(&#39;b::len word) = return (UCAST (&#39;a&#8594;&#39;b) a)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_zext_def</span><span> </span><span>llb_zext_def</span><span> </span><span>Let_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_sext_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_up&#39; SCAST (&#39;a&#8594;&#39;b) &#10233; ll_sext (a::&#39;a::len word) TYPE(&#39;b::len word) = return (SCAST (&#39;a&#8594;&#39;b) a)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_sext_def</span><span> </span><span>llb_sext_def</span><span> </span><span>Let_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>ll_trunc_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>cond_llvm_htripleI</span><span class="delimiter">[</span><span>OF</span><span> </span><span>ll_trunc_simp</span><span class="delimiter">,</span><span> </span><span>OF</span><span> </span><span>WBOUNDSD</span><span class="delimiter">]</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>ll_zext_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>cond_llvm_htripleI</span><span class="delimiter">[</span><span>OF</span><span> </span><span>ll_zext_simp</span><span class="delimiter">,</span><span> </span><span>OF</span><span> </span><span>WBOUNDSD</span><span class="delimiter">]</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>ll_sext_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>cond_llvm_htripleI</span><span class="delimiter">[</span><span>OF</span><span> </span><span>ll_sext_simp</span><span class="delimiter">,</span><span> </span><span>OF</span><span> </span><span>WBOUNDSD</span><span class="delimiter">]</span><span>
+</span><span>    
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Control Flow&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>llvm_prim_ctrl_setup</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sublocale</span></span><span> </span><span>llvm_prim_setup</span><span> </span><span class="delimiter">&lt;</span><span> </span><span>llvm_prim_ctrl_setup</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span> </span><span>llvm_prim_ctrl_setup</span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The if command is handled by a set of normalization rules.
+  Note that the VCG will split on the introduced conjunction automatically.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>llc_if_simps</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;llc_if 1 t e = t&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;r&#8800;0 &#10233; llc_if r t e = t&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;llc_if 0 t e = e&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>llc_if_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>llc_if_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;wp (llc_if b t e) Q s &#10231; (to_bool b &#10230; wp t Q s) &#8743; (&#172;to_bool b &#10230; wp e Q s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>llc_if_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>if_simp</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;wp (If b t e) Q s &#10231; (b &#10230; wp t Q s) &#8743; (&#172;b &#10230; wp e Q s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  
+</span><span class="keyword2"><span class="keyword">end</span></span><span>  
+</span><span>    
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The while command is handled by a standard invariant/variant rule.&#8250;</span></span></span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>llc_while_unfold</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llc_while b f &#963; = doM { ctd &#8592; b &#963;; llc_if ctd (doM { &#963;&#8592;f &#963;; llc_while b f &#963;}) (return &#963;)}&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>llc_while_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>llc_while_def</span><span> </span><span>llc_if_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>mwhile_unfold</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>llc_while_annot</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;&#963;::llvm_rep &#8658; &#39;t &#8658; llvm_amemory &#8658; bool) &#8658; (&#39;t&#215;&#39;t) set &#8658; (&#39;&#963;&#8658;1 word llM) &#8658; _&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llc_while_annot I R &#8801; llc_while&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>vcg_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llc_while_annot I R&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>annotate_llc_while</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llc_while = llc_while_annot I R&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>llc_while_annot_def</span><span class="delimiter">)</span><span> 
+</span><span>  
+</span><span class="keyword1"><span class="command">context</span></span><span> </span><span>llvm_prim_ctrl_setup</span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>basic_while_rule</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;wf R&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llSTATE (I &#963; t) s&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>STEP</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;&#963; t s. &#10214; llSTATE (I &#963; t) s &#10215; &#10233; wp (b &#963;) (&#955;ctd s<span class="hidden">&#8681;</span><sub>1</sub>. 
+    (to_bool ctd &#10230; wp (f &#963;) (&#955;&#963;&#39; s<span class="hidden">&#8681;</span><sub>2</sub>. llSTATE (EXS t&#39;. I &#963;&#39; t&#39; ** &#8593;((t&#39;,t)&#8712;R)) s<span class="hidden">&#8681;</span><sub>2</sub>) s<span class="hidden">&#8681;</span><sub>1</sub>)
+  &#8743; (&#172;to_bool ctd &#10230; Q &#963; s<span class="hidden">&#8681;</span><sub>1</sub>)
+    ) s&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;wp (llc_while b f &#963;) Q s&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">,</span><span>2</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>t</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>&#963;</span><span> </span><span>s</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>less</span><span> </span><span>t</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>llc_while_unfold</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>vcg_normalize_simps</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>wp_monoI</span><span class="delimiter">[</span><span>OF</span><span> </span><span>STEP</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>fact</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>r</span><span> </span><span>s<span class="hidden">&#8681;</span><sub>1</sub></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_bool r&quot;</span></span></span><span class="delimiter">;</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>vcg_normalize_simps</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>erule</span><span> </span><span>wp_monoI</span><span class="delimiter">;</span><span> </span><span>clarsimp</span><span class="delimiter">;</span><span> </span><span>fri_extract</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>less.IH</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>          
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Standard while rule. 
+  Note that the second parameter of the invariant is the termination measure, which must
+  decrease wrt. a well-founded relation. It is initialized as a schematic variable, and must be 
+  derivable via frame inference. In practice, the invariant will contain a &#8249;&#8593;(t=&#8230;)&#8250; part.
+&#8250;</span></span></span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>llc_while_annot_rule</span><span class="delimiter">[</span><span>vcg_decomp_erules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>  
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llSTATE P s&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FRAME P (I &#963; t) F&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>WF</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;SOLVE_AUTO_DEFER (wf R)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>STEP</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;&#963; t s. &#10214; llSTATE ((I &#963; t ** F)) s &#10215; &#10233; EXTRACT (wp (b &#963;) (&#955;ctd s<span class="hidden">&#8681;</span><sub>1</sub>. 
+    (to_bool ctd &#10230; wp (f &#963;) (&#955;&#963;&#39; s<span class="hidden">&#8681;</span><sub>2</sub>. llPOST (EXS t&#39;. I &#963;&#39; t&#39; ** &#8593;((t&#39;,t)&#8712;R) ** F) s<span class="hidden">&#8681;</span><sub>2</sub>) s<span class="hidden">&#8681;</span><sub>1</sub>)
+  &#8743; (&#172;to_bool ctd &#10230; Q &#963; s<span class="hidden">&#8681;</span><sub>1</sub>)
+    ) s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;wp (llc_while_annot I R b f &#963;) Q s&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">from</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;llSTATE P s&#8250;</span></span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;FRAME P (I &#963; t) F&#8250;</span></span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>PRE</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llSTATE (I &#963; t ** F) s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>FRAME_def</span><span> </span><span>STATE_def</span><span> </span><span>entails_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>llc_while_annot_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>basic_while_rule</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>I</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;&#955;&#963; t. I &#963; t ** F&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>R</span><span class="delimiter">=</span><span>R</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>WF</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>PRE</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>STEP</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">qed</span></span><span>  
+</span><span>  
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;LLVM Code Generator Setup&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Useful shortcuts&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Direct Arithmetic&#8250;</span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: How would we handle conditional rules, like from return (a div b) to ll_udiv?
+  We would have to transform the program to a weaker one, that asserts preconditions, and
+  then reason about this!
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>llvm_prim_arith_setup</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arith_inlines</span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">,</span><span> </span><span>vcg_monadify_xforms</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;return (a+b) = ll_add a b&quot;</span></span></span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;return (a-b) = ll_sub a b&quot;</span></span></span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;return (a*b) = ll_mul a b&quot;</span></span></span><span> 
+</span><span>  
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;return (a AND b) = ll_and a b&quot;</span></span></span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;return (a OR b) = ll_or a b&quot;</span></span></span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;return (a XOR b) = ll_xor a b&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span class="keyword2"><span class="keyword">end</span></span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Direct Comparison&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="delimiter">(</span><span>input</span><span class="delimiter">)</span><span> </span><span>ll_cmp&#39;</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bool &#8658; 1 word&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_cmp&#39; &#8801; from_bool&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>vcg_monadify_xforms</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_cmp b &#8801; return (ll_cmp&#39; b)&quot;</span></span></span><span>
+</span><span>  
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* To work with current monadify implementation, 
+  we have to replace each operation by a constants
+  
+  TODO: Can we change monadifier?
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_cmp&#39;_eq a b &#8801; ll_cmp&#39; (a=b)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_cmp&#39;_ne a b &#8801; ll_cmp&#39; (a&#8800;b)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_cmp&#39;_ule a b &#8801; ll_cmp&#39; (a&#8804;b)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_cmp&#39;_ult a b &#8801; ll_cmp&#39; (a&lt;b)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_cmp&#39;_sle a b &#8801; ll_cmp&#39; (a &lt;=s b)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_cmp&#39;_slt a b &#8801; ll_cmp&#39; (a &lt;s b)&quot;</span></span></span><span>
+</span><span>                                          
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>ll_cmp&#39;_defs</span><span> </span><span class="delimiter">=</span><span> </span><span>ll_cmp&#39;_eq_def</span><span> </span><span>ll_cmp&#39;_ne_def</span><span> </span><span>ll_cmp&#39;_ule_def</span><span> </span><span>ll_cmp&#39;_ult_def</span><span> </span><span>ll_cmp&#39;_sle_def</span><span> </span><span>ll_cmp&#39;_slt_def</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">,</span><span> </span><span>vcg_monadify_xforms</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>ll_cmp&#39;_defs</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>llvm_prim_arith_setup</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_cmp&#39;_xforms</span><span class="delimiter">[</span><span>vcg_monadify_xforms</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;return (ll_cmp&#39;_eq  a b) = ll_icmp_eq a b&quot;</span></span></span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;return (ll_cmp&#39;_ne  a b) = ll_icmp_ne a b&quot;</span></span></span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;return (ll_cmp&#39;_ult a b) = ll_icmp_ult a b&quot;</span></span></span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;return (ll_cmp&#39;_ule a b) = ll_icmp_ule a b&quot;</span></span></span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;return (ll_cmp&#39;_slt a b) = ll_icmp_slt a b&quot;</span></span></span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;return (ll_cmp&#39;_sle a b) = ll_icmp_sle a b&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ll_cmp_def</span><span> </span><span>ll_cmp&#39;_defs</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>all</span><span> </span><span>vcg_normalize</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_ptrcmp&#39;_xforms</span><span class="delimiter">[</span><span>vcg_monadify_xforms</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;return (ll_cmp&#39;_eq  a b) = ll_ptrcmp_eq a b&quot;</span></span></span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;return (ll_cmp&#39;_ne  a b) = ll_ptrcmp_ne a b&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ll_cmp_def</span><span> </span><span>ll_cmp&#39;_defs</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>all</span><span> </span><span>vcg_normalize</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>    
+</span><span class="keyword2"><span class="keyword">end</span></span><span>    
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Boolean Operations&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>llvm_if_inline</span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">,</span><span>vcg_monadify_xforms</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;If b t e = llc_if (from_bool b) t e&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>llc_if_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>llvm_prim_arith_setup</span><span class="delimiter">)</span><span> </span><span>llvm_from_bool_inline</span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;from_bool (a&#8743;b) = (from_bool a AND from_bool b)&quot;</span></span></span><span>  
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;from_bool (a&#8744;b) = (from_bool a OR from_bool b)&quot;</span></span></span><span>  
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(from_bool (&#172;a)::1 word) = (1 - (from_bool a :: 1 word))&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>full_types</span><span class="delimiter">)</span><span> </span><span>from_bool_1</span><span> </span><span>from_bool_mask_simp</span><span> </span><span>from_bool_to_bool_iff</span><span> </span><span>word_bool_alg.conj_zero_left</span><span> </span><span>word_bw_comms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>full_types</span><span class="delimiter">)</span><span> </span><span>from_bool_1</span><span> </span><span>from_bool_neq_0</span><span> </span><span>word_bool_alg.disj_absorb</span><span> </span><span>word_bool_alg.disj_zero_left</span><span> </span><span>word_log_esimps</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>full_types</span><span class="delimiter">)</span><span> </span><span>cancel_comm_monoid_add_class.diff_cancel</span><span> </span><span>diff_zero</span><span> </span><span>from_bool_eq_if&#39;</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Products&#8250;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>inline_prod_case</span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#955;(a,b). f a b) = (&#955;x. doM { a&#8592;prod_extract_fst x; b &#8592; prod_extract_snd x; f a b })&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>prod_ops_simp</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>inline_return_prod_case</span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;return (case x of (a,b) &#8658; f a b) = (case x of (a,b) &#8658; return (f a b))&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>prod.case_distrib</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>inline_return_prod</span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;return (a,b) = doM { x &#8592; prod_insert_fst init a; x &#8592; prod_insert_snd x b; return x }&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>prod_ops_simp</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Marking of constants&#8250;</span></span></span><span>    
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_const x &#8801; return x&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_const_inline</span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bind (ll_const x) f = f x&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ll_const_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>vcg_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;numeral a&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>vcg_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_const c&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Data Refinement&#8250;</span></span></span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>standard_opr_abstraction</span><span> </span><span class="delimiter">=</span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>&#945;</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;c &#8658; &#39;a&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>I</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;c &#8658; bool&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>dflt_PRE1</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a&#8658;&#39;a) &#8658; &#39;c itself &#8658; &#39;a &#8658; bool&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>dflt_PRE2</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a&#8658;&#39;a&#8658;&#39;a) &#8658; &#39;c itself &#8658; &#39;a &#8658; &#39;a &#8658; bool&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>dflt_EPURE</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;c &#8658; bool&quot;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>dflt_EPURE_correct</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;c. I c &#10233; dflt_EPURE (&#945; c) c&quot;</span></span></span><span>  
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;assn &#8801; mk_pure_assn (&#955;a c. I c &#8743; a=&#945; c)&quot;</span></span></span><span>
+</span><span>                           
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>assn_pure</span><span class="delimiter">[</span><span>is_pure_rule</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_pure assn&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>assn_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>vcg_prep_delete_assn</span><span class="delimiter">[</span><span>vcg_prep_ext_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;pure_part (&#8639;assn a c) &#10233; dflt_EPURE a c&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>assn_def</span><span> </span><span>dflt_EPURE_correct</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_un_op PRE cop mop aop &#8801; 
+  (&#8704;a::&#39;c. I a &#8743; PRE TYPE(&#39;c) (&#945; a) &#10230; I (mop a) &#8743; &#945; (mop a) = aop (&#945; a) &#8743; cop a = return (mop a))&quot;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_bin_op PRE cop mop aop &#8801; 
+  (&#8704;a b::&#39;c. I a &#8743; I b &#8743; PRE TYPE(&#39;c) (&#945; a) (&#945; b) &#10230; I (mop a b) &#8743; &#945; (mop a b) = aop (&#945; a) (&#945; b) &#8743; cop a b = return (mop a b))&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_un_op&#39; cop mop aop &#8801; is_un_op (dflt_PRE1 aop) cop mop aop&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_bin_op&#39; cop mop aop &#8801; is_bin_op (dflt_PRE2 aop) cop mop aop&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_un_opI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">?</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;a. &#10214;I a; PRE TYPE(&#39;c) (&#945; a)&#10215; &#10233; cop a = return (mop a)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;a. &#10214;I a; PRE TYPE(&#39;c) (&#945; a)&#10215; &#10233; I (mop a)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;a. &#10214;I a; PRE TYPE(&#39;c) (&#945; a)&#10215; &#10233; &#945; (mop a) = aop (&#945; a)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_un_op PRE cop mop aop&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_un_op_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_bin_opI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">?</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;a b. &#10214;I a; I b; PRE TYPE(&#39;c) (&#945; a) (&#945; b)&#10215; &#10233; cop a b = return (mop a b)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;a b. &#10214;I a; I b; PRE TYPE(&#39;c) (&#945; a) (&#945; b)&#10215; &#10233; I (mop a b)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;a b. &#10214;I a; I b; PRE TYPE(&#39;c) (&#945; a) (&#945; b)&#10215; &#10233; &#945; (mop a b) = aop (&#945; a) (&#945; b)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_bin_op PRE cop mop aop&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_bin_op_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>un_op_tmpl</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>w</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;c&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>A</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_un_op PRE cop mop aop&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;assn i w ** &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(PRE TYPE(&#39;c) i)) 
+    (cop w) 
+    (&#955;r. &#8639;assn (aop i) r ** &#8639;assn i w)
+    &quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">interpret</span></span><span> </span><span>llvm_prim_arith_setup</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>A</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_un_op_def</span><span> </span><span>assn_def</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarsimp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bin_op_tmpl</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>w<span class="hidden">&#8681;</span><sub>1</sub></span><span> </span><span>w<span class="hidden">&#8681;</span><sub>2</sub></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;c&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>A</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_bin_op PRE cop mop aop&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;assn i<span class="hidden">&#8681;</span><sub>1</sub> w<span class="hidden">&#8681;</span><sub>1</sub> ** &#8639;assn i<span class="hidden">&#8681;</span><sub>2</sub> w<span class="hidden">&#8681;</span><sub>2</sub> ** &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(PRE TYPE(&#39;c) i<span class="hidden">&#8681;</span><sub>1</sub> i<span class="hidden">&#8681;</span><sub>2</sub>)) 
+    (cop w<span class="hidden">&#8681;</span><sub>1</sub> w<span class="hidden">&#8681;</span><sub>2</sub>) 
+    (&#955;r. &#8639;assn (aop i<span class="hidden">&#8681;</span><sub>1</sub> i<span class="hidden">&#8681;</span><sub>2</sub>) r ** &#8639;assn i<span class="hidden">&#8681;</span><sub>1</sub> w<span class="hidden">&#8681;</span><sub>1</sub> ** &#8639;assn i<span class="hidden">&#8681;</span><sub>2</sub> w<span class="hidden">&#8681;</span><sub>2</sub>)
+    &quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">interpret</span></span><span> </span><span>llvm_prim_arith_setup</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>A</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_bin_op_def</span><span> </span><span>assn_def</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarsimp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>bool</span><span class="delimiter">:</span><span> </span><span>standard_opr_abstraction</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_bool::1 word &#8658; bool&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#955;_. True&quot;</span></span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#955;_ _ _. True&#8250;</span></span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#955;_ _ _ _. True&#8250;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#955;_ _. True&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>standard</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span> </span><span>standard_opr_abstraction</span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_cmp_op cop mop aop &#8801; 
+    (&#8704;a b. I a &#8743; I b &#10230; (cop a b = return (from_bool (mop a b)) &#8743; (mop a b &#10231; aop (&#945; a) (&#945; b))))&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_cmp_opI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">?</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;a b. &#10214;I a; I b&#10215; &#10233; cop a b = return (from_bool (mop a b))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;a b. &#10214;I a; I b&#10215; &#10233; mop a b &#10231; aop (&#945; a) (&#945; b)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_cmp_op cop mop aop&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_cmp_op_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>cmp_op_tmpl</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>w<span class="hidden">&#8681;</span><sub>1</sub></span><span> </span><span>w<span class="hidden">&#8681;</span><sub>2</sub></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;c&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_cmp_op cop mop aop&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+      (&#8639;assn i<span class="hidden">&#8681;</span><sub>1</sub> w<span class="hidden">&#8681;</span><sub>1</sub> ** &#8639;assn i<span class="hidden">&#8681;</span><sub>2</sub> w<span class="hidden">&#8681;</span><sub>2</sub>) 
+      (cop w<span class="hidden">&#8681;</span><sub>1</sub> w<span class="hidden">&#8681;</span><sub>2</sub>) 
+      (&#955;r. &#8639;bool.assn (aop i<span class="hidden">&#8681;</span><sub>1</sub> i<span class="hidden">&#8681;</span><sub>2</sub>) r ** &#8639;assn i<span class="hidden">&#8681;</span><sub>1</sub> w<span class="hidden">&#8681;</span><sub>1</sub> ** &#8639;assn i<span class="hidden">&#8681;</span><sub>2</sub> w<span class="hidden">&#8681;</span><sub>2</sub>)
+      &quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_cmp_op_def</span><span> </span><span>assn_def</span><span> </span><span>bool.assn_def</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarsimp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Booleans&#8250;</span></span></span><span>
+</span><span>
+</span><span>   
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>to_bool_logics</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>a</span><span> </span><span>b</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;1 word&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_bool (a&amp;&amp;b) &#10231; to_bool a &#8743; to_bool b&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_bool (a||b) &#10231; to_bool a &#8744; to_bool b&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_bool (a XOR b) &#10231; to_bool a &#8800; to_bool b&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_bool (NOT a) &#10231; &#172;to_bool a&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>a</span><span class="delimiter">;</span><span> </span><span>cases</span><span> </span><span>b</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>a</span><span class="delimiter">;</span><span> </span><span>cases</span><span> </span><span>b</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>a</span><span class="delimiter">;</span><span> </span><span>cases</span><span> </span><span>b</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>a</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>                                             
+</span><span>
+</span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>llvm_prim_arith_setup</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>ll_not1</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;1 word &#8658; 1 word llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll_not1 x &#8801; ll_add x 1&quot;</span></span></span><span>  
+</span><span>    
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_not1_inline</span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;return (~~x) &#8801; ll_not1 x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>word1_NOT_eq</span><span> </span><span>arith_inlines</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bool_bin_ops</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;bool.is_bin_op&#39; ll_and (AND) (&#8743;)&quot;</span></span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;bool.is_bin_op&#39; ll_or (OR) (&#8744;)&quot;</span></span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;bool.is_bin_op&#39; ll_xor (XOR) (&#8800;)&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>all</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;rule&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>to_bool_logics</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>all</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;vcg_normalize?&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bool_un_ops</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;bool.is_un_op&#39; ll_not1 bitNOT Not&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>all</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;rule&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>to_bool_logics</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>all</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;vcg_normalize?&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word1_NOT_eq</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>bool_op_rules</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> 
+</span><span>  </span><span>bool_bin_ops</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>bool.bin_op_tmpl</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>bool_un_ops</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>bool.un_op_tmpl</span><span class="delimiter">]</span><span>
+</span><span>  
+</span><span class="keyword2"><span class="keyword">end</span></span><span>  
+</span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Control Flow&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ABSTRACT c ty P s &#8801; &#8707;F a. llSTATE (&#8639;ty a c ** F) s &#8743; P a&quot;</span></span></span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ABSTRACT_pure</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_pure A &#10233; ABSTRACT c A P h &#10231; (&#8707;a. &#9837;<span class="hidden">&#8681;</span><sub>p</sub>A a c &#8743; P a)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ABSTRACT_def</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>STATE_extract</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>STATE_def</span><span> </span><span>dr_assn_pure_asm_prefix_def</span><span> </span><span>sep_conj_def</span><span> </span><span>pure_part_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>full_types</span><span class="delimiter">)</span><span> </span><span>extract_pure_assn</span><span> </span><span>pred_lift_def</span><span> </span><span>sep_add_zero_sym</span><span> </span><span>sep_disj_commute</span><span> </span><span>sep_disj_zero</span><span> </span><span>sep_empty_app</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ABSTRACT_erule</span><span class="delimiter">[</span><span>vcg_decomp_erules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llSTATE P s&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FRAME P (&#8639;ty a c) F&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llSTATE (&#8639;ty a c ** F) s &#10233; EXTRACT (Q a)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ABSTRACT c ty Q s&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>FRAME_def</span><span> </span><span>ABSTRACT_def</span><span> </span><span>STATE_def</span><span> </span><span>entails_def</span><span> </span><span>vcg_tag_defs</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>llvm_prim_arith_setup</span><span> </span><span class="delimiter">+</span><span> </span><span>llvm_prim_ctrl_setup</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>dr_normalize_llc_if</span><span class="delimiter">[</span><span>vcg_normalize_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#9837;<span class="hidden">&#8681;</span><sub>p</sub>bool.assn b bi &#10233; wp (llc_if bi t e) Q s &#10231; ((b &#10230; wp t Q s) &#8743; (&#172;b&#10230;wp e Q s))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>bool.assn_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg_normalize</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>llc_while_annot_dr_rule</span><span class="delimiter">[</span><span>vcg_decomp_erules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>  
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llSTATE P s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FRAME P (I &#963; t) F&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>WF</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;SOLVE_AUTO_DEFER (wf R)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>STEP</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;&#963; t s. &#10214; llSTATE ((I &#963; t ** F)) s &#10215; &#10233; EXTRACT (wp (b &#963;) (&#955;ctdi s<span class="hidden">&#8681;</span><sub>1</sub>. 
+        ABSTRACT ctdi bool.assn (&#955;ctd. 
+            (ctd &#10230; wp (f &#963;) (&#955;&#963;&#39; s<span class="hidden">&#8681;</span><sub>2</sub>. llPOST (EXS t&#39;. I &#963;&#39; t&#39; ** &#8593;<span class="hidden">&#8681;</span><sub>d</sub>((t&#39;,t)&#8712;R) ** F) s<span class="hidden">&#8681;</span><sub>2</sub>) s<span class="hidden">&#8681;</span><sub>1</sub>)
+          &#8743; (&#172;ctd &#10230; Q &#963; s<span class="hidden">&#8681;</span><sub>1</sub>)
+        ) s<span class="hidden">&#8681;</span><sub>1</sub>
+      ) s)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;wp (llc_while_annot I R b f &#963;) Q s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>-</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg_rl</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>fact</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>fact</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>drule</span><span> </span><span>STEP</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>fri_extract_simps</span><span> </span><span>ABSTRACT_pure</span><span> </span><span>vcg_tag_defs</span><span> </span><span>bool.assn_def</span><span class="delimiter">)</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>  
+</span><span>  
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

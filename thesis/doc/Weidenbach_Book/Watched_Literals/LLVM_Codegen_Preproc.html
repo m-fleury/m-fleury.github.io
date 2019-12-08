@@ -1,0 +1,583 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory LLVM_Codegen_Preproc (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory LLVM_Codegen_Preproc</h1>
+
+<span class="command">theory</span> <span class="name">LLVM_Codegen_Preproc</span><br/>
+<span class="keyword">imports</span> <a href="LLVM_Codegen.html"><span class="name">LLVM_Codegen</span></a> <a href="Monadify.html"><span class="name">Monadify</span></a> <a href="Definition_Utils.html"><span class="name">Definition_Utils</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Preprocessor and Code-Generator User Interface&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>LLVM_Codegen_Preproc</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;../kernel/LLVM_Codegen&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Monadify&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;../../lib/Definition_Utils&quot;</span></span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;../../lib/Named_Simpsets&quot;</span></span></span><span> 
+</span><span class="keyword2"><span class="keyword">keywords</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;export_llvm&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_deps&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span>thy_decl</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Fixed-Point Unfolding Setup&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>llc_while_mono</span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span>      
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. M_mono (&#955;f. b f x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. M_mono (&#955;f. c f x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_mono (&#955;D. llc_while (b D) (c D) &#963;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>llc_while_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>pf_mono_prover</span><span>
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fn _ =&gt; Definition_Utils.declare_extraction_group @{binding LLVM} #&gt; snd&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fn _ =&gt; Definition_Utils.declare_extraction_group @{binding LLVM_while} #&gt; snd&#8250;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; fn _ =&gt;
+    Definition_Utils.add_extraction (@{extraction_group LLVM_while},&#8962;) {
+      pattern = Logic.varify_global @{term &quot;llc_while b body&quot;},
+      gen_thm = @{thm gen_code_thm_llc_while},
+      gen_tac = K (K no_tac)
+    }
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fn _ =&gt;
+    Definition_Utils.add_extraction (@{extraction_group LLVM},&#8962;) {
+      pattern = Logic.varify_global @{term &quot;REC (B::(&#39;a &#8658; &#39;b llM) &#8658; &#39;a &#8658; &#39;b llM)&quot;},
+      gen_thm = @{thm REC_unfold},
+      gen_tac = Partial_Function.mono_tac
+    }
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Preprocessor&#8250;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+    The actual code generator expects a set of monomorphic, well-shaped equations.
+    The preprocessor processes user specified equations, monomorphizes them and 
+    brings them into the right shape.
+  &#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>llvm_code</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Isabelle-LLVM code theorems&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">named_simpset</span></span><span> </span><span>llvm_inline</span><span> </span><span class="delimiter">=</span><span> </span><span>HOL_ss</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">attribute_setup</span></span><span> </span><span>llvm_inline</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+    Attrib.add_del 
+      (Named_Simpsets.add_attr @{named_simpset llvm_inline}) 
+      (Named_Simpsets.add_attr @{named_simpset llvm_inline})
+  &#8250;</span></span></span><span>
+</span><span>    
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>llvm_inline_bind_laws</span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;bind m return = m&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;bind (bind m (&#955;x. f x)) g = bind m (&#955;x. bind (f x) g)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>unit_meta_eq</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8801; ()&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pull_lambda_case</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(case x of (a,b) &#8658; &#955;y. t a b y) = (&#955;y. case x of (a,b) &#8658; t a b y)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ext</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>x</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; structure LLC_Preprocessor = 
+    struct
+      open LLC_Lib
+          
+      structure Monadify = Gen_Monadify_Cong (
+      
+        fun mk_return x = @{mk_term &quot;return ?x ::_ llM&quot;}
+        fun mk_bind m f = @{mk_term &quot;bind ?m ?f ::_ llM&quot;}
+      
+        fun dest_return @{mpat &quot;return ?x ::_ llM&quot;} = SOME x | dest_return _ = NONE
+        fun dest_bind @{mpat &quot;bind ?m ?f ::_ llM&quot;} = SOME (m,f) | dest_bind _ = NONE
+        
+        fun dest_monadT (Type (@{type_name M},[T,@{typ unit},@{typ llvm_memory},@{typ err}])) = SOME T | dest_monadT _ = NONE
+
+        val strip_op = K strip_comb
+        
+        val bind_return_thm = @{lemma &quot;bind m return = m&quot; by simp}
+        val return_bind_thm = @{lemma &quot;bind (return x) f = f x&quot; by simp}
+        val bind_bind_thm = @{lemma &quot;bind (bind m (&#955;x. f x)) g = bind m (&#955;x. bind (f x) g)&quot; by simp}
+        
+      )
+      
+      (********* Normalization of code theorems *)
+      
+  
+      fun cthm_inline ctxt thm = let
+        val ctxt = Named_Simpsets.put @{named_simpset llvm_inline} ctxt
+      in
+        (* TODO: Simplifier.rewrite may introduce beta redexes. 
+          Currently we eliminate them right away. Or is it OK to have beta-redexes? *)
+        Conv.fconv_rule (rhs_conv (Simplifier.rewrite ctxt) then_conv Thm.beta_conversion true) thm
+      end
+    
+      val cthm_monadify = Conv.fconv_rule o (rhs_conv o Monadify.monadify_conv)
+            
+      val inline_iteration_limit =
+        Config.int (Config.declare (&quot;inline_iteration_limit&quot;, &#8962;) (fn _ =&gt; Config.Int ~1));
+      
+      
+      fun monadify_inline_cthm ctxt thm = let
+        fun rpt 0 thm&#39; = raise THM (&quot;inline_iteration_limit exceeded&quot;,~1,[thm,thm&#39;])
+          | rpt n thm = let
+          val thm&#39; = thm |&gt; cthm_monadify ctxt |&gt; cthm_inline ctxt
+        in
+          if Thm.eq_thm_prop (thm,thm&#39;) then thm 
+          else rpt (n-1) thm&#39;
+        end
+        
+        val it_limit = Config.get ctxt inline_iteration_limit
+      in
+        thm 
+        |&gt; cthm_inline ctxt
+        |&gt; rpt it_limit
+      end  
+      
+      (*
+        Bring code theorem into parseable format. To be applied after inlining, 
+          immediately before parsing.
+        
+        Applies eta-expansion, return-expansion, and converts &#8801; to =.
+        Finally, it will replace unit-binds by () constants and anonymous bind.
+        
+        May fail on non-well-formed theorems.
+      *)
+      fun cthm_format ctxt thm = let
+        fun normalize_bind1 t = let
+          val (f,args) = strip_comb t
+          val _ = check_valid_head f
+  
+          val args_is_M = fastype_of f |&gt; binder_types |&gt; map (is_llM o body_type)
+                  
+          val _ = length args_is_M = length args orelse raise TYPE (&quot;cthm_format: All arguments must be explicit&quot;, [fastype_of f], [t])
+          
+          val args = map2 (fn isM =&gt; isM?(normalize o expand_eta_all)) args_is_M args
+          
+        in
+          list_comb (f, args)
+        end  
+          
+        and normalize @{mpat &quot;bind ?m ?f&quot;} = let
+            val m = normalize_bind1 m
+            val f = (*ensure_abs f*) expand_eta_all f |&gt; normalize
+          in @{mk_term &quot;bind ?m ?f&quot;} end
+        | normalize (Abs (x,T,t)) = Abs (x,T,normalize t)
+        | normalize (t as @{mpat &quot;return _&quot;}) = t
+        | normalize t = let val t = normalize_bind1 t in @{mk_term &quot;bind ?t (&#955;x. return x)&quot;} end
+      
+        fun normalize_eq @{mpat &quot;Trueprop (?a = ?b)&quot;} = let val b = normalize b in @{mk_term &quot;Trueprop (?a = ?b)&quot;} end
+          | normalize_eq @{mpat &quot;?a &#8801; ?b&quot;} = let val b = normalize b in @{mk_term &quot;?a &#8801; ?b&quot;} end
+          | normalize_eq t = raise TERM (&quot;format_code_thm: normalize_eq&quot;, [t])
+      
+        fun norm_tac ctxt = ALLGOALS (simp_tac (put_simpset HOL_ss ctxt addsimps @{thms bind_laws}))
+    
+        fun cthm_norm_lambda ctxt thm = let
+          val thm = Local_Defs.unfold ctxt @{thms pull_lambda_case} thm
+        
+          (*fun r thm = case Thm.concl_of thm of
+            @{mpat &quot;Trueprop (_ = (&#955;_. _))&quot;} =&gt; r (thm RS @{thm fun_cong})
+          | @{mpat &quot;_ &#8801; (&#955;_. _)&quot;} =&gt; r (thm RS @{thm meta_fun_cong})
+          | _ =&gt; thm
+          *)
+          
+          fun r thm = case try (fn () =&gt; (thm RS @{thm fun_cong})) () of
+            NONE =&gt; thm
+          | SOME thm =&gt; r thm  
+          
+        in
+          r thm
+        end
+        
+      in
+        thm 
+        |&gt; (simplify (put_simpset HOL_ss ctxt addsimps @{thms Monad.bind_laws atomize_eq}))
+        |&gt; cthm_norm_lambda ctxt
+        |&gt; (Conv.fconv_rule (Refine_Util.f_tac_conv ctxt normalize_eq (norm_tac ctxt)))
+        |&gt; (Conv.fconv_rule (Conv.top_sweep_conv (K (Conv.rewr_conv @{thm unit_meta_eq})) ctxt))
+      end
+      
+      (********* Gathering of code equations *)
+      (* TODO: Use net *)
+
+      
+      fun dep_prep_code_thm thm = let
+        val c = head_of_eqn_thm thm
+        val _ = check_valid_head c
+      in
+        (c,thm)
+      end
+      
+      fun dep_try_instantiate_code_thm c (l,thm) = let
+        val thy = Thm.theory_of_thm thm
+      in
+        case SOME (Pattern.match thy (l,c) (Vartab.empty,Vartab.empty)) handle Pattern.MATCH =&gt; NONE of
+          NONE =&gt; NONE
+        | SOME m =&gt; SOME (instantiate_uc m thm)
+      end
+      
+      fun dep_find_code_thm pthms c = 
+        case get_first (dep_try_instantiate_code_thm c) pthms of
+          SOME eqn =&gt; eqn
+        | NONE =&gt; raise TERM (&quot;No code equation&quot;,[c])
+      
+      val cmd_name_prefix = Long_Name.qualify (Long_Name.qualifier @{const_name ll_add}) &quot;ll_&quot;
+      val comb_name_prefix = Long_Name.qualify (Long_Name.qualifier @{const_name llc_while}) &quot;llc_&quot;
+          
+      fun dep_is_ll_comb_name name =
+               name = @{const_name bind}
+        orelse name = @{const_name return}
+        orelse String.isPrefix cmd_name_prefix name
+        orelse String.isPrefix comb_name_prefix name
+        
+        
+      fun dep_is_call_const t = case try dest_head t of
+        NONE =&gt; false
+      | SOME (name,T) =&gt; 
+                  not (dep_is_ll_comb_name name) (* Not an internal name *)
+          andalso is_llM (body_type T)           (* Yields a monadic result *)
+          andalso not (exists (exists_subtype is_llM) (binder_types T)) (* No monadic parameters *)
+        
+      fun calls_of_cthm thm = Term.fold_aterms 
+        (fn t =&gt; dep_is_call_const t?cons t) 
+        (rhs_of_eqn (Thm.prop_of thm))
+        []
+      
+      fun default_extractions ctxt = 
+          Definition_Utils.get_extraction_group ctxt @{extraction_group LLVM}
+        |&gt; (not (Config.get ctxt llc_compile_while) ? 
+              append (Definition_Utils.get_extraction_group ctxt @{extraction_group LLVM_while}))  
+      
+      fun gather_code_thms roots lthy = let
+        val thy = Proof_Context.theory_of lthy
+        val pthms = Named_Theorems.get lthy @{named_theorems llvm_code}
+          |&gt; map dep_prep_code_thm
+          |&gt; Refine_Util.subsume_sort fst thy
+      
+        fun process_root c (ctab, lthy) = let
+          val _ = check_valid_head c
+          val basename = name_of_head c |&gt; Long_Name.base_name
+        in
+          case Termtab.lookup ctab c of
+            SOME _ =&gt; (ctab, lthy)
+          | NONE =&gt; let
+              val _ = assert_monomorphic_const c
+              (* Get code theorem and inline it *)
+              val teqn = dep_find_code_thm pthms c |&gt; monadify_inline_cthm lthy
+
+              (* Extract recursion equations *)
+              val exs = default_extractions lthy
+              
+              val ((teqn,add_eqns,_),lthy) = Definition_Utils.extract_recursion_eqs exs basename teqn lthy
+              val teqns = teqn::add_eqns
+              
+              (* Inline and format again *)
+              val teqns = map (monadify_inline_cthm lthy #&gt; cthm_format lthy) teqns
+
+              (* Update table *)
+              val ctab = fold Termtab.update_new (map dep_prep_code_thm teqns) ctab
+                            
+              (* Find calls *)
+              val calls = map calls_of_cthm teqns |&gt; flat
+              
+              (* Recurse *)
+              val (ctab,lthy) = fold process_root calls (ctab,lthy)
+            in
+              (ctab, lthy)
+            end
+        end 
+
+        val (ctab,lthy) = fold process_root roots (Termtab.empty,lthy)
+        val thms = Termtab.dest ctab |&gt; map snd
+        
+      in
+        (thms,lthy)
+      end
+        
+    end
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;K (LLC_Preprocessor.Monadify.prepare_add_const_decl @{term &quot;numeral a&quot;})&#8250;</span></span></span><span>  
+</span><span>  
+</span><span>  
+</span><span>    
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Code Generator Driver&#8250;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+    The driver combines preeprocessing and code generation, 
+    and defines the user interface of the code generator, namely the commands
+    @{command export_llvm} and @{command llvm_deps}.
+  &#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; structure LLC_Driver 
+    = struct
+    
+      val cfg_llvm_debug = Attrib.setup_config_bool @{binding llvm_debug} (K false)
+    
+      fun pretty_cthms ctxt cthms = let 
+        val ctxt = Config.put Syntax_Trans.eta_contract false ctxt      
+      in Pretty.big_list &quot;Code Theorems&quot; (map (Thm.pretty_thm ctxt) cthms) end
+
+      fun pretty_ftab_entry ctxt (t,n) = Pretty.block [
+        Syntax.pretty_term ctxt t, Pretty.brk 1, Pretty.str &quot;:: &quot;, Syntax.pretty_typ ctxt (fastype_of t), 
+        Pretty.brk 1,Pretty.str &quot;&#8594;&quot;,Pretty.brk 1, Pretty.str n
+      ]
+          
+      fun pretty_ftab ctxt ftab = Pretty.big_list &quot;Symbol table:&quot; 
+        (map (pretty_ftab_entry ctxt) (Termtab.dest ftab))
+                
+      fun consts_to_llvm cns lthy = let
+        val dbg = Config.get lthy cfg_llvm_debug
+        
+        fun trace s = if dbg then Pretty.string_of (s ()) |&gt; tracing else ()
+                                                                                                      
+        val _ = trace (fn () =&gt; Pretty.str &quot;Gathering code theorems&quot;)
+        val (cthms,lthy) = LLC_Preprocessor.gather_code_thms (map fst cns) lthy
+        val _ = trace (fn () =&gt; pretty_cthms lthy cthms)
+        
+        val _ = trace (fn () =&gt; Pretty.str &quot;Computing symbol table&quot;)
+        val fixes = map_filter (fn (_,NONE) =&gt; NONE | (cn,SOME name) =&gt; SOME (cn,name)) cns
+        val ftab = LLC_Compiler.compute_fun_names fixes cthms
+        val _ = trace (fn () =&gt; pretty_ftab lthy ftab)
+        
+                  
+        val _ = trace (fn () =&gt; Pretty.str &quot;Translating code theorems to IL&quot;)
+        val tysxeqns = LLC_Compiler.parse_cthms ftab cthms lthy
+        val _ = trace (fn () =&gt; LLC_Intermediate.pretty_llc tysxeqns)
+        
+        val _ = trace (fn () =&gt; Pretty.str &quot;Writing LLVM&quot;)
+        val res = LLC_Backend.compile_to_llvm lthy tysxeqns
+      in
+        ((cthms,res), lthy)
+      end
+      
+      local
+        val using_master_directory =
+          File.full_path o Resources.master_directory o Proof_Context.theory_of;
+          
+        fun prepare_path ctxt (s,pos) = let
+          val _ = Position.report pos Markup.language_path;
+          val path = Path.explode s;
+          val _ = Position.report pos (Markup.path (Path.smart_implode path));
+          val path = using_master_directory ctxt path
+        in path end
+      
+        fun write_out NONE s = writeln s
+          | write_out (SOME path) s = File.write path s
+      in
+        fun export_llvm cns path lthy = let
+          val lthy = Config.put Syntax_Trans.eta_contract false lthy
+          val ((cthms,llvm_code),lthy) = consts_to_llvm cns lthy
+          val _ = write_out path llvm_code      
+        in
+          (cthms,lthy)
+        end
+        
+        val export_llvm_cmd = (Args.mode &quot;debug&quot; -- Args.mode &quot;no_while&quot; -- Parse_Spec.opt_thm_name &quot;:&quot; -- (Scan.repeat1 (Parse.term -- Scan.option (@{keyword &quot;is&quot;} |-- Parse.name )) -- Scan.option ((@{keyword &quot;file&quot;} |-- Parse.position Parse.path))) 
+            &gt;&gt; (fn (((dbg,nowhile),bnd),(cns,path)) =&gt; fn lthy =&gt; let 
+            
+              local
+                val lthy = (dbg?Config.put cfg_llvm_debug true) lthy
+                val lthy = (nowhile?Config.put LLC_Lib.llc_compile_while false) lthy
+              in
+                val cns = map (apfst (Syntax.read_term lthy)) cns
+                val path = Option.map (prepare_path lthy) path 
+                
+                val (cthms,lthy) = export_llvm cns path lthy
+              end
+              
+              val (_,lthy) = Local_Theory.note (bnd,cthms) lthy 
+              
+            in lthy end))
+        
+        val llvm_deps_cmd = Parse_Spec.opt_thm_name &quot;:&quot; -- Scan.repeat1 Parse.term
+          &gt;&gt; (fn (bnd,cns) =&gt; fn lthy =&gt; let
+              val cns = map (Syntax.read_term lthy) cns
+              val (cthms,lthy) = LLC_Preprocessor.gather_code_thms cns lthy
+              val (_,lthy) = Local_Theory.note (bnd,cthms) lthy 
+              
+              val _ = pretty_cthms lthy cthms |&gt; Pretty.string_of |&gt; writeln
+          
+             in lthy end 
+          )
+        
+            
+      end
+
+      val _ = Outer_Syntax.local_theory @{command_keyword export_llvm} &quot;generate LLVM code for constants&quot; export_llvm_cmd
+      val _ = Outer_Syntax.local_theory @{command_keyword llvm_deps} &quot;Print LLVM code theorems for constants&quot; llvm_deps_cmd
+    end
+  &#8250;</span></span></span><span>                                                      
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Setup for Product Type&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We prepare a setup to compile product types to anonymous 2-element structures&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ll_prod_is_pair</span><span class="delimiter">[</span><span>ll_is_pair_type_thms</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;ll_is_pair_type True TYPE(&#39;a::llvm_rep &#215;&#39;b::llvm_rep) TYPE(&#39;a) TYPE(&#39;b)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>ll_is_pair_type_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prod_insert_fst &#8801; ll_insert_fst :: (&#39;a::llvm_rep &#215; &#39;b::llvm_rep) &#8658; &#39;a &#8658; (&#39;a&#215;&#39;b) llM&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prod_insert_snd &#8801; ll_insert_snd :: (&#39;a::llvm_rep &#215; &#39;b::llvm_rep) &#8658; &#39;b &#8658; (&#39;a&#215;&#39;b) llM&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prod_extract_fst &#8801; ll_extract_fst :: (&#39;a::llvm_rep &#215; &#39;b::llvm_rep) &#8658; &#39;a llM&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prod_extract_snd &#8801; ll_extract_snd :: (&#39;a::llvm_rep &#215; &#39;b::llvm_rep) &#8658; &#39;b llM&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prod_gep_fst &#8801; ll_gep_fst :: (&#39;a::llvm_rep &#215; &#39;b::llvm_rep) ptr &#8658; &#39;a ptr llM&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prod_gep_snd &#8801; ll_gep_snd :: (&#39;a::llvm_rep &#215; &#39;b::llvm_rep) ptr &#8658; &#39;b ptr llM&quot;</span></span></span><span>
+</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>prod_ops_simp</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;prod_insert_fst = (&#955;(_,b) a. return (a,b))&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;prod_insert_snd = (&#955;(a,_) b. return (a,b))&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;prod_extract_fst = (&#955;(a,b). return a)&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;prod_extract_snd = (&#955;(a,b). return b)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> 
+</span><span>      </span><span>prod_insert_fst_def</span><span> </span><span>ll_insert_fst_def</span><span> 
+</span><span>      </span><span>prod_insert_snd_def</span><span> </span><span>ll_insert_snd_def</span><span>
+</span><span>      </span><span>prod_extract_fst_def</span><span> </span><span>ll_extract_fst_def</span><span> 
+</span><span>      </span><span>prod_extract_snd_def</span><span> </span><span>ll_extract_snd_def</span><span>       
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>all</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;intro ext&#8250;</span></span></span><span>  </span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> 
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>checked_split_pair_def</span><span> </span><span>to_val_prod_def</span><span> </span><span>from_val_prod_def</span><span> </span><span>checked_from_val_def</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span>
+</span><span>      </span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Ad-Hoc Regression Tests&#8250;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">experiment</span></span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>exp</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;64 word &#8658; 64 word llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;exp i &#8801; doM {
+    s &#8592; prod_insert_fst init 1;
+    s &#8592; prod_insert_snd s i;
+    s &#8592; llc_while
+      (&#955;s. doM {
+        i &#8592; prod_extract_snd s;
+        ll_icmp_ne i 0
+      })
+      (&#955;s. doM {
+        c &#8592; prod_extract_fst s;
+        i &#8592; prod_extract_snd s;
+        
+        c &#8592; ll_mul c 2;
+        i &#8592; ll_sub i 1;
+        
+        s &#8592; prod_insert_fst init c;
+        s &#8592; prod_insert_snd s i;
+        
+        return s
+      })
+      s;
+  
+    prod_extract_fst s
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>streq</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;8 word ptr &#8658; 8 word ptr &#8658; 1 word llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;streq s<span class="hidden">&#8681;</span><sub>1</sub> s<span class="hidden">&#8681;</span><sub>2</sub> = doM {
+      x &#8592; ll_load s<span class="hidden">&#8681;</span><sub>1</sub>;
+      ll_load s<span class="hidden">&#8681;</span><sub>2</sub> &#10524; ll_icmp_eq x
+    }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">export_llvm</span></span><span> </span><span>streq</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;test2 (n::32 word) &#8801; doM {
+    n &#8592; ll_add n 42;
+    p &#8592; ll_malloc TYPE(16 word) n;
+    p &#8592; ll_ofs_ptr p (5::32 word);
+    ll_store 42 p;
+    r &#8592; ll_load p; 
+    return r  
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;add_add (a::_ word) &#8801; doM {
+    x &#8592; ll_add a a;
+    x &#8592; ll_add x x;
+    return x
+  }&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;add_add_driver (a::32 word) (b::64 word) &#8801; doM {
+    a &#8592; add_add a;
+    b &#8592; add_add b;
+    a &#8592; ll_zext a TYPE(64 word);
+    b &#8592; ll_add a b;
+    return b
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">export_llvm</span></span><span> </span><span class="delimiter">(</span><span>debug</span><span class="delimiter">)</span><span> </span><span>add_add_driver</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;main (argc::32 word) (argv::8 word ptr ptr) &#8801; doM {
+    r &#8592; test2 argc;
+    r &#8592; ll_zext r TYPE(32 word);
+    return r
+  }&quot;</span></span></span><span> 
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;main_exp (argc::32 word) (argv::8 word ptr ptr) &#8801; doM {
+    argc &#8592; ll_zext argc TYPE(64 word);
+    r &#8592; exp argc;
+    r &#8592; ll_trunc r TYPE(32 word);
+    return r
+  }&quot;</span></span></span><span> 
+</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;testx (a::64 word) &#8801; llc_while (&#955;a. ll_icmp_ult 0 a) (&#955;a. ll_sub a 1) a&quot;</span></span></span><span>
+</span><span>    
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>eta_contract</span><span> </span><span class="delimiter">=</span><span> </span><span>false</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span class="keyword1"><span class="command">export_llvm</span></span><span> </span><span class="delimiter">(</span><span>debug</span><span class="delimiter">)</span><span> </span><span>testx</span><span>
+</span><span class="keyword1"><span class="command">export_llvm</span></span><span> </span><span class="delimiter">(</span><span>debug</span><span class="delimiter">)</span><span> </span><span>exp_thms1</span><span class="delimiter">:</span><span> </span><span>exp</span><span>  
+</span><span class="keyword1"><span class="command">export_llvm</span></span><span> </span><span class="delimiter">(</span><span>debug</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>no_while</span><span class="delimiter">)</span><span> </span><span>exp_thms2</span><span class="delimiter">:</span><span> </span><span>exp</span><span>  
+</span><span class="keyword1"><span class="command">export_llvm</span></span><span> </span><span class="delimiter">(</span><span>debug</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>no_while</span><span class="delimiter">)</span><span> </span><span>exp_thms3</span><span class="delimiter">:</span><span> </span><span>exp</span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>exp_thms1</span><span>
+</span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>exp_thms2</span><span>
+</span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>exp_thms3</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">export_llvm</span></span><span> </span><span class="delimiter">(</span><span>debug</span><span class="delimiter">)</span><span> </span><span>foobar</span><span class="delimiter">:</span><span> </span><span>main_exp</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span>main</span><span>
+</span><span class="keyword1"><span class="command">export_llvm</span></span><span> </span><span class="delimiter">(</span><span>debug</span><span class="delimiter">)</span><span> </span><span>main</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span>main</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;test_if_names (n::32 word) &#8801; doM {
+    tmp &#8592; ll_icmp_eq n 0;
+    a &#8592; llc_if tmp (return null) (doM {
+                                     x &#8592; ll_malloc TYPE(8 word) n;
+                                     return x
+                                   });
+    p &#8592; ll_ofs_ptr a (1::32 word);
+    ll_store 0x2A p;
+    ll_free a;
+    return ()
+  }&quot;</span></span></span><span>
+</span><span> 
+</span><span class="keyword1"><span class="command">export_llvm</span></span><span> </span><span>test_if_names</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fib</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;64 word &#8658; 64 word llM&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fib n &#8801; REC (&#955;fib n. doM { 
+    t&#8592;ll_icmp_ule n 1; 
+    llc_if t 
+      (return n) 
+      (doM { 
+        n<span class="hidden">&#8681;</span><sub>1</sub> &#8592; ll_sub n 1; 
+        a&#8592;fib n<span class="hidden">&#8681;</span><sub>1</sub>; 
+        n<span class="hidden">&#8681;</span><sub>2</sub> &#8592; ll_sub n 2; 
+        b&#8592;fib n<span class="hidden">&#8681;</span><sub>2</sub>; 
+        c&#8592;ll_add a b; 
+        return c })} ) n&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">export_llvm</span></span><span> </span><span>fib</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span>fib</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

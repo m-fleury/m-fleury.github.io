@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Find_In_Thms (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Find_In_Thms</h1>
+
+<span class="command">theory</span> <span class="name">Find_In_Thms</span><br/>
+<span class="keyword">imports</span> <a href="../../HOL/HOL/Main.html"><span class="name">Main</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+  Simple query tool for theorem collections.
+  
+  Syntax: find_in_thms pattern* in thm+
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Find_In_Thms</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">keywords</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find_in_thms&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span>diag</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+    
+  structure Find_In_Thms = struct
+  
+    (* filter_pattern *)
+    
+    fun expand_abs t =
+      let
+        val m = Term.maxidx_of_term t + 1;
+        val vs = strip_abs_vars t;
+        val ts = map_index (fn (k, (_, T)) =&gt; Var ((Name.aT, m + k), T)) vs;
+      in betapplys (t, ts) end;
+    
+    fun get_names t = Term.add_const_names t (Term.add_free_names t []);
+    
+    (* Does pat match a subterm of obj? *)
+    fun matches_subterm thy (pat, obj) =
+      let
+        fun msub bounds obj = Pattern.matches thy (pat, obj) orelse
+          (case obj of
+            Abs (_, T, t) =&gt; msub (bounds + 1) (snd (Term.dest_abs (Name.bound bounds, T, t)))
+          | t $ u =&gt; msub bounds t orelse msub bounds u
+          | _ =&gt; false)
+      in msub 0 obj end;
+    
+    fun filter_pattern ctxt pat =
+      let
+        val pat&#39; = (expand_abs o Envir.eta_contract) pat;
+        fun check thm = matches_subterm (Proof_Context.theory_of ctxt) (pat&#39;, Thm.full_prop_of thm);
+      in check end;
+
+      
+    val _ =
+      Outer_Syntax.command \&lt;^command_keyword&gt;&#8249;find_in_thms&#8250;
+        &quot;find theorems matching specified patterns in theorem collection&quot;
+        (Scan.repeat Parse.term -- (\&lt;^keyword&gt;&#8249;in&#8250; |-- Parse.thms1)  &gt;&gt; (fn (pats,thms) =&gt;
+          Toplevel.keep (fn st =&gt; let
+            val ctxt = Toplevel.context_of st
+            
+            fun is_plain (Facts.Named (_,NONE), []) = true
+              | is_plain _ = false
+            
+            fun prt_of (r,s) = if is_plain (r,s) then Pretty.str (Facts.string_of_ref r)
+              else Pretty.enclose &quot;&#171;&quot; &quot;&#187;&quot; [
+                  Pretty.str (Facts.string_of_ref r), 
+                    Pretty.list &quot;[&quot; &quot;]&quot; (map (Token.pretty_src ctxt) s)]
+            
+            val thms = thms ~~ map (Attrib.eval_thms ctxt o single) thms
+              |&gt; map (apfst prt_of #&gt; apsnd (tag_list 1))
+              |&gt; map (fn (name,ls) =&gt; map (fn (i,thm) =&gt; ((name,i),thm)) ls)
+              |&gt; flat
+             
+            
+            val pats = map (Proof_Context.read_term_pattern ctxt) pats
+            
+            val filters = map (filter_pattern ctxt) pats
+            fun flt (_,thm) = forall (fn flt =&gt; flt thm) filters
+            val thms = filter flt thms 
+            
+            fun pretty_thm ((n,i),thm) = Pretty.block [
+              n,Pretty.enclose &quot;(&quot; &quot;)&quot; [Pretty.str (string_of_int i)],Pretty.str &quot;:&quot;,Pretty.brk 1,
+              Thm.pretty_thm ctxt thm]
+            
+            val _ = map pretty_thm thms |&gt; Pretty.big_list &quot;Results&quot; |&gt; Pretty.writeln
+          in () end)));
+
+  end          
+&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

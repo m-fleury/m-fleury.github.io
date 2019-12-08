@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Term_Synth (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Term_Synth</h1>
+
+<span class="command">theory</span> <span class="name">Term_Synth</span><br/>
+<span class="keyword">imports</span> <a href="Sepref_Misc.html"><span class="name">Sepref_Misc</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Rule-Based Synthesis of Terms&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Term_Synth</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Sepref_Misc</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>SYNTH_TERM</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::{} &#8658; &#39;b::{} &#8658; bool&quot;</span></span></span><span>
+</span><span>    </span><span class="comment">&#8213; &#8249;Indicate synthesis of @{term y} from @{term x}.&#8250;</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;SYNTH_TERM x y &#8801; True&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">consts</span></span><span> </span><span>SDUMMY</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a :: {}&quot;</span></span></span><span>
+</span><span>    </span><span class="comment">&#8213; &#8249;After synthesis has been completed, these are replaced by fresh schematic variable&#8250;</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">named_theorems_rev</span></span><span> </span><span>synth_rules</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Term synthesis rules&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Term synthesis works by proving @{term &quot;SYNTH_TERM t v&quot;}, by repeatedly applying the 
+    first matching intro-rule from @{text &quot;synth_rules&quot;}.  &#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  signature TERM_SYNTH = sig
+    (* Synthesize something from term t. The initial list of theorems is
+      added to beginning of synth_rules, and can be used to install intro-rules
+      for SYNTH_TERM.*)
+    val synth_term: thm list -&gt; Proof.context -&gt; term -&gt; term
+  end
+
+
+  structure Term_Synth : TERM_SYNTH = struct
+
+    (* Assumption: Term does not contain dummy variables *)
+    fun replace_sdummies t = let
+      fun r (t1$t2) n = let
+              val (t1,n) = r t1 n
+              val (t2,n) = r t2 n
+            in (t1$t2,n) end
+        | r (Abs (x,T,t)) n = let
+              val (t,n) = r t n
+            in (Abs (x,T,t),n) end
+        | r @{mpat (typs) &quot;SDUMMY::?&#39;v_T&quot;} n = (Var ((&quot;_dummy&quot;,n),T),n+1)
+        | r (t&#39; as (Var ((name,_),_))) n = if String.isPrefix &quot;_&quot; name then raise TERM (&quot;replace_sdummies: Term already contains dummy patterns&quot;,[t&#39;,t]) else (t&#39;,n)
+        | r t n = (t,n)
+    in
+      fst (r t 0)
+    end    
+
+    (* Use synthesis rules to transform the given term *)
+    fun synth_term thms ctxt t = let
+      val orig_ctxt = ctxt
+      val (t,ctxt) = yield_singleton (Variable.import_terms true) t ctxt
+      val v = Var ((&quot;result&quot;,0),TVar ((&quot;T&quot;,0),[]))
+      val goal = @{mk_term &quot;Trueprop (SYNTH_TERM ?t ?v)&quot;} |&gt; Thm.cterm_of ctxt
+  
+      val rules = thms @ Named_Theorems_Rev.get ctxt @{named_theorems_rev synth_rules}
+        |&gt; Tactic.build_net
+      fun tac ctxt = ALLGOALS (TRY_SOLVED&#39; (
+        REPEAT_DETERM&#39; (CHANGED o resolve_from_net_tac ctxt rules)))
+      
+      val thm = Goal.prove_internal ctxt [] goal (fn _ =&gt; tac ctxt)
+
+      val res = case Thm.concl_of thm of
+          @{mpat &quot;Trueprop (SYNTH_TERM _ ?res)&quot;} =&gt; res 
+        | _ =&gt; raise THM(&quot;Synth_Term: Proved a different theorem?&quot;,~1,[thm])
+
+      val res = singleton (Variable.export_terms ctxt orig_ctxt) res
+        |&gt; replace_sdummies
+  
+    in
+      res
+    end
+  end  
+&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

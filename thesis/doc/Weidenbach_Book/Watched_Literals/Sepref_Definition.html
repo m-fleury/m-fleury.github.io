@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Sepref_Definition (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Sepref_Definition</h1>
+
+<span class="command">theory</span> <span class="name">Sepref_Definition</span><br/>
+<span class="keyword">imports</span> <a href="Sepref_Translate.html"><span class="name">Sepref_Translate</span></a> <a href="Term_Synth.html"><span class="name">Term_Synth</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref-Definition Command&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Sepref_Definition</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Sepref_Translate</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Lib/Term_Synth&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">keywords</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sepref_definition&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span>thy_goal</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sepref_def&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span>thy_goal</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sepref_thm&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span>thy_goal</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; Setup of Extraction-Tools &#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>cd_patterns</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine _ &#8977; _ _ _&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Synthesis setup for sepref-definition goals&#8250;</span></span></span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: The UNSPEC are an ad-hoc hack to specify the synthesis goal *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">consts</span></span><span> </span><span>UNSPEC</span><span class="delimiter">::</span><span class="tfree">&#39;a</span><span>  
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>hfunspec</span><span> 
+</span><span>    </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a &#8658; &#39;b &#8658; assn) &#8658; (&#39;a &#8658; &#39;b &#8658; assn)&#215;(&#39;a &#8658; &#39;b &#8658; assn)&quot;</span></span></span><span> 
+</span><span>    </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;(_<span class="hidden">&#8679;</span><sup>?</sup>)&quot;</span></span></span><span> </span><span class="delimiter">[</span><span>1000</span><span class="delimiter">]</span><span> </span><span>999</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;R<span class="hidden">&#8679;</span><sup>?</sup> &#8801; hf_pres R UNSPEC&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>SYNTH</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a &#8658; &#39;r nres) &#8658; ((&#39;ai &#8658;&#39;ri llM) &#215; (&#39;a &#8658; &#39;r nres)) set &#8658; bool&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;SYNTH f R &#8801; True&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CP_UNCURRY _ _ &#8801; True&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CP_PAT _ _ &#8801; True&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;INTRO_KD _ _ &#8801; True&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>SPEC_RES_ASSN</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;a &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;SPEC_RES_ASSN _ _ &#8801; True&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>synth_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CP_UNCURRY f g&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>synth_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CP_UNCURRY (uncurry0 f) (uncurry0 g)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>synth_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CP_UNCURRY f g &#10233; CP_UNCURRY (uncurry f) (uncurry g)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>synth_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CP_PAT f g&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>synth_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CP_PAT (uncurry0 f) (uncurry0 g)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>synth_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CP_PAT f g &#10233; CP_PAT (uncurry f) (uncurry g)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>synth_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;INTRO_KD R1 R1&#39;; INTRO_KD R2 R2&#39;&#10215; &#10233; INTRO_KD (R1*<span class="hidden">&#8681;</span><sub>a</sub>R2) (R1&#39;*<span class="hidden">&#8681;</span><sub>a</sub>R2&#39;)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>synth_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;INTRO_KD (R<span class="hidden">&#8679;</span><sup>?</sup>) (hf_pres R k)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>synth_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;INTRO_KD (R<span class="hidden">&#8679;</span><sup>k</sup>) (R<span class="hidden">&#8679;</span><sup>k</sup>)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>synth_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;INTRO_KD (R<span class="hidden">&#8679;</span><sup>d</sup>) (R<span class="hidden">&#8679;</span><sup>d</sup>)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>synth_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;SPEC_RES_ASSN R R&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>synth_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;SPEC_RES_ASSN UNSPEC R&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>synth_hnrI</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;CP_UNCURRY f fi; CP_PAT f fpat; INTRO_KD R R&#39;; SPEC_RES_ASSN S S&#39;&#10215; &#10233; SYNTH_TERM (SYNTH f ([P]<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>d</sub> R&#8594;S)) ((fpat,SDUMMY)&#8712;SDUMMY,(fi,f)&#8712;([P]<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>d</sub> R&#39;&#8594;S&#39;))&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>SYNTH_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  structure Sepref_Definition = struct
+    fun make_hnr_goal t ctxt = let
+      val ctxt = Variable.declare_term t ctxt
+      val (pat,goal) = case Term_Synth.synth_term @{thms synth_hnrI} ctxt t of
+        @{mpat &quot;(?pat,?goal)&quot;} =&gt; (pat,goal) | t =&gt; raise TERM(&quot;Synthesized term does not match&quot;,[t])
+      val pat = Thm.cterm_of ctxt pat |&gt; Definition_Utils.prepare_cd_pattern ctxt
+      val goal = HOLogic.mk_Trueprop goal
+    in
+      ((pat,goal),ctxt)
+    end
+
+    local 
+      open Refine_Util
+      (*val flags = parse_bool_config&#39; &quot;prep_code&quot; cfg_prep_code
+      val parse_flags = parse_paren_list&#39; flags  
+      *)
+
+    in       
+      val sd_parser = Parse.binding -- Parse.opt_attribs --| @{keyword &quot;is&quot;} 
+        -- Parse.opt_attribs -- Parse.term --| @{keyword &quot;::&quot;} -- Parse.term
+        
+      val sd_dflt_parser = 
+          Parse.binding 
+        -- Scan.optional Parse.attribs @{attributes [llvm_code]} 
+        --| @{keyword &quot;is&quot;} 
+        -- Scan.optional Parse.attribs @{attributes [sepref_fr_rules]} 
+        -- Parse.term 
+        --| @{keyword &quot;::&quot;} 
+        -- Parse.term
+        
+        
+    end  
+
+    fun mk_synth_term ctxt t_raw r_raw = let
+        val t = Syntax.parse_term ctxt t_raw
+        val r = Syntax.parse_term ctxt r_raw
+        val t = Const (@{const_name SYNTH},dummyT)$t$r
+      in
+        Syntax.check_term ctxt t
+      end  
+
+
+    fun sd_cmd ((((name,attribs_def),attribs_ref),t_raw),r_raw) lthy = let
+      (*local
+        val ctxt = Refine_Util.apply_configs flags lthy
+      in
+        val flag_prep_code = Config.get ctxt cfg_prep_code
+      end
+      *)
+
+      val t = mk_synth_term lthy t_raw r_raw
+
+      val ((pat,goal),ctxt) = make_hnr_goal t lthy
+      
+      fun 
+        after_qed [[thm]] ctxt = let
+            val thm = singleton (Variable.export ctxt lthy) thm
+
+            val (_,lthy) 
+              = Local_Theory.note 
+                 ((Definition_Utils.mk_qualified (Binding.name_of name) &quot;refine_raw&quot;,[]),[thm]) 
+                 lthy;
+
+            val ((dthm,rthm),lthy) = Definition_Utils.define_concrete_fun NONE name attribs_def attribs_ref [] thm [pat] lthy
+
+            val _ = Thm.pretty_thm lthy dthm |&gt; Pretty.string_of |&gt; writeln
+            val _ = Thm.pretty_thm lthy rthm |&gt; Pretty.string_of |&gt; writeln
+          in
+            lthy
+          end
+        | after_qed thmss _ = raise THM (&quot;After-qed: Wrong thmss structure&quot;,~1,flat thmss)
+
+    in
+      Proof.theorem NONE after_qed [[ (goal,[]) ]] ctxt
+    end
+
+
+
+    val _ = Outer_Syntax.local_theory_to_proof @{command_keyword &quot;sepref_definition&quot;}
+      &quot;Synthesis of imperative program&quot;
+      (sd_parser &gt;&gt; sd_cmd)
+
+    val _ = Outer_Syntax.local_theory_to_proof @{command_keyword &quot;sepref_def&quot;}
+      &quot;Synthesis of imperative program (default attributes)&quot;
+      (sd_dflt_parser &gt;&gt; sd_cmd)
+      
+      
+    val st_parser = Parse.binding --| @{keyword &quot;is&quot;} -- Parse.term --| @{keyword &quot;::&quot;} -- Parse.term
+
+    fun st_cmd ((name,t_raw),r_raw) lthy = let
+      val t = mk_synth_term lthy t_raw r_raw
+      val ((_,goal),ctxt) = make_hnr_goal t lthy
+      
+      fun 
+        after_qed [[thm]] ctxt = let
+            val thm = singleton (Variable.export ctxt lthy) thm
+
+            val _ = Thm.pretty_thm lthy thm |&gt; Pretty.string_of |&gt; tracing
+  
+            val (_,lthy) 
+              = Local_Theory.note 
+                 ((Definition_Utils.mk_qualified (Binding.name_of name) &quot;refine_raw&quot;,[]),[thm]) 
+                 lthy;
+
+          in
+            lthy
+          end
+        | after_qed thmss _ = raise THM (&quot;After-qed: Wrong thmss structure&quot;,~1,flat thmss)
+
+    in
+      Proof.theorem NONE after_qed [[ (goal,[]) ]] ctxt
+    end
+
+    val _ = Outer_Syntax.local_theory_to_proof @{command_keyword &quot;sepref_thm&quot;}
+      &quot;Synthesis of imperative program: Only generate raw refinement theorem&quot;
+      (st_parser &gt;&gt; st_cmd)
+
+  end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

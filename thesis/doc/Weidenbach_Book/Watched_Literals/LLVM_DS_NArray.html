@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory LLVM_DS_NArray (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory LLVM_DS_NArray</h1>
+
+<span class="command">theory</span> <span class="name">LLVM_DS_NArray</span><br/>
+<span class="keyword">imports</span> <a href="LLVM_DS_Array.html"><span class="name">LLVM_DS_Array</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Array with Potential Zero Size&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>LLVM_DS_NArray</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;LLVM_DS_Array&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">term</span></span><span> </span><span>array_assn</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span>narray</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a ptr&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;narray_assn &#8801; mk_assn (&#955;xs p. case xs of [] &#8658; &#8593;(p=null) | _ &#8658; &#8639;array_assn xs p)&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">term</span></span><span> </span><span>array_new</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;narray_new TYPE(&#39;a::llvm_rep) n &#8801; if n=signed_nat 0 then return null else array_new TYPE(&#39;a) n&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>array_new_rule_snat</span><span class="delimiter">[</span><span>no_vars</span><span class="delimiter">]</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>narray_new_rule_snat</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;snat.assn n ni) (narray_new TYPE(_) ni) (&#8639;narray_assn (replicate n init))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>narray_assn_def</span><span> </span><span>narray_new_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>split</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>list.split</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg_monadify</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: From an abstract point of view, 
+    it&#39;s a bad idea to split init by the simplifier! 
+    Remove that from default setup!
+  *)</span></span></span></span></span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>narray_assn_init_pure</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#9633; &#8866; &#8639;narray_assn [] null&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>narray_assn_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>array_nth_rule_snat</span><span class="delimiter">[</span><span>no_vars</span><span class="delimiter">]</span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>narray_nth_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;narray_assn xs p &#8743;* &#8639;snat.assn i ii &#8743;* &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(i &lt; length xs)) 
+    (array_nth p ii)
+    (&#955;r. &#8593;(r = xs ! i) &#8743;* &#8639;narray_assn xs p)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>narray_assn_def</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.split</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>array_upd_rule_snat</span><span class="delimiter">[</span><span>no_vars</span><span class="delimiter">]</span><span>  
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>narray_upd_rule_snat</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;narray_assn xs p &#8743;* &#8639;snat.assn i ii &#8743;* &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(i &lt; length xs)) 
+    (array_upd p ii x)
+    (&#955;r. &#8593;(r = p) &#8743;* &#8639;narray_assn (xs[i := x]) p)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>narray_assn_def</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.splits</span><span> </span><span>nat.splits</span><span class="delimiter">;</span><span> </span><span>intro</span><span> </span><span>allI</span><span> </span><span>impI</span><span> </span><span>conjI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;narray_free p &#8801; if p=null then return () else array_free p&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>array_free_rule</span><span class="delimiter">[</span><span>no_vars</span><span class="delimiter">]</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>narray_free_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;narray_assn xs p) (narray_free p) (&#955;_. &#9633;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>narray_assn_def</span><span> </span><span>narray_free_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>xs</span><span class="delimiter">;</span><span> </span><span>clarsimp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>narrayset_rule_snat</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;narray_assn dst dsti ** &#8639;snat.assn n ni ** &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(n&#8804;length dst))
+    (arrayset dsti c ni)
+    (&#955;_. &#8639;narray_assn (replicate n c @ drop n dst) dsti)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>narray_assn_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>dst</span><span class="delimiter">;</span><span> </span><span>clarsimp</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.splits</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>arrayset_zerosize_rule</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>        
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;narray_new_init n (c::&#39;a::llvm_rep) &#8801; doM { 
+    r &#8592; narray_new TYPE(&#39;a) n; 
+    arrayset r c n;
+    return r
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>narray_new_init_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple   
+    (&#8639;snat.assn n ni) 
+    (narray_new_init ni c) 
+    (&#955;r. &#8639;narray_assn (replicate n c) r)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>narray_new_init_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span> 
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arraycpy_0_rl</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple (&#8639;snat.assn 0 ni) (arraycpy dsti srci ni) (&#955;_. &#9633;)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arraycpy_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>llc_while_unfold</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg_monadify</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg&#39;</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>narraycpy_rule_snat</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+      (&#8639;narray_assn dst dsti ** &#8639;narray_assn src srci ** &#8639;snat.assn n ni ** &#8593;<span class="hidden">&#8681;</span><sub>d</sub>(n&#8804;length src &#8743; n&#8804;length dst))
+      (arraycpy dsti srci ni)
+      (&#955;_. &#8639;narray_assn (take n src @ drop n dst) dsti ** &#8639;narray_assn src srci)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>narray_assn_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>dst</span><span class="delimiter">;</span><span> </span><span>cases</span><span> </span><span>src</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>arraycpy_0_rl</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.splits</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;array_grow newsz oldsz src &#8801; doM {
+    dst &#8592; narray_new TYPE(_) newsz;
+    arraycpy dst src oldsz;
+    narray_free src;
+    return dst
+  }&quot;</span></span></span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>narray_grow_rule_snat</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_htriple 
+    (&#8639;narray_assn src srci ** &#8639;snat.assn newsz newszi ** &#8639;snat.assn oldsz oldszi ** &#8593;(oldsz &#8804; length src &#8743; oldsz &#8804; newsz))
+    (array_grow newszi oldszi srci)
+    (&#955;dsti. &#8639;narray_assn (take oldsz src@replicate (newsz - oldsz) init) dsti)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>array_grow_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>      
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;example1 (n::64 word) &#8801; doM {
+    a &#8592; narray_new TYPE(8 word) n;
+    array_upd a (1::64 word) 42;
+    narray_free a
+  }&quot;</span></span></span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">export_llvm</span></span><span> </span><span class="delimiter">(</span><span>debug</span><span class="delimiter">)</span><span> </span><span>example1</span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* is &quot;example1&quot; file &quot;exampel1.ll&quot;*)</span></span></span></span></span><span>
+</span><span>    
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

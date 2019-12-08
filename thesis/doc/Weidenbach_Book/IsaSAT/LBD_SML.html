@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory LBD_SML (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory LBD_SML</h1>
+
+<span class="command">theory</span> <span class="name">LBD_SML</span><br/>
+<span class="keyword">imports</span> <a href="LBD.html"><span class="name">LBD</span></a> <a href="IsaSAT_Literals_SML.html"><span class="name">IsaSAT_Literals_SML</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>LBD_SML</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>LBD</span><span> </span><span>Watched_Literals.WB_Word_Assn</span><span> </span><span>IsaSAT_Literals_SML</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>lbd_int_assn</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_ref &#8658; lbd_assn &#8658; assn&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_int_assn &#8801; array_assn bool_assn *a uint32_nat_assn *a uint32_nat_assn&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>lbd_assn</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd &#8658; lbd_assn &#8658; assn&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_assn &#8801; hr_comp lbd_int_assn lbd_ref&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Testing if a level is marked&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>level_in_lbd_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo level_in_lbd_ref)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;(n, (lbd, m)). length lbd &#8804; uint_max]<span class="hidden">&#8681;</span><sub>a</sub>
+       uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> lbd_int_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; bool_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>level_in_lbd_ref_def</span><span> </span><span>short_circuit_conv</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>level_in_lbd_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry level_in_lbd_code, uncurry (RETURN &#8728;&#8728; level_in_lbd)) &#8712; uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub>
+     lbd_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>lbd_ref_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span>uint_max_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>level_in_lbd_code.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>level_in_lbd_ref_level_in_lbd</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>convert_fref</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lbd_assn_def</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Marking more levels&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>list_grow_array_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;CONSTRAINT is_pure R&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry2 (&#955;xs u. array_grow xs (nat_of_uint32 u)),
+        uncurry2 (RETURN ooo list_grow)) &#8712;
+    [&#955;((xs, n), x). n &#8805; length xs]<span class="hidden">&#8681;</span><sub>a</sub> (array_assn R)<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> R<span class="hidden">&#8679;</span><sup>k</sup> &#8594;
+       array_assn R&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>R&#39;</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;R = pure R&#39;&#8250;</span></span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;the_pure R = R&#39;&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>CONSTRAINT_D</span><span> </span><span>pure_the_pure</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;pure R&#39; b bi = &#8593;( (bi, b) &#8712; R&#39;)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>b</span><span> </span><span>bi</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>pure_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>       </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>list_grow_def</span><span> </span><span>array_assn_def</span><span> </span><span>is_array_def</span><span>
+</span><span>          </span><span>hr_comp_def</span><span> </span><span>list_rel_pres_length</span><span> </span><span>list_rel_def</span><span> </span><span>list_all2_replicate</span><span>
+</span><span>         </span><span>uint32_nat_rel_def</span><span> </span><span>br_def</span><span>
+</span><span>        </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>list_all2_appendI</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>lbd_write_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry lbd_ref_write&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_int_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> lbd_int_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lbd_ref_write_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lbd_write_hnr_</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry lbd_write_code, uncurry (RETURN &#8728;&#8728; lbd_write))
+    &#8712; [&#955;(lbd, i). i &#8804; Suc (uint_max div 2)]<span class="hidden">&#8681;</span><sub>a</sub>
+      lbd_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; lbd_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>lbd_write_code.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>lbd_ref_write_lbd_write</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>convert_fref</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lbd_assn_def</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>lbd_empty_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_empty_ref&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_int_assn<span class="hidden">&#8679;</span><sup>d</sup>  &#8594;<span class="hidden">&#8681;</span><sub>a</sub> lbd_int_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lbd_empty_ref_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lbd_empty_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(lbd_empty_code, lbd_empty) &#8712; lbd_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> lbd_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>lbd_empty_code.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>lbd_empty_ref_lbd_empty</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>convert_fref</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lbd_assn_def</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>empty_lbd_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry0 (RETURN empty_lbd_ref)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> lbd_int_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>empty_lbd_ref_def</span><span> </span><span>array_fold_custom_replicate</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>empty_lbd_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(Sepref_Misc.uncurry0 empty_lbd_code, Sepref_Misc.uncurry0 (RETURN empty_lbd)) &#8712; unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> lbd_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>empty_lbd_code.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>empty_lbd_ref_empty_lbd</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>convert_fref</span><span> </span><span>uncurry0_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lbd_assn_def</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>get_LBD_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;get_LBD_ref&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_int_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>get_LBD_ref_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>get_LBD_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(get_LBD_code, get_LBD) &#8712; lbd_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>get_LBD_code.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>get_LBD_ref_get_LBD</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>convert_fref</span><span class="delimiter">]</span><span class="delimiter">,</span><span>
+</span><span>     </span><span>unfolded</span><span> </span><span>lbd_assn_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

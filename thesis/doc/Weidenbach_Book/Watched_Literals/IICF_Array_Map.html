@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IICF_Array_Map (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IICF_Array_Map</h1>
+
+<span class="command">theory</span> <span class="name">IICF_Array_Map</span><br/>
+<span class="keyword">imports</span> <a href="IICF_Array.html"><span class="name">IICF_Array</span></a> <a href="IICF_Map.html"><span class="name">IICF_Map</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IICF_Array_Map</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>IICF_Array</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;../Intf/IICF_Map&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;../Intf/IICF_List&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;am1_rel N
+    &#8801; br (&#955;xs k. if k&lt;length xs then xs!k else None) (&#955;xs. length xs = N)&quot;</span></span></span><span>
+</span><span>    
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;am1_empty N &#8801; replicate N None&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;am1_update k v xs &#8801; mop_list_set xs k (Some v)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;am1_delete k xs &#8801; mop_list_set xs k None&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;am1_lookup k xs &#8801; mop_list_get xs k&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;am1_contains_key k xs &#8801; doN {x &#8592; mop_list_get xs k; RETURN (&#172;is_None x)}&quot;</span></span></span><span>
+</span><span>
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_op</span></span><span> </span><span>am_custom_empty</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#955;_::nat. Map.empty::nat&#8640;_&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat_rel &#8594; &#10216;nat_rel,V&#10217;map_rel&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fold_am_custom_empty</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;Map.empty = op_am_custom_empty N&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;op_map_empty = op_am_custom_empty N&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mop_map_empty = mop_am_custom_empty N&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>am1_empty_refine</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(am1_empty, op_am_custom_empty) &#8712; nat_rel &#8594;<span class="hidden">&#8681;</span><sub>f</sub><span class="hidden">&#8681;</span><sub>d</sub> (&#955;N. am1_rel N)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>am1_empty_def</span><span> </span><span>am1_rel_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>in_br_conv</span><span> </span><span>fun_eq_iff</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>frefI</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>am1_update_refine</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(uncurry2 am1_update, uncurry2 mop_map_update) 
+    &#8712; (nbn_rel N &#215;<span class="hidden">&#8681;</span><sub>r</sub> Id)&#215;<span class="hidden">&#8681;</span><sub>r</sub>am1_rel N &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;am1_rel N&#10217;nres_rel&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>frefI</span><span class="delimiter">;</span><span> </span><span>clarsimp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>am1_update_def</span><span> </span><span>am1_rel_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>refine_vcg</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>in_br_conv</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>am1_delete_refine</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(uncurry am1_delete, uncurry mop_map_delete) 
+    &#8712; nbn_rel N &#215;<span class="hidden">&#8681;</span><sub>r</sub> am1_rel N &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;am1_rel N&#10217;nres_rel&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>frefI</span><span class="delimiter">;</span><span> </span><span>clarsimp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>am1_delete_def</span><span> </span><span>am1_rel_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>refine_vcg</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>in_br_conv</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>am1_lookup_refine</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(uncurry am1_lookup, uncurry mop_map_lookup)
+    &#8712; nbn_rel N &#215;<span class="hidden">&#8681;</span><sub>r</sub> am1_rel N &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;Id&#10217;nres_rel&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>frefI</span><span class="delimiter">;</span><span> </span><span>clarsimp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>am1_lookup_def</span><span> </span><span>am1_rel_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>refine_vcg</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>in_br_conv</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>am1_contains_key_refine</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(uncurry am1_contains_key, uncurry mop_map_contains_key)
+    &#8712; nbn_rel N &#215;<span class="hidden">&#8681;</span><sub>r</sub> am1_rel N &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;bool_rel&#10217;nres_rel&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>frefI</span><span class="delimiter">;</span><span> </span><span>clarsimp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>am1_contains_key_def</span><span> </span><span>am1_rel_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>refine_vcg</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>in_br_conv</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">context</span></span><span> </span><span>dflt_pure_option</span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>  
+</span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;am2_assn &#8801; IICF_Array.array_assn option_assn&quot;</span></span></span><span>
+</span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;am_assn N &#8801; hr_comp am2_assn (am1_rel N)&quot;</span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>am_assn_intf</span><span class="delimiter">[</span><span>intf_of_assn</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;intf_of_assn A TYPE(&#39;v) &#10233; intf_of_assn (am_assn N) (TYPE((nat,&#39;v)i_map))&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">context</span></span><span> 
+</span><span>      </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>DUMMY</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;l::len2 itself&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword2"><span class="keyword">notes</span></span><span> </span><span class="delimiter">[</span><span>fcomp_norm_unfold</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>am_assn_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">notes</span></span><span> </span><span class="delimiter">[</span><span>fcomp_norm_simps</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>map_rel_Id</span><span> </span><span>option_rel_id_simp</span><span> 
+</span><span>        </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Declare by default! *)</span></span></span></span></span><span> </span><span>hrr_comp_id_conv</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>    
+</span><span>      </span><span class="keyword2"><span class="keyword">private</span></span><span> </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="delimiter">(</span><span>input</span><span class="delimiter">)</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;K_assn &#8801; snat_assn&#39; TYPE(&#39;l)&quot;</span></span></span><span>
+</span><span>    
+</span><span>      </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>am2_empty</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;RETURN o am1_empty&quot;</span></span></span><span> 
+</span><span>        </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;K_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> am2_assn&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>am1_empty_def</span><span> </span><span>am2_assn_def</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>array_fold_custom_replicate</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>        
+</span><span>        </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>no_register</span><span class="delimiter">)</span><span> </span><span>am2_empty</span><span class="delimiter">:</span><span> </span><span>am2_empty.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>am1_empty_refine</span><span class="delimiter">]</span><span> 
+</span><span>          </span><span class="keyword2"><span class="keyword">uses</span></span><span> </span><span>op_am_custom_empty.fref</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>V</span><span class="delimiter">=</span><span>Id</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>        
+</span><span>      </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>am2_lookup</span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry am1_lookup&quot;</span></span></span><span> 
+</span><span>        </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;K_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> am2_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> option_assn&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>am1_lookup_def</span><span> </span><span>am2_assn_def</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>no_register</span><span class="delimiter">,</span><span>ismop</span><span class="delimiter">)</span><span> </span><span>am2_lookup</span><span class="delimiter">:</span><span> </span><span>am2_lookup.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>am1_lookup_refine</span><span class="delimiter">]</span><span> 
+</span><span>        </span><span class="keyword2"><span class="keyword">uses</span></span><span> </span><span>mop_map_lookup.fref</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>K</span><span class="delimiter">=</span><span>Id</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>V</span><span class="delimiter">=</span><span>Id</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>am2_contains_key</span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry am1_contains_key&quot;</span></span></span><span> 
+</span><span>        </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;K_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> am2_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>am1_contains_key_def</span><span> </span><span>am2_assn_def</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>no_register</span><span class="delimiter">,</span><span>ismop</span><span class="delimiter">)</span><span> </span><span>am2_contains_key</span><span class="delimiter">:</span><span> </span><span>am2_contains_key.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>am1_contains_key_refine</span><span class="delimiter">]</span><span> 
+</span><span>        </span><span class="keyword2"><span class="keyword">uses</span></span><span> </span><span>mop_map_contains_key.fref</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>K</span><span class="delimiter">=</span><span>Id</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>V</span><span class="delimiter">=</span><span>Id</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>        
+</span><span>                        
+</span><span>      </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>am2_update</span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry2 am1_update&quot;</span></span></span><span>  
+</span><span>        </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;K_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> A<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> am2_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> am2_assn&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>am1_update_def</span><span> </span><span>am2_assn_def</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>        
+</span><span>      </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>no_register</span><span class="delimiter">,</span><span>ismop</span><span class="delimiter">)</span><span> </span><span>am2_update</span><span class="delimiter">:</span><span> </span><span>am2_update.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>am1_update_refine</span><span class="delimiter">]</span><span> 
+</span><span>        </span><span class="keyword2"><span class="keyword">uses</span></span><span> </span><span>mop_map_update.fref</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>K</span><span class="delimiter">=</span><span>Id</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>V</span><span class="delimiter">=</span><span>Id</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>am2_delete</span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry am1_delete&quot;</span></span></span><span>  
+</span><span>        </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;K_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> am2_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> am2_assn&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>am1_delete_def</span><span> </span><span>am2_assn_def</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>no_register</span><span class="delimiter">,</span><span>ismop</span><span class="delimiter">)</span><span> </span><span>am2_delete</span><span class="delimiter">:</span><span> </span><span>am2_delete.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>am1_delete_refine</span><span class="delimiter">]</span><span> 
+</span><span>        </span><span class="keyword2"><span class="keyword">uses</span></span><span> </span><span>mop_map_delete.fref</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>K</span><span class="delimiter">=</span><span>Id</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>V</span><span class="delimiter">=</span><span>Id</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>                  
+</span><span>      </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>am_assn_free</span><span class="delimiter">[</span><span>sepref_frame_free_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;MK_FREE (am_assn N) narray_free&quot;</span></span></span><span>  
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>am_assn_def</span><span> </span><span>am2_assn_def</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>sepref_frame_free_rules</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>        
+</span><span>    </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">concrete_definition</span></span><span> </span><span>snat_am_empty</span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span>snat.am2_empty_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">concrete_definition</span></span><span> </span><span>snat_am_lookup</span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span>snat.am2_lookup_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">concrete_definition</span></span><span> </span><span>snat_am_contains_key</span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span>snat.am2_contains_key_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">concrete_definition</span></span><span> </span><span>snat_am_update</span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span>snat.am2_update_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">concrete_definition</span></span><span> </span><span>snat_am_delete</span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">,</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span>snat.am2_delete_def</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>snat_am_empty.refine</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>snat_am_empty.refine</span><span class="delimiter">,</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>snat.am2_empty_hnr</span><span> </span><span>snat.am2_empty_hnr_mop</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>snat_am_lookup.refine</span><span class="delimiter">,</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>snat.am2_lookup_hnr</span><span> </span><span>snat.am2_lookup_hnr_mop</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>snat_am_contains_key.refine</span><span class="delimiter">,</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>snat.am2_contains_key_hnr</span><span> </span><span>snat.am2_contains_key_hnr_mop</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>snat_am_update.refine</span><span class="delimiter">,</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>snat.am2_update_hnr</span><span> </span><span>snat.am2_update_hnr_mop</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>snat_am_delete.refine</span><span class="delimiter">,</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>snat.am2_delete_hnr</span><span> </span><span>snat.am2_delete_hnr_mop</span><span>
+</span><span>  
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">export_llvm</span></span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;snat_am_empty :: 32 word &#8658; 32 word ptr llM&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;snat_am_lookup :: 32 word &#8658; 32 word ptr &#8658; 32 word llM&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;snat_am_contains_key :: 32 word &#8658; 32 word ptr &#8658; 1 word llM&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;snat_am_update :: 32 word &#8658; 32 word &#8658; 32 word ptr &#8658; 32 word ptr llM&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;snat_am_delete :: 32 word &#8658; 32 word ptr &#8658; 32 word ptr llM&quot;</span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;snat_am_assn&#39; TYPE(&#39;l::len2) &#8801; snat.am_assn :: nat &#8658; (nat &#8658; nat option) &#8658; &#39;l word ptr &#8658; llvm_amemory &#8658; bool&quot;</span></span></span><span>
+</span><span>
+</span><span>  
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*  method frame_solve_simple = 
+    rule fr_round1_init, 
+    (determ &#8249;rule fr_round1_match | rule fr_round1_nomatch&#8250;)+, 
+    rule fr_round1_finalize,
+    tactic &#8249;&#8250;
+*)</span></span></span></span></span><span>    
+</span><span>      
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">experiment</span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>test</span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#955;N. doN {
+      ASSERT (10 &#8804;N &#8743; N&#8804;42);
+      m &#8592; mop_am_custom_empty N;
+      m &#8592; mop_map_update 4 2 m;
+      if op_map_contains_key 4 m then doN {
+        m &#8592; mop_map_update 5 2 m;
+        m &#8592; mop_map_update 6 2 m;
+        m &#8592; mop_map_delete 5 m;
+        RETURN (the (m 4))
+      } else doN {
+        RETURN (the (m 0))
+      }
+    }&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(snat_assn&#39; TYPE(32))<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> snat_assn&#39; TYPE(32)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(32)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">export_llvm</span></span><span> </span><span>test</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>  
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

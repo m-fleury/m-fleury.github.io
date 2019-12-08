@@ -1,0 +1,931 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IICF_Abs_Heap (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IICF_Abs_Heap</h1>
+
+<span class="command">theory</span> <span class="name">IICF_Abs_Heap</span><br/>
+<span class="keyword">imports</span> <a href="IICF_List.html"><span class="name">IICF_List</span></a> <a href="IICF_Prio_Bag.html"><span class="name">IICF_Prio_Bag</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Heap Implementation On Lists&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IICF_Abs_Heap</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;HOL-Library.Multiset&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;../../../Sepref&quot;</span></span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;List-Index.List_Index&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;../../Intf/IICF_List&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;../../Intf/IICF_Prio_Bag&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  We define Min-Heaps, which implement multisets of prioritized values.
+  The operations are: 
+    empty heap, emptiness check, insert an element, 
+    remove a minimum priority element.&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Basic Definitions&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span>heap</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a list&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>heapstruct</span><span> </span><span class="delimiter">=</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>prio</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;b::linorder&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>valid</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; nat &#8658; bool&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;valid h i &#8801; i&gt;0 &#8743; i&#8804;length h&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>&#945;</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; &#39;a multiset&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#945; &#8801; mset&quot;</span></span></span><span>
+</span><span>  
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>valid_empty</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;valid [] i&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>valid0</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;valid h 0&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>valid_glen</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i&gt;length h &#10233; &#172;valid h i&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>valid_len</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;h&#8800;[] &#10233; valid h (length h)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>validI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;0&lt;i &#10233; i&#8804;length h &#10233; valid h i&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>val_of</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; nat &#8658; &#39;a&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;val_of l i &#8801; l!(i-1)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>prio_of</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; nat &#8658; &#39;b&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;prio_of l i &#8801; prio (val_of l i)&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Navigating the tree&#8250;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>parent</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat &#8658; nat&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;parent i &#8801; i div 2&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>left</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat &#8658; nat&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;left i &#8801; 2*i&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>right</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat &#8658; nat&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;right i &#8801; 2*i + 1&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;has_parent h i &#8801; valid h (parent i)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;has_left h i &#8801; valid h (left i)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;has_right h i &#8801; valid h (right i)&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;vparent h i == val_of h (parent i)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;vleft h i == val_of h (left i)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;vright h i == val_of h (right i)&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pparent h i == prio_of h (parent i)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pleft h i == prio_of h (left i)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pright h i == prio_of h (right i)&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>parent_left_id</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;parent (left i) = i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>parent_def</span><span> </span><span>left_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>parent_right_id</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;parent (right i) = i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>parent_def</span><span> </span><span>right_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>child_of_parentD</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;has_parent l i &#10233; left (parent i) = i &#8744; right (parent i) = i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>parent_def</span><span> </span><span>left_def</span><span> </span><span>right_def</span><span> </span><span>valid_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rc_imp_lc</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;valid h i; has_right h i&#10215; &#10233; has_left h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span> </span><span>left_def</span><span> </span><span>right_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>plr_corner_cases</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;0&lt;i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;i&#8800;parent i&quot;</span></span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;i&#8800;left i&quot;</span></span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;i&#8800;right i&quot;</span></span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;parent i &#8800; i&quot;</span></span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;left i &#8800; i&quot;</span></span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;right i &#8800; i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>parent_def</span><span> </span><span>left_def</span><span> </span><span>right_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>i_eq_parent_conv</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i=parent i &#10231; i=0&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>parent_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Heap Property&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The heap property states, that every node&#39;s priority is greater 
+      or equal to its parent&#39;s priority &#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>heap_invar</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; bool&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar l 
+      &#8801; &#8704;i. valid l i &#10230; has_parent l i &#10230; pparent l i &#8804; prio_of l i&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_rel1 &#8801; br &#945; heap_invar&quot;</span></span></span><span>  
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>heap_invar_empty</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar []&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>heap_invar_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">function</span></span><span> </span><span>heap_induction_scheme</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat &#8658; unit&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;heap_induction_scheme i = (
+        if i&gt;1 then heap_induction_scheme (parent i) else ())&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>pat_completeness</span><span> </span><span>auto</span><span>  
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">termination</span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>relation</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;less_than&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>parent_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> 
+</span><span>      </span><span>heap_parent_le</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;heap_invar l; valid l i; has_parent l i&#10215; 
+        &#10233; pparent l i &#8804; prio_of l i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>heap_invar_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>heap_min_prop</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>H</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar h&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>V</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;valid h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prio_of h (Suc 0) &#8804; prio_of h i&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i&gt;1&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>False</span><span> </span><span class="keyword1"><span class="command">with</span></span><span> </span><span>V</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>Suc_lessI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>      </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>True</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>V</span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i&#8804;length h&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;valid h (Suc 0)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">with</span></span><span> </span><span>True</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>i</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>heap_induction_scheme.induct</span><span class="delimiter">)</span><span>  
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rename_tac</span><span> </span><span>i</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;parent i = Suc 0&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>order_trans</span><span class="delimiter">[</span><span>rotated</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>heap_parent_le</span><span class="delimiter">[</span><span>OF</span><span> </span><span>H</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span>3</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>order_trans</span><span class="delimiter">)</span><span>  
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rprems</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>parent_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span>4</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>heap_parent_le</span><span class="delimiter">[</span><span>OF</span><span> </span><span>H</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span> </span><span>parent_def</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; Obviously, the heap property can also be stated in terms of children,
+      i.e., each node&#39;s priority is smaller or equal to it&#39;s children&#39;s priority.&#8250;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;children_ge h p i &#8801; 
+      (has_left h i &#10230; p &#8804; pleft h i)
+    &#8743; (has_right h i &#10230; p &#8804; pright h i)&quot;</span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar&#39; h &#8801; &#8704;i. valid h i &#10230; children_ge h (prio_of h i) i&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>heap_eq_heap&#39;</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar h &#10231; heap_invar&#39; h&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>heap_invar_def</span><span> 
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>heap_invar&#39;_def</span><span> </span><span>children_ge_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>rule</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarsimp</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>frule</span><span> </span><span>child_of_parentD</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Basic Operations&#8250;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The basic operations are the only operations that directly 
+      modify the underlying data structure.&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Val-Of&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="delimiter">(</span><span>input</span><span class="delimiter">)</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;val_of_pre l i &#8801; valid l i&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>val_of_op</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; nat &#8658; &#39;a nres&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;val_of_op l i &#8801; ASSERT (i&gt;0) &#10914; mop_list_get l (i-1)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>val_of_correct</span><span class="delimiter">[</span><span>refine_vcg</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;val_of_pre l i &#10233; val_of_op l i &#8804; SPEC (&#955;r. r = val_of l i)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>val_of_op_def</span><span> </span><span>val_of_def</span><span> </span><span>valid_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>refine_vcg</span><span> </span><span>auto</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="delimiter">(</span><span>input</span><span class="delimiter">)</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prio_of_pre &#8801; val_of_pre&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prio_of_op l i &#8801; do {v &#8592; val_of_op l i; RETURN (prio v)}&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>prio_of_op_correct</span><span class="delimiter">[</span><span>refine_vcg</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;prio_of_pre l i &#10233; prio_of_op l i &#8804; SPEC (&#955;r. r = prio_of l i)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>prio_of_op_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>refine_vcg</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Update&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;update_pre h i v &#8801; valid h i&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>update</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; nat &#8658; &#39;a &#8658; &#39;a heap&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;update h i v &#8801; h[i - 1 := v]&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>update_op</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; nat &#8658; &#39;a &#8658; &#39;a heap nres&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;update_op h i v &#8801; ASSERT (i&gt;0) &#10914; mop_list_set h (i-1) v&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>update_correct</span><span class="delimiter">[</span><span>refine_vcg</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;update_pre h i v &#10233; update_op h i v &#8804; SPEC(&#955;r. r = update h i v)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>update_op_def</span><span> </span><span>update_def</span><span> </span><span>valid_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>refine_vcg</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>update_valid</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;valid (update h i v) j &#10231; valid h j&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>update_def</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>val_of_update</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;update_pre h i v; valid h j&#10215; &#10233; val_of (update h i v) j = (
+      if i=j then v else val_of h j)&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>update_def</span><span> </span><span>val_of_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>nth_list_update</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>length_update</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;length (update l i v) = length l&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>update_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Exchange&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; Exchange two elements &#8250;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>exch</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; nat &#8658; nat &#8658; &#39;a heap&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;exch l i j &#8801; swap l (i - 1) (j - 1)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;exch_pre l i j &#8801; valid l i &#8743; valid l j&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>exch_op</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a list &#8658; nat &#8658; nat &#8658; &#39;a list nres&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;exch_op l i j &#8801; do { 
+      ASSERT (i&gt;0 &#8743; j&gt;0);
+      l &#8592; mop_list_swap l (i - 1) (j - 1);
+      RETURN l
+    }&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>exch_op_alt</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;exch_op l i j = do { 
+      vi &#8592; val_of_op l i;
+      vj &#8592; val_of_op l j;
+      l &#8592; update_op l i vj;
+      l &#8592; update_op l j vi;
+      RETURN l }&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>exch_op_def</span><span> </span><span>swap_def</span><span> </span><span>val_of_op_def</span><span> </span><span>update_op_def</span><span> 
+</span><span>        </span><span>pw_eq_iff</span><span> </span><span>refine_pw_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>exch_op_correct</span><span class="delimiter">[</span><span>refine_vcg</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;exch_pre l i j &#10233; exch_op l i j &#8804; SPEC (&#955;r. r = exch l i j)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>exch_op_def</span><span> 
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>refine_vcg</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>exch_def</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>       
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>valid_exch</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;valid (exch l i j) k = valid l k&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>exch_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>val_of_exch</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;valid l i; valid l j; valid l k&#10215; &#10233; 
+      val_of (exch l i j) k = (
+        if k=i then val_of l j
+        else if k=j then val_of l i
+        else val_of l k
+      )&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>exch_def</span><span> </span><span>val_of_def</span><span> </span><span>valid_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>exch_eq</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;exch h i i = h&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>exch_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>&#945;_exch</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;valid l i; valid l j&#10215; 
+      &#10233; &#945; (exch l i j) = &#945; l&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>exch_def</span><span> </span><span>valid_def</span><span> 
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>length_exch</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;length (exch l i j) = length l&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>exch_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Butlast&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Remove last element&#8250;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;butlast_pre l &#8801; l&#8800;[]&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>butlast_op</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; &#39;a heap nres&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;butlast_op l &#8801; mop_list_butlast l&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>butlast_op_correct</span><span class="delimiter">[</span><span>refine_vcg</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;butlast_pre l &#10233; butlast_op l &#8804; SPEC (&#955;r. r = butlast l)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>butlast_op_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>valid_butlast_conv</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;valid (butlast h) i &#10231; valid h i &#8743; i &lt; length h&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>valid_butlast</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;valid (butlast h) i &#10233; valid h i&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>h</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>rev_cases</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>val_of_butlast</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;valid h i; i&lt;length h&#10215; 
+      &#10233; val_of (butlast h) i = val_of h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span> </span><span>val_of_def</span><span> </span><span>nth_butlast</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>val_of_butlast&#39;</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;valid (butlast h) i &#10233; val_of (butlast h) i = val_of h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>h</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>rev_cases</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span> </span><span>val_of_def</span><span> </span><span>nth_append</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>&#945;_butlast</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; length h &#8800; 0 &#10215; 
+      &#10233; &#945; (butlast h) = &#945; h - {# val_of h (length h)#}&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>h</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>rev_cases</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>val_of_def</span><span class="delimiter">)</span><span>   
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>heap_invar_butlast</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar h &#10233; heap_invar (butlast h)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;h = []&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>heap_invar_def</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>valid_butlast</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Append&#8250;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>append_op</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; &#39;a &#8658; &#39;a heap nres&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;append_op l v &#8801; mop_list_append l v&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>append_op_correct</span><span class="delimiter">[</span><span>refine_vcg</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;append_op l v &#8804; SPEC (&#955;r. r = l@[v])&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>append_op_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>valid_append</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;valid (l@[v]) i &#10231; valid l i &#8744; i = length l + 1&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>val_of_append</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;valid (l@[v]) i &#10233; 
+      val_of (l@[v]) i = (if valid l i then val_of l i else v)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>valid_def</span><span> </span><span>val_of_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>nth_append</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>&#945;_append</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#945; (l@[v]) = &#945; l + {#v#}&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Auxiliary operations&#8250;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The auxiliary operations do not have a corresponding abstract operation, but
+      are to restore the heap property after modification.&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Swim&#8250;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;This invariant expresses that the heap has a single defect,
+      which can be repaired by swimming up&#8250;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>swim_invar</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; nat &#8658; bool&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;swim_invar h i &#8801; 
+        valid h i
+      &#8743; (&#8704;j. valid h j &#8743; has_parent h j &#8743; j&#8800;i &#10230; pparent h j &#8804; prio_of h j)
+      &#8743; (has_parent h i &#10230; 
+        (&#8704;j. valid h j &#8743; has_parent h j &#8743; parent j = i 
+          &#10230; pparent h i &#8804; prio_of h j))&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Move up an element that is too small, until it fits&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>swim_op</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; nat &#8658; &#39;a heap nres&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;swim_op h i &#8801; do {
+        RECT (&#955;swim (h,i). do {
+          ASSERT (valid h i &#8743; swim_invar h i);
+          if has_parent h i then do {
+            ppi &#8592; prio_of_op h (parent i);
+            pi &#8592; prio_of_op h i;
+            if (&#172;ppi &#8804; pi) then do {
+              h &#8592; exch_op h i (parent i);
+              swim (h, parent i)
+            } else
+              RETURN h
+          } else 
+            RETURN h
+        }) (h,i)
+      }&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>swim_invar_valid</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;swim_invar h i &#10233; valid h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>swim_invar_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>swim_invar_exit1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;has_parent h i &#10233; swim_invar h i &#10233; heap_invar h&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>heap_invar_def</span><span> </span><span>swim_invar_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>swim_invar_exit2</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pparent h i &#8804; prio_of h i &#10233; swim_invar h i &#10233; heap_invar h&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>heap_invar_def</span><span> </span><span>swim_invar_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>swim_invar_pres</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>HPI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;has_parent h i&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>VIOLATED</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pparent h i &gt; prio_of h i&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>INV</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;swim_invar h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">defines</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;h&#39; &#8801; exch h i (parent i)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;swim_invar h&#39; (parent i)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>swim_invar_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>safe</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>h&#39;_def</span><span> </span><span>HPI</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>HPI</span><span> </span><span>VIOLATED</span><span> </span><span>INV</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>swim_invar_def</span><span> </span><span>h&#39;_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>HPI</span><span> </span><span>VIOLATED</span><span> </span><span>INV</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>swim_invar_def</span><span> </span><span>h&#39;_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>order_trans</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>swim_invar_decr</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>INV</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar h&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>V</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;valid h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>DECR</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prio v &#8804; prio_of h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;swim_invar (update h i v) i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>INV</span><span> </span><span>V</span><span> </span><span>DECR</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swim_invar_def</span><span> </span><span>heap_invar_def</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>dual_order.trans</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>swim_op_correct</span><span class="delimiter">[</span><span>refine_vcg</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;swim_invar h i&#10215; &#10233;
+      swim_op h i &#8804; SPEC (&#955;h&#39;. &#945; h&#39; = &#945; h &#8743; heap_invar h&#39; &#8743; length h&#39; = length h)&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>swim_op_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span>  </span><span>RECT_rule</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> 
+</span><span>          </span><span>pre</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;&#955;(hh,i). 
+            swim_invar hh i 
+          &#8743; &#945; hh = &#945; h 
+          &#8743; length hh = length h&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>          </span><span>V</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;inv_image less_than snd&quot;</span></span></span><span>
+</span><span>          </span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swim_invar_valid</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>rprems</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swim_invar_pres</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>parent_def</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swim_invar_exit2</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swim_invar_exit1</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sink&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Move down an element that is too big, until it fits in&#8250;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>sink_op</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; nat &#8658; &#39;a heap nres&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;sink_op h i &#8801; do {
+        RECT (&#955;sink (h,i). do {
+          ASSERT (valid h i);
+          if has_right h i then do {
+            ASSERT (has_left h i);
+            lp &#8592; prio_of_op h (left i);
+            rp &#8592; prio_of_op h (right i);
+            p &#8592; prio_of_op h i;
+            if (lp &lt; p &#8743; rp &#8805; lp) then do {
+              h &#8592; exch_op h i (left i);
+              sink (h,left i)
+            } else if (rp&lt;lp &#8743; rp &lt; p) then do {
+              h &#8592; exch_op h i (right i);
+              sink (h,right i)
+            } else 
+              RETURN h
+          } else if (has_left h i) then do {
+            lp &#8592; prio_of_op h (left i);
+            p &#8592; prio_of_op h i;
+            if (lp &lt; p) then do {
+              h &#8592; exch_op h i (left i);
+              sink (h,left i)
+            } else
+              RETURN h
+            
+          } else 
+            RETURN h
+        }) (h,i)
+      }&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;This invariant expresses that the heap has a single defect, 
+      which can be repaired by sinking&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_invar l i &#8801; 
+      valid l i
+    &#8743; (&#8704;j. valid l j &#8743; j&#8800;i &#10230; children_ge l (prio_of l j) j)
+    &#8743; (has_parent l i &#10230; children_ge l (pparent l i) i)&quot;</span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sink_invar_valid</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_invar l i &#10233; valid l i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sink_invar_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sink_invar_exit</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;sink_invar l i; children_ge l (prio_of l i) i&#10215; 
+      &#10233; heap_invar&#39; l&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>heap_invar&#39;_def</span><span> </span><span>sink_invar_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sink_aux1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172; (2*i &#8804; length h) &#10233; &#172;has_left h i &#8743; &#172;has_right h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>valid_def</span><span> </span><span>left_def</span><span> </span><span>right_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sink_invar_pres1</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_invar h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;has_left h i&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;has_right h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prio_of h i &#8805; pleft h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pleft h i &#8805; pright h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_invar (exch h i (right i)) (right i)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sink_invar_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>children_ge_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sink_invar_pres2</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_invar h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;has_left h i&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;has_right h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prio_of h i &#8805; pleft h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pleft h i &#8804; pright h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_invar (exch h i (left i)) (left i)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sink_invar_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>children_ge_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sink_invar_pres3</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_invar h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;has_left h i&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;has_right h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prio_of h i &#8805; pright h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pleft h i &#8804; pright h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_invar (exch h i (left i)) (left i)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sink_invar_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>children_ge_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sink_invar_pres4</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_invar h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;has_left h i&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;has_right h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prio_of h i &#8805; pright h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pleft h i &#8805; pright h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_invar (exch h i (right i)) (right i)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sink_invar_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>children_ge_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sink_invar_pres5</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_invar h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;has_left h i&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;has_right h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prio_of h i &#8805; pleft h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_invar (exch h i (left i)) (left i)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sink_invar_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>children_ge_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>sink_invar_pres</span><span> </span><span class="delimiter">=</span><span> 
+</span><span>      </span><span>sink_invar_pres1</span><span> 
+</span><span>      </span><span>sink_invar_pres2</span><span> 
+</span><span>      </span><span>sink_invar_pres3</span><span> 
+</span><span>      </span><span>sink_invar_pres4</span><span> 
+</span><span>      </span><span>sink_invar_pres5</span><span>
+</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sink_invar_incr</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>INV</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar h&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>V</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;valid h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>INCR</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prio v &#8805; prio_of h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_invar (update h i v) i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>INV</span><span> </span><span>V</span><span> </span><span>INCR</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sink_invar_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>children_ge_def</span><span> </span><span>heap_invar_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>children_ge_def</span><span> </span><span>heap_invar_def</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>order_trans</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>frule</span><span> </span><span>spec</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>x</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;left i&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>frule</span><span> </span><span>spec</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>x</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;right i&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sink_op_correct</span><span class="delimiter">[</span><span>refine_vcg</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;sink_invar h i&#10215; &#10233;
+      sink_op h i &#8804; SPEC (&#955;h&#39;. &#945; h&#39; = &#945; h &#8743; heap_invar h&#39; &#8743; length h&#39; = length h)&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sink_op_def</span><span> </span><span>heap_eq_heap&#39;</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span>  </span><span>RECT_rule</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> 
+</span><span>          </span><span>pre</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;&#955;(hh,i). sink_invar hh i &#8743; &#945; hh = &#945; h &#8743; length hh = length h&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>          </span><span>V</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;measure (&#955;(l,i). length l - i)&quot;</span></span></span><span>
+</span><span>          </span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sink_invar_valid</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span> </span><span>left_def</span><span> </span><span>right_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>rprems</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>sink_invar_pres</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span> </span><span>left_def</span><span> </span><span>right_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>rprems</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>sink_invar_pres</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span> </span><span>left_def</span><span> </span><span>right_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarsimp</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>sink_invar_exit</span><span class="delimiter">,</span><span> </span><span>assumption</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>children_ge_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>rprems</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>sink_invar_pres</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span> </span><span>left_def</span><span> </span><span>right_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarsimp</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>sink_invar_exit</span><span class="delimiter">,</span><span> </span><span>assumption</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>children_ge_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarsimp</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>sink_invar_exit</span><span class="delimiter">,</span><span> </span><span>assumption</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>children_ge_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sink_op_swim_rule</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;swim_invar h i &#10233; sink_op h i &#8804; SPEC (&#955;h&#39;. h&#39;=h)&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>frule</span><span> </span><span>swim_invar_valid</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sink_op_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>RECT_unfold</span><span class="delimiter">,</span><span> </span><span>refine_mono</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>fold</span><span> </span><span>sink_op_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>refine_vcg</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span> </span><span>left_def</span><span> </span><span>right_def</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>swim_invar_valid</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swim_invar_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swim_invar_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swim_invar_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swim_invar_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swim_invar_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swim_invar_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>sink_op_opt</span><span>
+</span><span>      </span><span class="comment">&#8213; &#8249;Sink operation as presented in Sedgewick et al. Algs4 reference implementation&#8250;</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span>   
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;sink_op_opt h k &#8801; RECT (&#955;D (h,k). do {
+        ASSERT (k&gt;0 &#8743; k&#8804;length h);
+        let len = length h;
+        if (2*k &#8804; len) then do {
+          let j = 2*k;
+          pj &#8592; prio_of_op h j;
+
+          j &#8592; (
+            if j&lt;len then do {
+              psj &#8592; prio_of_op h (Suc j);
+              if pj&gt;psj then RETURN (j+1) else RETURN j
+            } else RETURN j);
+
+          pj &#8592; prio_of_op h j;
+          pk &#8592; prio_of_op h k;
+          if (pk &gt; pj) then do {
+            h &#8592; exch_op h k j;
+            D (h,j)
+          } else
+            RETURN h
+        } else RETURN h    
+      }) (h,k)&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sink_op_opt_eq</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_op_opt h k = sink_op h k&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sink_op_opt_def</span><span> </span><span>sink_op_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>fo_rule</span><span> </span><span>arg_cong</span><span> </span><span>fun_cong</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sink_op_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>cong</span><span class="delimiter">:</span><span> </span><span>if_cong</span><span> </span><span>split</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>if_split</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>Let_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span> </span><span>left_def</span><span> </span><span>right_def</span><span> </span><span>prio_of_op_def</span><span> </span><span>val_of_op_def</span><span> 
+</span><span>        </span><span>val_of_def</span><span> </span><span>less_imp_diff_less</span><span> </span><span>ASSERT_same_eq_conv</span><span> </span><span>nz_le_conv_less</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Repair&#8250;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Repair a local defect in the heap. This can be done 
+      by swimming and sinking. Note that, depending on the defect, only one
+      of the operations will change the heap. 
+      Moreover, note that we do not need repair to implement the heap operations. 
+      However, it is required for heapmaps. &#8250;</span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;repair_op h i &#8801; do {
+      h &#8592; sink_op h i;
+      h &#8592; swim_op h i;
+      RETURN h
+    }&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>update_sink_swim_cases</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar h&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;valid h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">obtains</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;swim_invar (update h i v) i&quot;</span></span></span><span> </span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_invar (update h i v) i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>linear</span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prio v&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prio_of h i&quot;</span></span></span><span class="delimiter">,</span><span> </span><span>THEN</span><span> </span><span>disjE</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>blast</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>swim_invar_decr</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>blast</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>sink_invar_incr</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>heap_invar_imp_swim_invar</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;heap_invar h; valid h i&#10215; &#10233; swim_invar h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>heap_invar_def</span><span> </span><span>swim_invar_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>order_trans</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>repair_correct</span><span class="delimiter">[</span><span>refine_vcg</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar h&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;valid h i&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;repair_op (update h i v) i &#8804; SPEC (&#955;h&#39;.
+        heap_invar h&#39; &#8743; &#945; h&#39; = &#945; (update h i v) &#8743; length h&#39; = length h)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>update_sink_swim_cases</span><span class="delimiter">[</span><span>of</span><span> </span><span>h</span><span> </span><span>i</span><span> </span><span>v</span><span class="delimiter">,</span><span> </span><span>OF</span><span> </span><span>assms</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>repair_op_def</span><span>  
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>sink_op_swim_rule</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span> </span><span class="delimiter">[</span><span>4</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>heap_invar_imp_swim_invar</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span> </span><span class="delimiter">[</span><span>3</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Operations&#8250;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+    subsubsection &#8249;Length&#8250;
+    definition length_op :: &quot;&#39;a heap &#8658; nat nres&quot; where &quot;length_op &#8801; lst_op_length&quot;
+
+    lemma [refine_vcg]: &quot;length_op l &#8804; SPEC (&#955;r. r = length l)&quot;
+      unfolding length_op_def
+      by refine_vcg
+    *)</span></span></span></span></span><span>  
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Empty&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="delimiter">(</span><span>input</span><span class="delimiter">)</span><span> </span><span>empty</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap&quot;</span></span></span><span> </span><span class="comment">&#8213; &#8249;The empty heap&#8250;</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;empty &#8801; []&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>empty_op</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap nres&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;empty_op &#8801; mop_list_empty&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>empty_op_correct</span><span class="delimiter">[</span><span>refine_vcg</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;empty_op &#8804; SPEC (&#955;r. &#945; r = {#} &#8743; heap_invar r)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>empty_op_def</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>refine_vcg</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Emptiness check&#8250;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>is_empty_op</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; bool nres&quot;</span></span></span><span> </span><span class="comment">&#8213; &#8249;Check for emptiness&#8250;</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_empty_op h &#8801; do {ASSERT (heap_invar h); let l=length h; RETURN (l=0)}&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_empty_op_correct</span><span class="delimiter">[</span><span>refine_vcg</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar h &#10233; is_empty_op h &#8804; SPEC (&#955;r. r&#10231;&#945; h = {#})&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_empty_op_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>refine_vcg</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Insert&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>insert_op</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;a heap &#8658; &#39;a heap nres&quot;</span></span></span><span> </span><span class="comment">&#8213; &#8249;Insert element&#8250;</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;insert_op v h &#8801; do {
+        ASSERT (heap_invar h);
+        h &#8592; append_op h v;
+        let l = length h;
+        h &#8592; swim_op h l;
+        RETURN h
+      }&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>swim_invar_insert</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar l &#10233; swim_invar (l@[x]) (Suc (length l))&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>swim_invar_def</span><span> </span><span>heap_invar_def</span><span> </span><span>valid_def</span><span> </span><span>parent_def</span><span> </span><span>val_of_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>nth_append</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span>  
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;(insert_op,RETURN oo op_mset_insert) &#8712; Id &#8594; heap_rel1 &#8594; &#10216;heap_rel1&#10217;nres_rel&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>insert_op_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span> </span><span>heap_rel1_def</span><span> </span><span>o_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>refine_vcg</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swim_invar_insert</span><span> </span><span>in_br_conv</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>insert_op_correct</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar h &#10233; insert_op v h &#8804; SPEC (&#955;h&#39;. heap_invar h&#39; &#8743; &#945; h&#39; = &#945; h + {#v#})&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>insert_op_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swim_invar_insert</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>refine_vcg</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>insert_op_correct</span><span>  
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Pop minimum element&#8250;</span></span></span><span>  
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>pop_min_op</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; (&#39;a &#215; &#39;a heap) nres&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;pop_min_op h &#8801; do {
+        ASSERT (heap_invar h);
+        ASSERT (valid h 1);
+        m &#8592; val_of_op h 1;
+        let l = length h;
+        h &#8592; exch_op h 1 l;
+        h &#8592; butlast_op h;
+        
+        if (l&#8800;1) then do {
+          h &#8592; sink_op h 1;
+          RETURN (m,h)
+        } else RETURN (m,h)
+      }&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>left_not_one</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;left j &#8800; Suc 0&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>left_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>right_one_conv</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;right j = Suc 0 &#10231; j=0&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>right_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>parent_one_conv</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;parent (Suc 0) = 0&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>parent_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sink_invar_init</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>I</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar h&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>NE</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;length h &gt; 1&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sink_invar (butlast (exch h (Suc 0) (length h))) (Suc 0)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>NE</span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>V</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;valid h (Suc 0)&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;valid h (length h)&quot;</span></span></span><span> 
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>-</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span> </span><span>neq_Nil_conv</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>h</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>      </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>I</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>heap_eq_heap&#39;</span><span> </span><span>heap_invar&#39;_def</span><span> </span><span>sink_invar_def</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>impI</span><span> </span><span>conjI</span><span> </span><span>allI</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>NE</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>V</span><span> </span><span>valid_butlast_conv</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>children_ge_def</span><span> </span><span>V</span><span> </span><span>NE</span><span> </span><span>valid_butlast_conv</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>children_ge_def</span><span> </span><span>V</span><span> </span><span>NE</span><span> </span><span>valid_butlast_conv</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>in_set_conv_val</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;v &#8712; set h &#10231; (&#8707;i. valid h i &#8743; v = val_of h i)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>iffI</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span> </span><span>val_of_def</span><span> </span><span>in_set_conv_nth</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule_tac</span><span> </span><span>x</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;Suc i&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>exI</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span> </span><span>val_of_def</span><span> </span><span>in_set_conv_nth</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule_tac</span><span> </span><span>x</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;i - Suc 0&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>exI</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>      
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pop_min_op_correct</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar h&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#945; h &#8800; {#}&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pop_min_op h &#8804; SPEC (&#955;(v,h&#39;). heap_invar h&#39; &#8743;
+        v &#8712;# &#945; h &#8743; &#945; h&#39; = &#945; h - {#v#} &#8743; (&#8704;v&#39;&#8712;set_mset (&#945; h). prio v &#8804; prio v&#39;))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>    
+</span><span>      </span><span class="keyword1"><span class="command">note</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span> </span><span>del</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>length_greater_0_conv</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>LG</span><span> </span><span class="delimiter">=</span><span> </span><span>length_greater_0_conv</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>assms</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>pop_min_op_def</span><span>  
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>refine_vcg</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>sink_invar_init</span><span> </span><span>LG</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>h</span><span class="delimiter">;</span><span> </span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>val_of_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* FIXME: Looking below val_of! *)</span></span></span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>in_set_conv_val</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>heap_min_prop</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>h</span><span class="delimiter">;</span><span> </span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>val_of_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* FIXME: Looking below val_of! *)</span></span></span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>h</span><span class="delimiter">;</span><span> </span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>val_of_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* FIXME: Looking below val_of! *)</span></span></span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">qed</span></span><span>    
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>refine_vcg</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>pop_min_op_correct</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Peek minimum element&#8250;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>peek_min_op</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a heap &#8658; &#39;a nres&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;peek_min_op h &#8801; do {
+        ASSERT (heap_invar h);
+        ASSERT (valid h 1);
+        val_of_op h 1
+      }&quot;</span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>peek_min_op_correct</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_invar h&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#945; h &#8800; {#}&quot;</span></span></span><span> 
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;peek_min_op h &#8804; SPEC (&#955;v. 
+        v &#8712;# &#945; h &#8743; (&#8704;v&#39;&#8712;set_mset (&#945; h). prio v &#8804; prio v&#39;))&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>peek_min_op_def</span><span>  
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>refine_vcg</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarsimp_all</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>valid_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>  
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>h</span><span class="delimiter">;</span><span> </span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>val_of_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* FIXME: Looking below val_of! *)</span></span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>in_set_conv_val</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>heap_min_prop</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>      
+</span><span>    </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>peek_min_op_correct&#39;</span><span class="delimiter">[</span><span>refine_vcg</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>peek_min_op_correct</span><span>
+</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Operations as Relator-Style Refinement&#8250;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>empty_op_refine</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(empty_op,RETURN op_mset_empty)&#8712;&#10216;heap_rel1&#10217;nres_rel&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>order_trans</span><span class="delimiter">)</span><span>  
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>empty_op_correct</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>heap_rel1_def</span><span> </span><span>br_def</span><span> </span><span>pw_le_iff</span><span> </span><span>refine_pw_simps</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_empty_op_refine</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(is_empty_op,RETURN o op_mset_is_empty) &#8712; heap_rel1 &#8594; &#10216;bool_rel&#10217;nres_rel&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>nres_relI</span><span> </span><span>fun_relI</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>refine_vcg</span><span>  
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>heap_rel1_def</span><span> </span><span>br_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>  
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>insert_op_refine</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(insert_op,RETURN oo op_mset_insert) &#8712; Id &#8594; heap_rel1 &#8594; &#10216;heap_rel1&#10217;nres_rel&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>nres_relI</span><span> </span><span>fun_relI</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>RETURN_as_SPEC_refine</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>heap_rel1_def</span><span> </span><span>br_def</span><span> </span><span>pw_le_iff</span><span> </span><span>refine_pw_simps</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>  
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pop_min_op_refine</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;(pop_min_op, PR_CONST (mop_prio_pop_min prio)) &#8712; heap_rel1 &#8594; &#10216;Id &#215;<span class="hidden">&#8681;</span><sub>r</sub> heap_rel1&#10217;nres_rel&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>fun_relI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mop_prio_pop_min_def</span><span> </span><span>PR_CONST_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>SPEC_refine</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>heap_rel1_def</span><span> </span><span>br_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>peek_min_op_refine</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;(peek_min_op, PR_CONST (mop_prio_peek_min prio)) &#8712; heap_rel1 &#8594; &#10216;Id&#10217;nres_rel&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>fun_relI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mop_prio_peek_min_def</span><span> </span><span>PR_CONST_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>RES_refine</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>heap_rel1_def</span><span> </span><span>br_def</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>  
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

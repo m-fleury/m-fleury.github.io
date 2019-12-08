@@ -1,0 +1,780 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Sepref_Translate (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Sepref_Translate</h1>
+
+<span class="command">theory</span> <span class="name">Sepref_Translate</span><br/>
+<span class="keyword">imports</span> <a href="Sepref_Frame.html"><span class="name">Sepref_Frame</span></a> <a href="Sepref_Combinator_Setup.html"><span class="name">Sepref_Combinator_Setup</span></a> <a href="User_Smashing.html"><span class="name">User_Smashing</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Translation&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Sepref_Translate</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> 
+</span><span>  </span><span>Sepref_Monadify</span><span> 
+</span><span>  </span><span>Sepref_Constraints</span><span> 
+</span><span>  </span><span>Sepref_Frame</span><span> 
+</span><span>  </span><span>Sepref_Rules</span><span> 
+</span><span>  </span><span>Sepref_Combinator_Setup</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Lib/User_Smashing&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  This theory defines the translation phase.
+  
+  The main functionality of the translation phase is to
+  apply refinement rules. Thereby, the linearity information is
+  exploited to create copies of parameters that are still required, but
+  would be destroyed by a synthesized operation.
+  These \emph{frame-based} rules are in the named theorem collection
+  @{text sepref_fr_rules}, and the collection @{text sepref_copy_rules}
+  contains rules to handle copying of parameters.
+
+  Apart from the frame-based rules described above, there is also a set of
+  rules for combinators, in the collection @{text sepref_comb_rules}, 
+  where no automatic copying of parameters is applied.
+
+  Moreover, this theory contains 
+  \begin{itemize}
+    \item A setup for the  basic monad combinators and recursion.
+    \item A tool to import parametricity theorems.
+    \item Some setup to identify pure refinement relations, i.e., those not
+      involving the heap.
+    \item A preprocessor that identifies parameters in refinement goals,
+      and flags them with a special tag, that allows their correct handling.
+  \end{itemize}
+&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Tag to keep track of abstract bindings. 
+  Required to recover information for side-condition solving.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bind_ref_tag x m &#8801; RETURN x &#8804; m&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Tag to keep track of preconditions in assertions&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;vassn_tag &#915; &#8801; &#8707;h. &#915; h&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>vassn_tagI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#915; h &#10233; vassn_tag &#915;&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vassn_tag_def</span><span> </span><span class="keyword1"><span class="command">..</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>vassn_dest</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;vassn_tag (&#915;<span class="hidden">&#8681;</span><sub>1</sub> ** &#915;<span class="hidden">&#8681;</span><sub>2</sub>) &#10233; vassn_tag &#915;<span class="hidden">&#8681;</span><sub>1</sub> &#8743; vassn_tag &#915;<span class="hidden">&#8681;</span><sub>2</sub>&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;vassn_tag (hn_ctxt R a b) &#10233; rdomp R a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vassn_tag_def</span><span> </span><span>hn_ctxt_def</span><span> </span><span>rdomp_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_conj_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>entails_preI</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;vassn_tag A &#10233; A &#8866; B&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;A &#8866; B&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>entails_def</span><span> </span><span>vassn_tag_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>invalid_assn_const</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;invalid_assn (&#955;_ _. P) x y = &#8593;(vassn_tag P)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>invalid_assn_def</span><span> </span><span>vassn_tag_def</span><span> </span><span>pure_part_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>vassn_tag_simps</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;vassn_tag &#9633;&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;vassn_tag sep_true&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>vassn_tag_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hn_refine_vassn_tagI</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; vassn_tag &#915; &#10233; hn_refine &#915; c &#915;&#39; R a &#10215; &#10233; hn_refine &#915; c &#915;&#39; R a&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hn_refine_preI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>vassn_tag_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;GEN_ALGO f &#934; &#8801; &#934; f&quot;</span></span></span><span>
+</span><span class="comment">&#8213; &#8249;Tag to synthesize @{term f} with property @{term &#934;}.&#8250;</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_GEN_ALGO</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;GEN_ALGO f &#934; &#10233; GEN_ALGO f &#934;&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">named_theorems_rev</span></span><span> </span><span>sepref_gen_algo_rules</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref: Generic algorithm rules&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Tag for side-condition solver to discharge by assumption&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>RPREM</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bool &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;RPREM P = P&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>RPREMI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P &#10233; RPREM P&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>trans_frame_rule</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;RECOVER_PURE &#915; &#915;&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;vassn_tag (&#915;&#39;**F) &#10233; hn_refine &#915;&#39; c &#915;&#39;&#39; R a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine (&#915;**F) c (&#915;&#39;&#39;**F) R a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hn_refine_vassn_tagI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hn_refine_frame</span><span class="delimiter">[</span><span>OF</span><span> </span><span>_</span><span> </span><span>entails_refl</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">applyF</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hn_refine_cons_pre</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">focus</span></span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>RECOVER_PURE_def</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>assumption</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">solved</span></span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply1</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>assms</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">applyS</span></span></span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>RECOVER_PURE_def</span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>entails_eq_iff</span><span> </span><span>entails_preI</span><span> </span><span>frame_thms</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">solved</span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>recover_pure_cons</span><span class="delimiter">:</span><span> </span><span class="comment">&#8213; &#8249;Used for debugging&#8250;</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;RECOVER_PURE &#915; &#915;&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine &#915;&#39; c &#915;&#39;&#39; R a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine (&#915;) c (&#915;&#39;&#39;) R a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>trans_frame_rule</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>F</span><span class="delimiter">=</span><span>&#9633;</span><span class="delimiter">,</span><span> </span><span>OF</span><span> </span><span>assms</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>
+</span><span class="comment">&#8213; &#8249;Tag to align structure of refinement assertions for consequence rule&#8250;</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>CPR_TAG</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;assn &#8658; assn &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CPR_TAG y x &#8801; True&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>CPR_TAG_starI</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CPR_TAG P1 Q1&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CPR_TAG P2 Q2&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CPR_TAG (P1**P2) (Q1**Q2)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>CPR_tag_ctxtI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CPR_TAG (hn_ctxt R x xi) (hn_ctxt R&#39; x xi)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>CPR_tag_fallbackI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CPR_TAG P Q&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>CPR_TAG_rules</span><span> </span><span class="delimiter">=</span><span> </span><span>CPR_TAG_starI</span><span> </span><span>CPR_tag_ctxtI</span><span> </span><span>CPR_tag_fallbackI</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>cons_pre_rule</span><span class="delimiter">:</span><span> </span><span class="comment">&#8213; &#8249;Consequence rule to be applied if no direct operation rule matches&#8250;</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CPR_TAG P P&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P &#8866; P&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine P&#39; c Q R m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine P c Q R m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span class="delimiter">(</span><span>2</span><span>-</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hn_refine_cons_pre</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="comment">&#8213; &#8249;Bounds-Solver&#8250;</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">named_theorems_rev</span></span><span> </span><span>sepref_bounds_dest</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Bounds solver drules&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">named_theorems_rev</span></span><span> </span><span>sepref_bounds_simps</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Bounds solver simp rules&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+
+structure Sepref_Translate = struct
+
+  val cfg_debug = 
+    Attrib.setup_config_bool @{binding sepref_debug_translate} (K false)
+  
+  val dbg_msg_tac = Sepref_Debugging.dbg_msg_tac cfg_debug  
+
+  fun check_side_conds thm = let
+    open Sepref_Basic
+    (* Check that term is no binary operator on assertions *)
+    fun is_atomic (Const (_,@{typ &quot;assn&#8658;assn&#8658;assn&quot;})$_$_) = false
+      | is_atomic _ = true
+
+    val is_atomic_star_list = (&quot;Expected atoms separated by star&quot;,forall is_atomic o strip_star)
+
+    val is_trueprop = (&quot;Expected Trueprop conclusion&quot;,can HOLogic.dest_Trueprop)
+
+    fun assert t&#39; (msg,p) t = if p t then () else raise TERM(msg,[t&#39;,t])
+
+    fun chk_prem t = let
+      val assert = assert t
+      
+      fun chk @{mpat &quot;MERGE ?l _ ?r _ ?m&quot;} = (
+            assert is_atomic_star_list l;
+            assert is_atomic_star_list r;
+            assert is_atomic_star_list m
+          )
+        | chk @{mpat &quot;?l &#8866; ?r&quot;} = (
+            assert is_atomic_star_list l;
+            assert is_atomic_star_list r
+          )
+        | chk _ = ()  
+
+      val t = Logic.strip_assums_concl t 
+    in
+      assert is_trueprop t;
+      chk (HOLogic.dest_Trueprop t)
+    end    
+
+  in
+    map chk_prem (Thm.prems_of thm)
+  end
+
+  structure sepref_comb_rules = Named_Sorted_Thms (
+    val name = @{binding &quot;sepref_comb_rules&quot;}
+    val description = &quot;Sepref: Combinator rules&quot;
+    val sort = K I
+    fun transform _ thm = let
+      val _ = check_side_conds thm  
+    in
+      [thm]
+    end
+  )
+
+  structure sepref_fr_rules = Named_Sorted_Thms (
+    val name = @{binding &quot;sepref_fr_rules&quot;}
+    val description = &quot;Sepref: Frame-based rules&quot;
+    val sort = K I
+    fun transform context thm = let
+      val ctxt = Context.proof_of context
+      val thm = Sepref_Rules.ensure_hnr ctxt thm
+        |&gt; Conv.fconv_rule (Sepref_Frame.align_rl_conv ctxt)
+
+      val _ = check_side_conds thm  
+      val _ = case try (Sepref_Rules.analyze_hnr ctxt) thm of 
+          NONE =&gt;
+            (Pretty.block [
+              Pretty.str &quot;hnr-analysis failed&quot;, 
+              Pretty.str &quot;:&quot;, 
+              Pretty.brk 1, 
+              Thm.pretty_thm ctxt thm])
+            |&gt; Pretty.string_of |&gt; error  
+        | SOME ana =&gt; let
+            val _ = Sepref_Combinator_Setup.is_valid_abs_op ctxt (fst (#ahead ana))
+              orelse Pretty.block [
+                Pretty.str &quot;Invalid abstract head:&quot;,
+                Pretty.brk 1,
+                Pretty.enclose &quot;(&quot; &quot;)&quot; [Syntax.pretty_term ctxt (fst (#ahead ana))],
+                Pretty.brk 1,
+                Pretty.str &quot;in thm&quot;,
+                Pretty.brk 1,
+                Thm.pretty_thm ctxt thm                
+              ]
+            |&gt; Pretty.string_of |&gt; error  
+          in () end
+    in
+      [thm]
+    end
+  )
+
+  (***** Side Condition Solving *)
+  local
+    open Sepref_Basic
+  in
+  
+    fun side_unfold_tac ctxt = let
+      (*val ctxt = put_simpset HOL_basic_ss ctxt
+        addsimps sepref_prep_side_simps.get ctxt*)
+    in
+      CONVERSION (Id_Op.unprotect_conv ctxt)
+      THEN&#39; SELECT_GOAL (Local_Defs.unfold0_tac ctxt @{thms bind_ref_tag_def})
+      THEN&#39; TRY o (hyp_subst_tac ctxt)
+      (*THEN&#39; asm_full_simp_tac ctxt*)
+    end
+  
+    (* TODO: Not accessible as single ML function? *)
+    fun linarith_tac ctxt = 
+      Method.insert_tac ctxt (rev (Named_Theorems.get ctxt \&lt;^named_theorems&gt;&#8249;arith&#8250;))
+      THEN&#39; Lin_Arith.tac ctxt
+    
+    fun bounds_tac ctxt = let
+      val ctxt = ctxt 
+        addSDs Named_Theorems_Rev.get ctxt @{named_theorems_rev sepref_bounds_dest}
+        addsimps Named_Theorems_Rev.get ctxt @{named_theorems_rev sepref_bounds_simps}
+    in
+      TRADE (fn ctxt =&gt; 
+        SELECT_GOAL (auto_tac ctxt)
+        THEN_ALL_NEW TRY o linarith_tac ctxt
+      ) ctxt
+    end
+    
+    fun side_fallback_tac ctxt = 
+      side_unfold_tac ctxt 
+      THEN&#39; (
+        TRADE (SELECT_GOAL o auto_tac) ctxt
+        THEN_ALL_NEW (TRY o SOLVED&#39; (bounds_tac ctxt))
+      )
+  
+    val side_frame_tac = Sepref_Frame.frame_tac side_fallback_tac
+    val side_merge_tac = Sepref_Frame.merge_tac side_fallback_tac
+    val side_free_tac = Sepref_Frame.free_tac side_fallback_tac
+    
+    
+    fun side_constraint_tac ctxt = Sepref_Constraints.constraint_tac ctxt
+    
+    val pf_mono_tac = Subgoal.FOCUS_PREMS (fn {context=ctxt,...} =&gt; CHANGED (ALLGOALS (Partial_Function.mono_tac ctxt)))
+    
+    fun side_mono_tac ctxt = side_unfold_tac ctxt THEN&#39; TRADE pf_mono_tac ctxt
+  
+    fun side_gen_algo_tac ctxt = 
+      side_unfold_tac ctxt
+      THEN&#39; resolve_tac ctxt (Named_Theorems_Rev.get ctxt @{named_theorems_rev sepref_gen_algo_rules})
+  
+    fun side_pref_def_tac ctxt = 
+      side_unfold_tac ctxt THEN&#39; 
+      TRADE (fn ctxt =&gt; 
+        resolve_tac ctxt @{thms PREFER_tagI DEFER_tagI} 
+        THEN&#39; (Sepref_Debugging.warning_tac&#39; &quot;Obsolete PREFER/DEFER side condition&quot; ctxt THEN&#39; Tagged_Solver.solve_tac ctxt)
+      ) ctxt
+
+
+    fun side_rprem_tac ctxt = 
+      resolve_tac ctxt @{thms RPREMI} THEN&#39; Refine_Util.rprems_tac ctxt
+      THEN&#39; (K (smash_new_rule ctxt))
+
+    (*
+      Solve side condition, or invoke hnr_tac on hn_refine goal.
+
+      In debug mode, side-condition solvers are allowed to not completely solve 
+      the side condition, but must change the goal.
+    *)  
+    fun side_cond_dispatch_tac dbg hnr_tac ctxt = let
+      fun MK tac = if dbg then CHANGED o tac ctxt else SOLVED&#39; (tac ctxt)
+
+      val t_merge = MK side_merge_tac
+      val t_frame = MK side_frame_tac
+      val t_free = MK side_free_tac
+      val t_indep = MK Indep_Vars.indep_tac
+      val t_constraint = MK side_constraint_tac
+      val t_mono = MK side_mono_tac
+      val t_pref_def = MK side_pref_def_tac
+      val t_rprem = MK side_rprem_tac
+      val t_gen_algo = side_gen_algo_tac ctxt
+      val t_fallback = MK side_fallback_tac
+    in
+      WITH_concl 
+        (fn @{mpat &quot;Trueprop ?t&quot;} =&gt; (case t of
+              @{mpat &quot;MERGE _ _ _ _ _&quot;} =&gt; t_merge
+            | @{mpat &quot;MK_FREE _ _&quot;} =&gt; t_free
+            | @{mpat &quot;_ &#8866; _&quot;} =&gt; t_frame
+            | @{mpat &quot;INDEP _&quot;} =&gt; t_indep     (* TODO: Get rid of this!? *)
+            | @{mpat &quot;CONSTRAINT _ _&quot;} =&gt; t_constraint
+            | @{mpat &quot;M.mono_body _&quot;} =&gt; t_mono
+            | @{mpat &quot;PREFER_tag _&quot;} =&gt; t_pref_def
+            | @{mpat &quot;DEFER_tag _&quot;} =&gt; t_pref_def
+            | @{mpat &quot;RPREM _&quot;} =&gt; t_rprem
+            | @{mpat &quot;GEN_ALGO _ _&quot;} =&gt; t_gen_algo
+            | @{mpat &quot;hn_refine _ _ _ _ _&quot;} =&gt; hnr_tac 
+            | _ =&gt; t_fallback
+          )
+        | _ =&gt; K no_tac  
+      )
+    end
+
+  end  
+
+  (***** Main Translation Tactic *)
+  local
+    open Sepref_Basic STactical
+
+    (* ATTENTION: Beware of evaluation order, as some initialization operations on
+      context are expensive, and should not be repeated during proof search! *)
+  in
+
+
+    (* Translate combinator, yields new translation goals and side conditions
+      which must be processed in order. *)
+    fun trans_comb_tac ctxt = let
+      val comb_rl_net = sepref_comb_rules.get ctxt
+        |&gt; Tactic.build_net
+
+    in
+      DETERM o (
+        resolve_from_net_tac ctxt comb_rl_net 
+        ORELSE&#39; ( 
+          Sepref_Frame.norm_goal_pre_tac ctxt 
+          THEN&#39; resolve_from_net_tac ctxt comb_rl_net
+        )
+      )
+    end
+
+    (* Translate operator. Only succeeds if it finds an operator rule such that
+      all resulting side conditions can be solved. Takes the first such rule.
+
+      In debug mode, it returns a sequence of the unsolved side conditions of
+      each applicable rule.
+    *)
+    fun gen_trans_op_tac dbg ctxt = let
+      val fr_rl_net = sepref_fr_rules.get ctxt |&gt; Tactic.build_net
+      val fr_rl_tac = 
+        resolve_from_net_tac ctxt fr_rl_net (* Try direct match *)
+        ORELSE&#39; (
+          Sepref_Frame.norm_goal_pre_tac ctxt (* Normalize precondition *) 
+          THEN&#39; (
+            resolve_from_net_tac ctxt fr_rl_net
+            ORELSE&#39; (
+              resolve_tac ctxt @{thms cons_pre_rule} (* Finally, generate a frame condition *)
+              THEN_ALL_NEW_LIST [
+                SOLVED&#39; (REPEAT_ALL_NEW_FWD (DETERM o resolve_tac ctxt @{thms CPR_TAG_rules})),
+                K all_tac,  (* Frame remains unchanged as first goal, even if fr_rl creates side-conditions *)
+                resolve_from_net_tac ctxt fr_rl_net
+              ]
+            )
+          )  
+        )
+      
+      val side_tac = REPEAT_ALL_NEW_FWD (side_cond_dispatch_tac false (K no_tac) ctxt)
+
+      val fr_tac = 
+        if dbg then (* Present all possibilities with (partially resolved) side conditions *)
+          fr_rl_tac THEN_ALL_NEW_FWD (TRY o side_tac)
+        else (* Choose first rule that solves all side conditions *)
+          DETERM o SOLVED&#39; (fr_rl_tac THEN_ALL_NEW_FWD (SOLVED&#39; side_tac))
+
+    in
+      PHASES&#39; [
+        (&quot;Align goal&quot;,Sepref_Frame.align_goal_tac, 0),
+        (&quot;Frame rule&quot;,fn ctxt =&gt; resolve_tac ctxt @{thms trans_frame_rule}, 1),
+        (* RECOVER_PURE goal *)
+        (&quot;Recover pure&quot;,Sepref_Frame.recover_pure_tac, ~1),
+        (* hn-refine goal with stripped precondition *)
+        (&quot;Apply rule&quot;,K fr_tac,~1)
+      ] (flag_phases_ctrl ctxt dbg) ctxt
+    end
+
+    (* Translate combinator, operator, or side condition. *)
+    fun gen_trans_step_tac dbg ctxt = side_cond_dispatch_tac dbg
+      (trans_comb_tac ctxt ORELSE&#39; gen_trans_op_tac dbg ctxt)
+      ctxt
+
+    val trans_step_tac = gen_trans_step_tac false  
+    val trans_step_keep_tac = gen_trans_step_tac true
+
+    fun gen_trans_tac dbg ctxt = 
+      PHASES&#39; [
+        (&quot;Translation steps&quot;,REPEAT_DETERM&#39; o trans_step_tac,~1),
+        (&quot;Constraint solving&quot;,fn ctxt =&gt; fn _ =&gt; Sepref_Constraints.process_constraint_slot ctxt, 0)
+      ] (flag_phases_ctrl ctxt dbg) ctxt
+
+    val trans_tac = gen_trans_tac false  
+    val trans_keep_tac = gen_trans_tac true
+
+
+  end
+
+
+  val setup = I
+    #&gt; sepref_fr_rules.setup
+    #&gt; sepref_comb_rules.setup
+
+
+end
+
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">setup</span></span><span> </span><span>Sepref_Translate.setup</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_bounds</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref_Translate.bounds_tac)&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Basic Setup&#8250;</span></span></span><span>
+</span><span>              
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hn_pass</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine (hn_ctxt P x x&#39;) (return x&#39;) (hn_invalid P x x&#39;) P (PASS$x)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>rule</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>invalidate_clone&#39;</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>hn_ctxt_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*lemma hn_pass_pure[sepref_fr_rules]:
+  shows &quot;hn_refine (hn_val P x x&#39;) (return x&#39;) (hn_val P x x&#39;) (pure P) (PASS$x)&quot;
+  by rule (sep_auto simp: hn_ctxt_def pure_def)
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>hnr_bind</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hn_bind</span><span class="delimiter">[</span><span>sepref_comb_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>D1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine &#915; m&#39; &#915;1 Rh m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>D2</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x x&#39;. bind_ref_tag x m &#10233; 
+      hn_refine (hn_ctxt Rh x x&#39; ** &#915;1) (f&#39; x&#39;) (&#915;2 x x&#39;) R (f x)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>IMP</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x x&#39;. &#915;2 x x&#39; &#8866; hn_ctxt Rx x x&#39; ** &#915;&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;MK_FREE Rx fr&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine &#915; (doM {x&#8592;m&#39;; r&#8592;f&#39; x; fr x; return r}) &#915;&#39; R (Refine_Basic.bind$m$(&#955;<span class="hidden">&#8681;</span><sub>2</sub>x. f x))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>APP_def</span><span> </span><span>PROTECT2_def</span><span> </span><span>bind_ref_tag_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hnr_bind</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hn_RECT&#39;</span><span class="delimiter">[</span><span>sepref_comb_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;INDEP Ry&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;INDEP Rx&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;INDEP Rx&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>FR</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P &#8866; hn_ctxt Rx ax px ** F&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>S</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;cf af ax px. &#10214;
+    &#8896;ax px. hn_refine (hn_ctxt Rx ax px ** F) (cf px) (hn_ctxt Rx&#39; ax px ** F) Ry 
+      (RCALL$af$ax)&#10215; 
+    &#10233; hn_refine (hn_ctxt Rx ax px ** F) (cB cf px) (F&#39; ax px) Ry 
+          (aB af ax)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>FR&#39;</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;ax px. F&#39; ax px &#8866; hn_ctxt Rx&#39; ax px ** F&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>M</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8896;x. M.mono_body (&#955;f. cB f x))&quot;</span></span></span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*assumes PREC[unfolded CONSTRAINT_def]: &quot;CONSTRAINT precise Ry&quot;*)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine 
+    (P) (Monad.REC cB px) (hn_ctxt Rx&#39; ax px ** F) Ry 
+        (RECT$(&#955;<span class="hidden">&#8681;</span><sub>2</sub>D x. aB D x)$ax)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>APP_def</span><span> </span><span>PROTECT2_def</span><span> 
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hn_refine_cons_pre</span><span class="delimiter">[</span><span>OF</span><span> </span><span>FR</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hnr_RECT</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hn_refine_cons_post</span><span class="delimiter">[</span><span>OF</span><span> </span><span>_</span><span> </span><span>FR&#39;</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>S</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>RCALL_def</span><span> </span><span>APP_def</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>assumption</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>fact</span><span class="delimiter">+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hn_RCALL</span><span class="delimiter">[</span><span>sepref_comb_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;RPREM (hn_refine P&#39; c Q&#39; R (RCALL $ a $ b))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P &#8866; P&#39; ** F&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine P c (Q&#39;**F) R (RCALL $ a $ b)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span>hn_refine_frame</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>m</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;RCALL$a$b&quot;</span></span></span><span class="delimiter">]</span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hn_refine_synthI</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine &#915; c &#915;&#39; R&#39; m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;c = c&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;R&#39; = R&#39;&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#915;&#39; &#8866; &#915;&#39;&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine &#915; c&#39; &#915;&#39;&#39; R&#39;&#39; m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>blast</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>hn_refine_cons_post</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hn_refine_extract_pre_val</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine (hn_val S xa xc ** &#915;) c &#915;&#39; R m &#10231; ((xc,xa)&#8712;S &#10230; hn_refine &#915; c &#915;&#39; R m)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>hn_refine_def</span><span> </span><span>hn_ctxt_def</span><span> </span><span>pure_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span> </span><span>pred_lift_extract_simps</span><span> </span><span>htriple_extract_pre_pure</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hnr_freeI</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;MK_FREE R fr&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine &#915; c &#915;&#39; R&#39; m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine (hn_ctxt R x y ** &#915;) (doM { fr y; c}) &#915;&#39; R&#39; m&quot;</span></span></span><span>  
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hn_refine_nofailI</span><span class="delimiter">)</span><span>  
+</span><span>  </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nofail m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">note</span></span><span> </span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>MK_FREED</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">]</span><span> </span><span>hn_refineD</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nofail m&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>hn_ctxt_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>rule</span><span> </span><span>vcg</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>drop_hn_val</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_val R x y &#8866; &#9633;&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>hn_ctxt_def</span><span> </span><span>pure_def</span><span> </span><span>entails_def</span><span> </span><span>pred_lift_extract_simps</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>drop_hn_invalid</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_invalid R x y &#8866; &#9633;&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>hn_ctxt_def</span><span> </span><span>invalid_assn_def</span><span> </span><span>entails_def</span><span> </span><span>pred_lift_extract_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;op_ASSERT_bind I m &#8801; Refine_Basic.bind (ASSERT I) (&#955;_. m)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pat_ASSERT_bind</span><span class="delimiter">[</span><span>def_pat_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Refine_Basic.bind$(ASSERT$I)$(&#955;<span class="hidden">&#8681;</span><sub>2</sub>_. m) &#8801; UNPROTECT (op_ASSERT_bind I)$m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">term</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PR_CONST (op_ASSERT_bind I)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>id_op_ASSERT_bind</span><span class="delimiter">[</span><span>id_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;PR_CONST (op_ASSERT_bind I) ::<span class="hidden">&#8681;</span><sub>i</sub> TYPE(&#39;a nres &#8658; &#39;a nres)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arity_ASSERT_bind</span><span class="delimiter">[</span><span>sepref_monadify_arity</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;PR_CONST (op_ASSERT_bind I) &#8801; &#955;<span class="hidden">&#8681;</span><sub>2</sub>m. SP (PR_CONST (op_ASSERT_bind I))$m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>eq_reflection</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hn_ASSERT_bind</span><span class="delimiter">[</span><span>sepref_comb_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;I &#10233; hn_refine &#915; c &#915;&#39; R m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine &#915; c &#915;&#39; R (PR_CONST (op_ASSERT_bind I)$m)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>I</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;op_ASSUME_bind I m &#8801; Refine_Basic.bind (ASSUME I) (&#955;_. m)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pat_ASSUME_bind</span><span class="delimiter">[</span><span>def_pat_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Refine_Basic.bind$(ASSUME$I)$(&#955;<span class="hidden">&#8681;</span><sub>2</sub>_. m) &#8801; UNPROTECT (op_ASSUME_bind I)$m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>id_op_ASSUME_bind</span><span class="delimiter">[</span><span>id_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;PR_CONST (op_ASSUME_bind I) ::<span class="hidden">&#8681;</span><sub>i</sub> TYPE(&#39;a nres &#8658; &#39;a nres)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arity_ASSUME_bind</span><span class="delimiter">[</span><span>sepref_monadify_arity</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;PR_CONST (op_ASSUME_bind I) &#8801; &#955;<span class="hidden">&#8681;</span><sub>2</sub>m. SP (PR_CONST (op_ASSUME_bind I))$m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>eq_reflection</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hn_ASSUME_bind</span><span class="delimiter">[</span><span>sepref_comb_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;vassn_tag &#915; &#10233; I&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;I &#10233; hn_refine &#915; c &#915;&#39; R m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine &#915; c &#915;&#39; R (PR_CONST (op_ASSUME_bind I)$m)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hn_refine_preI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>I</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>vassn_tag_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Manual deallocation. Frees data before its variable goes out of scope&#8250;</span></span></span><span>  
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mop_free x &#8801; RETURN ()&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>mop_free</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mop_free_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;MK_FREE R f&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(f,mop_free)&#8712;R<span class="hidden">&#8679;</span><sup>d</sup>&#8594;<span class="hidden">&#8681;</span><sub>a</sub>unit_assn&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mop_free_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hfrefI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hn_refineI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>htriple_pure_preI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> 
+</span><span>    </span><span>simp</span><span class="delimiter">:</span><span> </span><span>hn_ctxt_def</span><span> </span><span>pure_def</span><span> </span><span>sep_algebra_simps</span><span> </span><span>invalid_assn_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>MK_FREED</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Import of Parametricity Theorems&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pure_hn_refineI</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Q &#10230; (c,a)&#8712;R&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine (&#8593;Q) (return c) (&#8593;Q) (pure R) (RETURN a)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>hn_refine_def</span><span> </span><span>pure_def</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pure_hn_refineI_no_asm</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(c,a)&#8712;R&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine &#9633; (return c) &#9633; (pure R) (RETURN a)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>hn_refine_def</span><span> </span><span>pure_def</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>import_param_0</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(P&#10233;Q) &#8801; Trueprop (PROTECT P &#10230; Q)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span class="delimiter">,</span><span> </span><span>simp</span><span class="delimiter">+</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>import_param_1</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(P&#10233;Q) &#8801; Trueprop (P&#10230;Q)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(P&#10230;Q&#10230;R) &#10231; (P&#8743;Q &#10230; R)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;PROTECT (P &#8743; Q) &#8801; PROTECT P &#8743; PROTECT Q&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(P &#8743; Q) &#8743; R &#8801; P &#8743; Q &#8743; R&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(a,c)&#8712;Rel &#8743; PROTECT P &#10231; PROTECT P &#8743; (a,c)&#8712;Rel&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span class="delimiter">,</span><span> </span><span>simp</span><span class="delimiter">+</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>import_param_2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Trueprop (PROTECT P &#8743; Q &#10230; R) &#8801; (P &#10233; Q&#10230;R)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span class="delimiter">,</span><span> </span><span>simp</span><span class="delimiter">+</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>import_param_3</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8593;(P &#8743; Q) = (&#8593;P**&#8593;Q)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8593;((c,a)&#8712;R) = hn_val R a c&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>hn_ctxt_def</span><span> </span><span>pure_def</span><span> </span><span>sep_algebra_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">named_theorems_rev</span></span><span> </span><span>sepref_import_rewrite</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Rewrite rules on importing parametricity theorems&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>to_import_frefD</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(f,g)&#8712;fref P R S&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;PROTECT (P y); (x,y)&#8712;R&#10215; &#10233; (f x, g y)&#8712;S y&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fref_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>add_PR_CONST</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(c,a)&#8712;R &#10233; (c,PR_CONST a)&#8712;R&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+structure Sepref_Import_Param = struct
+
+  (* TODO: Almost clone of Sepref_Rules.to_foparam*)
+  fun to_import_fo ctxt thm = let
+    val unf_thms = @{thms 
+      split_tupled_all prod_rel_simp uncurry_apply cnv_conj_to_meta Product_Type.split}
+  in
+    case Thm.concl_of thm of
+      @{mpat &quot;Trueprop ((_,_) &#8712; fref _ _ _)&quot;} =&gt;
+        (@{thm to_import_frefD} OF [thm])
+        |&gt; forall_intr_vars
+        |&gt; Local_Defs.unfold0 ctxt unf_thms
+        |&gt; Variable.gen_all ctxt
+    | @{mpat &quot;Trueprop ((_,_) &#8712; _)&quot;} =&gt;
+        Parametricity.fo_rule thm
+    | _ =&gt; raise THM(&quot;Expected parametricity or fref theorem&quot;,~1,[thm])
+  end
+
+  fun add_PR_CONST thm = case Thm.concl_of thm of
+    @{mpat &quot;Trueprop ((_,_) &#8712; fref _ _ _)&quot;} =&gt; thm (* TODO: Hack. Need clean interfaces for fref and param rules. Also add PR_CONST to fref rules! *)
+  | @{mpat &quot;Trueprop ((_,PR_CONST _) &#8712; _)&quot;} =&gt; thm
+  | @{mpat &quot;Trueprop ((_,?a) &#8712; _)&quot;} =&gt; if is_Const a orelse is_Free a orelse is_Var a then
+      thm
+    else
+      thm RS @{thm add_PR_CONST}
+  | _ =&gt; thm  
+
+
+  fun import ctxt thm = let
+    open Sepref_Basic
+    val thm = thm
+      |&gt; Conv.fconv_rule Thm.eta_conversion
+      |&gt; add_PR_CONST
+      |&gt; Local_Defs.unfold0 ctxt @{thms import_param_0}
+      |&gt; Local_Defs.unfold0 ctxt @{thms imp_to_meta}
+      |&gt; to_import_fo ctxt
+      |&gt; Local_Defs.unfold0 ctxt @{thms import_param_1}
+      |&gt; Local_Defs.unfold0 ctxt @{thms import_param_2}
+
+    val thm = case Thm.concl_of thm of
+      @{mpat &quot;Trueprop (_&#10230;_)&quot;} =&gt; thm RS @{thm pure_hn_refineI}
+    | _ =&gt; thm RS @{thm pure_hn_refineI_no_asm}
+
+    val thm = Local_Defs.unfold0 ctxt @{thms import_param_3} thm
+      |&gt; Conv.fconv_rule (hn_refine_concl_conv_a (K (Id_Op.protect_conv ctxt)) ctxt)
+
+    val thm = Local_Defs.unfold0 ctxt (Named_Theorems_Rev.get ctxt @{named_theorems_rev sepref_import_rewrite}) thm
+    val thm = Sepref_Rules.add_pure_constraints_rule ctxt thm
+  in
+    thm
+  end
+
+  val import_attr = Scan.succeed (Thm.mixed_attribute (fn (context,thm) =&gt;
+    let
+      val thm = import (Context.proof_of context) thm
+      val context = Sepref_Translate.sepref_fr_rules.add_thm thm context
+    in (context,thm) end
+  ))
+
+  val import_attr_rl = Scan.succeed (Thm.rule_attribute [] (fn context =&gt;
+    import (Context.proof_of context) #&gt; Sepref_Rules.ensure_hfref (Context.proof_of context)
+  ))
+
+  val setup = I
+    #&gt; Attrib.setup @{binding sepref_import_param} import_attr
+        &quot;Sepref: Import parametricity rule&quot;
+    #&gt; Attrib.setup @{binding sepref_param} import_attr_rl
+        &quot;Sepref: Transform parametricity rule to sepref rule&quot;
+    #&gt; Attrib.setup @{binding sepref_dbg_import_rl_only} 
+        (Scan.succeed (Thm.rule_attribute [] (import o Context.proof_of)))
+        &quot;Sepref: Parametricity to hnr-rule, no conversion to hfref&quot;    
+
+end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">setup</span></span><span> </span><span>Sepref_Import_Param.setup</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Purity&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;import_rel1 R &#8801; &#955;A c ci. &#8593;(is_pure A &#8743; (ci,c)&#8712;&#10216;the_pure A&#10217;R)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;import_rel2 R &#8801; &#955;A B c ci. &#8593;(is_pure A &#8743; is_pure B &#8743; (ci,c)&#8712;&#10216;the_pure A, the_pure B&#10217;R)&quot;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>import_rel1_pure_conv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;import_rel1 R (pure A) = pure (&#10216;A&#10217;R)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>import_rel1_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>pure_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>import_rel2_pure_conv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;import_rel2 R (pure A) (pure B) = pure (&#10216;A,B&#10217;R)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>import_rel2_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>pure_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*  
+lemma precise_pure[constraint_rules]: &quot;single_valued R &#10233; precise (pure R)&quot;
+  unfolding precise_def pure_def
+  by (auto dest: single_valuedD)
+
+lemma precise_pure_iff_sv: &quot;precise (pure R) &#10231; single_valued R&quot;          
+  apply (auto simp: precise_pure)
+  using preciseD[where R=&quot;pure R&quot; and F=emp and F&#39;=emp]
+  by (sep_auto simp: mod_and_dist intro: single_valuedI)
+
+lemma pure_precise_iff_sv: &quot;&#10214;is_pure R&#10215; 
+  &#10233; precise R &#10231; single_valued (the_pure R)&quot;
+  by (auto simp: is_pure_conv precise_pure_iff_sv)
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>safe_constraint_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>single_valued_Id</span><span> </span><span>br_sv</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

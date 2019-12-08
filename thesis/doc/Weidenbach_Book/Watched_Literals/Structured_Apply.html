@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Structured_Apply (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Structured_Apply</h1>
+
+<span class="command">theory</span> <span class="name">Structured_Apply</span><br/>
+<span class="keyword">imports</span> <a href="../../HOL/HOL/Main.html"><span class="name">Main</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Subgoal Structure for Apply Scripts&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Structured_Apply</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span>
+</span><span class="keyword2"><span class="keyword">keywords</span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;focus&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;solved&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;applyS&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;apply1&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;applyF&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;applyT&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span>prf_script</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;This theory provides some variants of the apply command 
+  that make the proof structure explicit. See below for examples.
+
+  Compared to the @{command subgoal}-command, these set of commands is more lightweight,
+  and fully supports schematic variables.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+  focus, focus &lt;method text&gt;, applyF &lt;method text&gt;
+    Focus on current subgoal, and then (optionally) apply method. applyF m is a synonym for focus m.
+
+  solved
+    Assert that subgoal is solved and release focus.
+
+  applyT &lt;method text&gt;
+    Apply method to current subgoal only. Same as apply m [].
+
+  applyS &lt;method text&gt;
+    Apply method to current subgoal, and assert that subgoal is solved.
+    &quot;applyS m&quot; is roughly equal to &quot;focus m solved&quot;
+
+  apply1 &lt;method text&gt;
+    Apply method to current subgoal, and assert that there is exactly one resulting subgoal.
+
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+signature STRUCTURED_APPLY = sig
+  val focus: Proof.state -&gt; Proof.state
+  val solved: Proof.state -&gt; Proof.state
+  val unfocus: Proof.state -&gt; Proof.state
+
+  val apply1: Method.text_range -&gt; Proof.state -&gt; Proof.state Seq.result Seq.seq
+  val applyT: Method.text * Position.range -&gt; Proof.state -&gt; Proof.state Seq.result Seq.seq
+  val apply_focus: Method.text_range -&gt; Proof.state -&gt; Proof.state Seq.result Seq.seq
+  val apply_solve: Method.text_range -&gt; Proof.state -&gt; Proof.state Seq.result Seq.seq
+end
+
+structure Structured_Apply: STRUCTURED_APPLY = struct
+  val focus = Proof.refine_primitive (K (Goal.restrict 1 1))
+  val unfocus = Proof.refine_primitive (K (Goal.unrestrict 1))
+  val solved = Proof.refine_primitive (fn _ =&gt; fn thm =&gt; let
+      val _ = if Thm.nprems_of thm &gt; 0 then error &quot;Subgoal not solved&quot; else ()
+    in
+      Goal.unrestrict 1 thm
+    end
+  )
+
+  fun apply_focus m = focus #&gt; Proof.apply m
+
+  fun assert_num_solved d msg m s = let
+    val n_subgoals = Proof.raw_goal #&gt; #goal #&gt; Thm.nprems_of
+    val n1 = n_subgoals s
+
+    fun do_assert s = if n1 - n_subgoals s &lt;&gt; d then error msg else s
+  in
+    s 
+    |&gt; Proof.apply m
+    |&gt; Seq.map_result do_assert
+  end
+
+  fun apply_solve m = 
+      focus 
+    #&gt; assert_num_solved 1 &quot;Subgoal not solved&quot; m
+    #&gt; Seq.map_result unfocus
+
+  fun apply1 m = 
+      focus 
+    #&gt; assert_num_solved 0 &quot;Method must not produce or solve subgoals&quot; m 
+    #&gt; Seq.map_result unfocus
+
+  fun applyT (m,pos) = let
+    open Method
+    val m = Combinator (no_combinator_info, Select_Goals 1, [m])
+  in
+    Proof.apply (m,pos)
+  end  
+
+
+end
+
+val _ =
+  Outer_Syntax.command @{command_keyword solved} &quot;Primitive unfocus after subgoal is solved&quot;
+    (Scan.succeed ( Toplevel.proof (Structured_Apply.solved) ));
+
+val _ =
+  Outer_Syntax.command @{command_keyword focus} &quot;Primitive focus then optionally apply method&quot;
+    (Scan.option Method.parse &gt;&gt; (fn 
+        NONE =&gt; Toplevel.proof (Structured_Apply.focus)
+      | SOME m =&gt; (Method.report m; Toplevel.proofs (Structured_Apply.apply_focus m))
+    ));
+
+val _ =
+  Outer_Syntax.command @{command_keyword applyF} &quot;Primitive focus then apply method&quot;
+    (Method.parse &gt;&gt; (fn m =&gt; (Method.report m; 
+      Toplevel.proofs (Structured_Apply.apply_focus m)
+    )));
+
+val _ =
+  Outer_Syntax.command @{command_keyword applyS} &quot;Apply method that solves exactly one subgoal&quot;
+    (Method.parse &gt;&gt; (fn m =&gt; (Method.report m; 
+      Toplevel.proofs (Structured_Apply.apply_solve m) 
+    )));
+
+val _ =
+  Outer_Syntax.command @{command_keyword apply1} &quot;Apply method that does not change number of subgoals&quot;
+    (Method.parse &gt;&gt; (fn m =&gt; (Method.report m; 
+      Toplevel.proofs (Structured_Apply.apply1 m) 
+    )));
+
+val _ =
+  Outer_Syntax.command @{command_keyword applyT} &quot;Apply method on first subgoal&quot;
+    (Method.parse &gt;&gt; (fn m =&gt; (Method.report m; 
+      Toplevel.proofs (Structured_Apply.applyT m) 
+    )));
+
+&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

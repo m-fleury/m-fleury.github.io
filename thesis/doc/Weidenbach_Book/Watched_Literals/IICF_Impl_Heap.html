@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IICF_Impl_Heap (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IICF_Impl_Heap</h1>
+
+<span class="command">theory</span> <span class="name">IICF_Impl_Heap</span><br/>
+<span class="keyword">imports</span> <a href="IICF_Abs_Heap.html"><span class="name">IICF_Abs_Heap</span></a> <a href="IICF_Array.html"><span class="name">IICF_Array</span></a> <a href="IICF_Array_List.html"><span class="name">IICF_Array_List</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Implementation of Heaps with Arrays&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IICF_Impl_Heap</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> 
+</span><span>  </span><span>IICF_Abs_Heap</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;../IICF_Array&quot;</span></span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;../IICF_Array_List&quot;</span></span></span><span> 
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Move *)</span></span></span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">term</span></span><span> </span><span>al_assn</span><span>
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Move *)</span></span></span></span></span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>size_mset_param</span><span class="delimiter">[</span><span>param</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(size,size)&#8712;&#10216;A&#10217;mset_rel &#8594; nat_rel&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>mset_rel_def</span><span> </span><span>p2rel_def</span><span> </span><span>rel_mset_size</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Move *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rdomp_ref_mk_assn_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rdomp &#8639;(mk_assn A) = rdomp A&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>rdomp_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>vcg_prep_ext_rules</span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">find_theorems</span></span><span> </span><span>pure_part</span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rdomp_arl_assn_len</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rdomp &#8639;(arl_assn:: (&#39;a::llvm_rep list, &#39;l::len2 word &#215; &#39;l word &#215; &#39;a ptr) dr_assn) xs&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;length xs &lt; max_snat LENGTH(&#39;l)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> 
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>rdomp_def</span><span> </span><span>arl_assn_def</span><span> </span><span>arl_assn&#39;_def</span><span> </span><span>sep_algebra_simps</span><span> </span><span>pred_lift_extract_simps</span><span>
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>snat.assn_def</span><span>
+</span><span>      </span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">find_theorems</span></span><span> </span><span>vassn_tag</span><span> </span><span>hn_refine</span><span>
+</span><span>
+</span><span>      
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Very specialized workaround lemma, to work around invalid-recombination
+    problem for case that B is pure 
+  *)</span></span></span></span></span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>workaround_invalid_recombine_pure2</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_pure B &#10233; hn_ctxt (invalid_assn A &#215;<span class="hidden">&#8681;</span><sub>a</sub> B) ax px &#8866; hn_invalid (A &#215;<span class="hidden">&#8681;</span><sub>a</sub> B) ax px&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>hn_ctxt_def</span><span> </span><span>invalid_assn_def</span><span> </span><span>prod_assn_def</span><span> </span><span>entails_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.split</span><span> </span><span>elim</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>is_pureE</span><span> 
+</span><span>      </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span> </span><span>pure_part_pure_conj_eq</span><span class="delimiter">)</span><span>
+</span><span>    </span><span>argo</span><span>
+</span><span>    
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Move
+    TODO: Should be generic algorithm!
+  *)</span></span></span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mop_list_swap_unfold</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mop_list_swap xs i j = do {
+    xi &#8592; mop_list_get xs i;
+    xj &#8592; mop_list_get xs j;
+    xs &#8592; mop_list_set xs i xj;
+    mop_list_set xs j xi
+  }&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>pw_eq_iff</span><span> </span><span>refine_pw_simps</span><span> </span><span>swap_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>    
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We implement the heap data structure by an array.
+    The implementation is automatically synthesized by the Sepref-tool.
+    &#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Setup of the Sepref-Tool&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Move *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mset_rel_id</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10216;Id&#10217;mset_rel = Id&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mset_rel_def</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>rel2p</span><span> </span><span>multiset.rel_eq</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>p2rel</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>heap_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>heapstruct</span><span> </span><span>prio</span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>prio</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;e &#8658; &#39;p::linorder&quot;</span></span></span><span> </span><span class="delimiter">+</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>prio_assn</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;p &#8658; &#39;pi::llvm_rep &#8658; assn&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>elem_assn</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;e &#8658; &#39;ei::llvm_rep &#8658; assn&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>prio_impl</span><span> </span><span>le_prio_impl</span><span> </span><span>lt_prio_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>ltype</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;l::len2 itself&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>prio_is_pure</span><span class="delimiter">[</span><span>safe_constraint_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_pure prio_assn&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>elem_is_pure</span><span class="delimiter">[</span><span>safe_constraint_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_pure elem_assn&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>prio_impl_refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(prio_impl, RETURN o prio)&#8712;elem_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> prio_assn&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>le_prio_impl_refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;(uncurry le_prio_impl, uncurry (RETURN oo (&#8804;))) &#8712; prio_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> prio_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>lt_prio_impl_refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;(uncurry lt_prio_impl, uncurry (RETURN oo (&lt;))) &#8712; prio_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> prio_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&quot;</span></span></span><span>
+</span><span>      
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>N</span><span> </span><span class="keyword2"><span class="keyword">defines</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;N&#8801;LENGTH(&#39;l)&quot;</span></span></span><span>
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*assumes l_len[simp,arith]: &quot;4 &lt; LENGTH(&#39;l)&quot;*)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>      
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;assn &#8801; al_assn&#39; TYPE(&#39;l) elem_assn&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;idx_assn &#8801; snat_assn&#39; TYPE(&#39;l)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;heap_assn &#8801; hr_comp (al_assn elem_assn) heap_rel1&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mk_free_heap_assn</span><span class="delimiter">[</span><span>sepref_frame_free_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;MK_FREE heap_assn arl_free&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>heap_assn_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>sepref_frame_free_rules</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>  
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*context
+      assumes l_len_pre: &quot;(4 &lt; LENGTH(&#39;l))&quot;
+    begin  
+      private lemma l_len: &quot;4 &lt; LENGTH(&#39;l)&quot; using l_len_pre unfolding vcg_tag_defs by auto
+    *)</span></span></span></span></span><span>  
+</span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>prio</span><span>
+</span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8804;) :: &#39;p &#8658; &#39;p &#8658; bool&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&lt;) :: &#39;p &#8658; &#39;p &#8658; bool&quot;</span></span></span><span>
+</span><span>      
+</span><span>      </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_frame_free_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> 
+</span><span>        </span><span>mk_free_is_pure</span><span class="delimiter">[</span><span>OF</span><span> </span><span>prio_is_pure</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>mk_free_is_pure</span><span class="delimiter">[</span><span>OF</span><span> </span><span>elem_is_pure</span><span class="delimiter">]</span><span>
+</span><span>          
+</span><span>      </span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>update_op</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>update_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry2 update_op&quot;</span></span></span><span> 
+</span><span>        </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> idx_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> elem_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> assn&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>update_op_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(&#39;l)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>update_impl.refine</span><span>
+</span><span>          
+</span><span>      </span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>val_of_op</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>val_of_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry val_of_op&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> idx_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> elem_assn&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>val_of_op_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(&#39;l)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>val_of_impl.refine</span><span>
+</span><span>    
+</span><span>      </span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>exch_op</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>exch_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry2 exch_op&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> idx_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> idx_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> assn&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>exch_op_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span> </span><span>mop_list_swap_unfold</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(&#39;l)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>        
+</span><span>      </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>exch_impl.refine</span><span>
+</span><span>    
+</span><span>      </span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>valid</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>valid_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry (RETURN oo valid)&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> idx_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>valid_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(&#39;l)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>valid_impl.refine</span><span>
+</span><span>          
+</span><span>      </span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>prio_of_op</span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>prio_of_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry (PR_CONST prio_of_op)&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> idx_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> prio_assn&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>prio_of_op_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span> </span><span>PR_CONST_def</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>prio_of_impl.refine</span><span>
+</span><span>      
+</span><span>      </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>append_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry mop_list_append&quot;</span></span></span><span> 
+</span><span>        </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[&#955;(xs,_). length xs + 1 &lt; max_snat LENGTH(&#39;l)]<span class="hidden">&#8681;</span><sub>a</sub> assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> elem_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; assn&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>append_impl.refine</span><span> 
+</span><span>      
+</span><span>      </span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>swim_op</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>swim_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> 
+</span><span>        </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry (PR_CONST swim_op)&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[&#955;_. 4&lt;LENGTH(&#39;l)]<span class="hidden">&#8681;</span><sub>a</sub> assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> idx_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; assn&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>swim_op_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span> </span><span>parent_def</span><span> </span><span>PR_CONST_def</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(&#39;l)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Workaround/Hack *)</span></span></span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>sepref_frame_match_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>workaround_invalid_recombine_pure2</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>B</span><span class="delimiter">=</span><span>snat_assn</span><span class="delimiter">,</span><span> </span><span>simplified</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref_dbg_keep</span><span>
+</span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>swim_impl.refine</span><span>
+</span><span>  
+</span><span>      
+</span><span>      </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>overflow_safe_hbound_check</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;2*k&#8804;n &#10231; k&#8804;n div 2&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>k</span><span> </span><span>n</span><span> </span><span class="delimiter">::</span><span> </span><span>nat</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>      
+</span><span>      </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*lemma bound_aux1: &quot;rdomp assn xs &#10233; j&#8804;length xs div 2 &#10233; 2*j &lt; max_snat LENGTH(&#39;l)&quot;  
+        apply sepref_bounds*)</span></span></span></span></span><span>
+</span><span>
+</span><span>      </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*          
+      lemma bound_aux2: &quot;&#10214;rdomp assn a1&#39;; 2 * a2&#39; &lt; length a1&#39;&#10215; 
+        &#10233; Suc (2 * a2&#39;) &lt; max_snat LENGTH(&#39;l)&quot;  
+        apply sepref_bounds
+        apply (drule al_assn_len_bound)
+        by auto
+      *)</span></span></span></span></span><span>
+</span><span>        
+</span><span>      </span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>sink_op</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>sink_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry (PR_CONST sink_op)&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[&#955;_. 4&lt;LENGTH(&#39;l)]<span class="hidden">&#8681;</span><sub>a</sub> assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> idx_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; assn&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sink_op_opt_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span> </span><span>sink_op_opt_eq</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">,</span><span>abs_def</span><span class="delimiter">]</span><span>  </span><span>PR_CONST_def</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>overflow_safe_hbound_check</span><span> </span><span>Suc_eq_plus1</span><span>
+</span><span>        </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Workaround/Hack *)</span></span></span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>sepref_frame_match_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>workaround_invalid_recombine_pure2</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>B</span><span class="delimiter">=</span><span>snat_assn</span><span class="delimiter">,</span><span> </span><span>simplified</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(&#39;l)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>        
+</span><span>      </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>sink_impl.refine</span><span>
+</span><span>  
+</span><span>      
+</span><span>      </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>prenorm_heaprel1_len</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(h,m)&#8712;heap_rel1 &#10233; length h = size m&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>heap_rel1_def</span><span> </span><span>in_br_conv</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>max_snat_param</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(max_snat,max_snat)&#8712;nat_rel &#8594; nat_rel&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">context</span></span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">notes</span></span><span> </span><span class="delimiter">[</span><span>fcomp_norm_unfold</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>heap_assn_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>list_rel_id_simp</span><span> </span><span>mset_rel_id</span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">notes</span></span><span> </span><span class="delimiter">[</span><span>fcomp_prenorm_simps</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>prenorm_heaprel1_len</span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">notes</span></span><span> </span><span class="delimiter">[</span><span>param</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>IdI</span><span class="delimiter">[</span><span>of</span><span> </span><span>N</span><span class="delimiter">]</span><span> </span><span>max_snat_param</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">begin</span></span><span>    
+</span><span>      
+</span><span>        </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>empty_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry0 empty_op&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[&#955;_. 4&lt;N]<span class="hidden">&#8681;</span><sub>a</sub> unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; assn&quot;</span></span></span><span>
+</span><span>          </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>empty_op_def</span><span> </span><span>N_def</span><span>
+</span><span>          </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>al_fold_custom_empty</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;l</span><span class="delimiter">=</span><span class="tfree">&#39;l</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>          </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>no_register</span><span class="delimiter">)</span><span> </span><span>heap_empty</span><span class="delimiter">:</span><span> </span><span>empty_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>empty_op_refine</span><span class="delimiter">]</span><span> 
+</span><span>          </span><span class="keyword2"><span class="keyword">uses</span></span><span> </span><span>op_mset_empty.fref</span><span class="delimiter">[</span><span>of</span><span> </span><span>Id</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>    
+</span><span>        </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>is_empty_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_empty_op&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&quot;</span></span></span><span>
+</span><span>          </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_empty_op_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span>
+</span><span>          </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(&#39;l)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>          </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span>heap_is_empty</span><span class="delimiter">:</span><span> </span><span>is_empty_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>is_empty_op_refine</span><span class="delimiter">]</span><span> 
+</span><span>          </span><span class="keyword2"><span class="keyword">uses</span></span><span> </span><span>op_mset_is_empty.fref</span><span class="delimiter">[</span><span>of</span><span> </span><span>Id</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>  
+</span><span>    
+</span><span>        </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>insert_impl</span><span>
+</span><span>          </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry insert_op&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[&#955;(_,xs). 4&lt;N &#8743; length xs+1 &lt; max_snat N]<span class="hidden">&#8681;</span><sub>a</sub> elem_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; assn&quot;</span></span></span><span>
+</span><span>          </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>insert_op_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span> </span><span>append_op_def</span><span> </span><span>N_def</span><span>
+</span><span>          </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span>heap_insert</span><span class="delimiter">:</span><span> </span><span>insert_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>insert_op_refine</span><span class="delimiter">]</span><span> 
+</span><span>          </span><span class="keyword2"><span class="keyword">uses</span></span><span> </span><span>op_mset_insert.fref</span><span class="delimiter">[</span><span>of</span><span> </span><span>Id</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>          
+</span><span>        </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>pop_min_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;pop_min_op&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[&#955;_. 4&lt;N]<span class="hidden">&#8681;</span><sub>a</sub> assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; elem_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> assn&quot;</span></span></span><span>
+</span><span>          </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>pop_min_op_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span> </span><span>butlast_op_def</span><span> </span><span>N_def</span><span>
+</span><span>          </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(&#39;l)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>          </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>no_mop</span><span class="delimiter">)</span><span> </span><span>heap_pop_min</span><span class="delimiter">:</span><span> </span><span>pop_min_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>pop_min_op_refine</span><span class="delimiter">]</span><span> 
+</span><span>          </span><span class="keyword2"><span class="keyword">uses</span></span><span> </span><span>op_prio_pop_min.fref</span><span class="delimiter">[</span><span>of</span><span> </span><span>Id</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>        
+</span><span>        
+</span><span>    
+</span><span>        </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>peek_min_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;peek_min_op&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> elem_assn&quot;</span></span></span><span>
+</span><span>          </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>peek_min_op_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span>
+</span><span>          </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(&#39;l)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>          </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>no_mop</span><span class="delimiter">)</span><span> </span><span>heap_peek_min</span><span class="delimiter">:</span><span> </span><span>peek_min_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>peek_min_op_refine</span><span class="delimiter">]</span><span> 
+</span><span>          </span><span class="keyword2"><span class="keyword">uses</span></span><span> </span><span>op_prio_peek_min.fref</span><span class="delimiter">[</span><span>of</span><span> </span><span>Id</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>                  
+</span><span>      </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*end        *)</span></span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>  
+</span><span>    
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">find_theorems</span></span><span> </span><span>snat_rel</span><span> </span><span>ll_icmp_ult</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>foo</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry (&#955;a b. RETURN (a&lt;b))&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(snat_assn&#39; TYPE(&#39;l::len2))<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (snat_assn&#39; TYPE(&#39;l::len2))<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">global_interpretation</span></span><span> </span><span>heap_impl</span><span> </span><span>id</span><span> </span><span>snat_assn</span><span> </span><span>snat_assn</span><span> </span><span>return</span><span> </span><span>ll_icmp_sle</span><span> </span><span>ll_icmp_slt</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(&#39;l::len2)&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;LENGTH(&#39;l)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">defines</span></span><span> </span><span>h_update_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>update_impl</span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>h_val_of_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>val_of_impl</span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>h_exch_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>exch_impl</span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>h_valid_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>valid_impl</span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>h_prio_of_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>prio_of_impl</span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>h_append_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>append_impl</span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>h_swim_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>swim_impl</span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>h_sink_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>sink_impl</span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>h_empty_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>empty_impl</span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>h_is_empty_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>is_empty_impl</span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>h_insert_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>insert_impl</span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>h_pop_min_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>pop_min_impl</span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>h_peek_min_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>peek_min_impl</span><span>
+</span><span>  
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>unfold_locales</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>pure_pure</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>   
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>heap_impl_inlines</span><span> </span><span class="delimiter">=</span><span> 
+</span><span>    </span><span>heap_impl.valid_impl_def</span><span class="delimiter">[</span><span>OF</span><span> </span><span>heap_impl_axioms</span><span class="delimiter">]</span><span>  
+</span><span>    </span><span>heap_impl.prio_of_impl_def</span><span class="delimiter">[</span><span>OF</span><span> </span><span>heap_impl_axioms</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>heap_impl.val_of_impl_def</span><span class="delimiter">[</span><span>OF</span><span> </span><span>heap_impl_axioms</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>heap_impl.append_impl_def</span><span class="delimiter">[</span><span>OF</span><span> </span><span>heap_impl_axioms</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>heap_impl.exch_impl_def</span><span class="delimiter">[</span><span>OF</span><span> </span><span>heap_impl_axioms</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>heap_impl.empty_impl_def</span><span class="delimiter">[</span><span>OF</span><span> </span><span>heap_impl_axioms</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>heap_impl.is_empty_impl_def</span><span class="delimiter">[</span><span>OF</span><span> </span><span>heap_impl_axioms</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>heap_impl.insert_impl_def</span><span class="delimiter">[</span><span>OF</span><span> </span><span>heap_impl_axioms</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>heap_impl.pop_min_impl_def</span><span class="delimiter">[</span><span>OF</span><span> </span><span>heap_impl_axioms</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>heap_impl.peek_min_impl_def</span><span class="delimiter">[</span><span>OF</span><span> </span><span>heap_impl_axioms</span><span class="delimiter">]</span><span>
+</span><span>    
+</span><span>    </span><span>h_swim_impl_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>h_sink_impl_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>update_impl_def</span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>val_of_impl_def</span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>exch_impl_def</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>h_valid_impl_def</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>heap_impl_inlines</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>h_prio_of_impl_def</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>heap_impl_inlines</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>h_append_impl_def</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>heap_impl_inlines</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>h_swim_impl_def</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>heap_impl.swim_impl_def</span><span class="delimiter">[</span><span>OF</span><span> </span><span>heap_impl_axioms</span><span class="delimiter">]</span><span class="delimiter">,</span><span> </span><span>unfolded</span><span> </span><span>heap_impl_inlines</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>h_sink_impl_def</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>heap_impl.sink_impl_def</span><span class="delimiter">[</span><span>OF</span><span> </span><span>heap_impl_axioms</span><span class="delimiter">]</span><span class="delimiter">,</span><span> </span><span>unfolded</span><span> </span><span>heap_impl_inlines</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>h_empty_impl_def</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>heap_impl_inlines</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>h_is_empty_impl_def</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>heap_impl_inlines</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>h_insert_impl_def</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>heap_impl_inlines</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>h_pop_min_impl_def</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>heap_impl_inlines</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>h_peek_min_impl_def</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>heap_impl_inlines</span><span class="delimiter">]</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;op_heap_custom_empty (_::&#39;a::len2 itself) (_::&#39;l::len2 itself) &#8801; op_mset_empty&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">context</span></span><span> </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>Q</span><span> </span><span>T</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;_::len2 itself&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span> </span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;op_heap_custom_empty Q T&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>op_heap_custom_empty_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(
+      uncurry0 (empty_impl::(&#39;a::len2 word,&#39;l)array_list llM ), 
+      uncurry0 (RETURN (PR_CONST (op_heap_custom_empty TYPE(&#39;a) TYPE(&#39;l))))) &#8712; [&#955;_. 4&lt;LENGTH(&#39;l::len2)]<span class="hidden">&#8681;</span><sub>a</sub> unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; heap_assn&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>op_heap_custom_empty_def</span><span> </span><span>PR_CONST_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>heap_empty_hnr</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>PRECOND_def</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>heap_fold_custom_empty</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;{#} = op_heap_custom_empty TYPE(&#39;a::len2) TYPE(&#39;l::len2)&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;op_mset_empty = op_heap_custom_empty TYPE(&#39;a::len2) TYPE(&#39;l::len2)&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mop_mset_empty = RETURN (op_heap_custom_empty TYPE(&#39;a::len2) TYPE(&#39;l::len2))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  
+</span><span>    
+</span><span>      
+</span><span>  
+</span><span>    
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sort_by_prio l<span class="hidden">&#8681;</span><sub>0</sub> &#8801; do {
+  q &#8592; nfoldli l<span class="hidden">&#8681;</span><sub>0</sub> (&#955;_. True) (&#955;x q. do { ASSERT (size q &lt; length l<span class="hidden">&#8681;</span><sub>0</sub>); mop_mset_insert x q }) {#};
+  ASSERT (q = mset l<span class="hidden">&#8681;</span><sub>0</sub>);
+  (l,q) &#8592; WHILEIT (&#955;(l,q). sorted l &#8743; (&#8704;x&#8712;set l. &#8704;y&#8712;#q. x&#8804;y) &#8743; mset l + q = mset l<span class="hidden">&#8681;</span><sub>0</sub>) 
+    (&#955;(l,q). &#172;op_mset_is_empty q) (&#955;(l,q). 
+  do {
+    (x,q) &#8592; mop_prio_pop_min id q;
+    ASSERT (size l &lt; length l<span class="hidden">&#8681;</span><sub>0</sub>);
+    RETURN (l@[x],q)
+  }) (op_list_empty,q);
+  RETURN l
+}&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sort_by_prio_correct</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sort_by_prio l &#8804; SPEC (&#955;l&#39;. sorted l&#39; &#8743; mset l&#39; = mset l)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sort_by_prio_def</span><span> </span><span>mop_prio_pop_min_def</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> 
+</span><span>    </span><span>nfoldli_rule</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>I</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;&#955;ll _ q. q = mset ll&quot;</span></span></span><span class="delimiter">]</span><span>
+</span><span>    </span><span>WHILEIT_rule</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>R</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;measure (&#955;(l,q). size q)&quot;</span></span></span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>0</span><span> </span><span>3</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>in_diffD</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>size_Diff1_less</span><span> </span><span>sorted_append_bigger</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>add_cancel_right_right</span><span> </span><span>le_add1</span><span> </span><span>nat_less_le</span><span> </span><span>size_eq_0_iff_empty</span><span> </span><span>size_mset</span><span> </span><span>size_union</span><span class="delimiter">)</span><span> 
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>insert_DiffM</span><span> </span><span>union_iff</span><span class="delimiter">)</span><span> 
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  
+</span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Move  *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">function</span></span><span> </span><span>list_intv_induction</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;list_intv_induction l u = (if l&lt;u then list_intv_induction (Suc l) u else ())&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>pat_completeness</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">termination</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>relation</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;measure (&#955;(l,u). u-l)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nfoldli_range_to_while</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nfoldli [l..&lt;u] c f &#963; = do {
+    (_,&#963;) &#8592; WHILET 
+      (&#955;(i,&#963;). i&lt;u &#8743; c &#963;) 
+      (&#955;(i,&#963;). do { &#963; &#8592; f i &#963;; ASSERT (i&lt;u); RETURN (i+1,&#963;) })
+      (l,&#963;);
+    RETURN &#963;
+  }&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>l</span><span> </span><span>u</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>&#963;</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>list_intv_induction.induct</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>1</span><span> </span><span>l</span><span> </span><span>u</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;l&lt;u&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>False</span><span> </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>WHILET_unfold</span><span class="delimiter">)</span><span> </span><span>simp</span><span>
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>True</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">thm</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;1.IH&quot;</span></span></span><span class="delimiter">[</span><span>OF</span><span> </span><span>True</span><span class="delimiter">,</span><span> </span><span>abs_def</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?thesis</span><span> 
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>WHILET_unfold</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>upt_conv_Cons</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;1.IH&quot;</span></span></span><span class="delimiter">[</span><span>OF</span><span> </span><span>True</span><span class="delimiter">,</span><span> </span><span>abs_def</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>  
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>sort_impl</span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;sort_by_prio&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[&#955;l. length l &lt; max_snat LENGTH(64)]<span class="hidden">&#8681;</span><sub>a</sub> (al_assn&#39; TYPE(64) (snat_assn&#39; TYPE(64)))<span class="hidden">&#8679;</span><sup>k</sup> &#8594; al_assn&#39; TYPE(64) (snat_assn&#39; TYPE(64))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sort_by_prio_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span> 
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>nfoldli_by_idx</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>nfoldli_range_to_while</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>heap_fold_custom_empty</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;l</span><span class="delimiter">=</span><span>64</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;64&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span>op_list_empty</span><span> </span><span>al_fold_custom_empty</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;l</span><span class="delimiter">=</span><span>64</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(64)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">export_llvm</span></span><span> 
+</span><span>  </span><span>sort_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sort&quot;</span></span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;arl_new_raw :: (64 word,64) array_list llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_new&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;arl_push_back :: _ &#8658; _ &#8658; (64 word,64) array_list llM&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arl_push_back&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">file</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sort.ll&quot;</span></span></span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* CAREFUL: The calling conventions generated by this LLVM code are hard/impossible to 
+    interface from C !? *)</span></span></span></span></span><span>
+</span><span>  
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

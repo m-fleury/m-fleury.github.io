@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory LLVM_Memory_RS (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory LLVM_Memory_RS</h1>
+
+<span class="command">theory</span> <span class="name">LLVM_Memory_RS</span><br/>
+<span class="keyword">imports</span> <a href="Sep_Value_RS.html"><span class="name">Sep_Value_RS</span></a> <a href="Sep_Array_Block_RS.html"><span class="name">Sep_Array_Block_RS</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>LLVM_Memory_RS</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;../basic/LLVM_Basic_Main&quot;</span></span></span><span>
+</span><span>  </span><span>Sep_Value_RS</span><span> 
+</span><span>  </span><span>Sep_Array_Block_RS</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>ab</span><span class="delimiter">:</span><span> </span><span>array_block2</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;STATIC_ERROR &#39;&#39;&#39;&#39;&quot;</span></span></span><span> </span><span>MEM_ERROR</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;vload MEM_ERROR::_ &#8658; (llvm_primval val,_,_,_) M&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;vstore MEM_ERROR&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;checked_gep MEM_ERROR&quot;</span></span></span><span> </span><span>val_&#945;</span><span> </span><span>vpto_assn</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#955;v. v&#8712;range val_&#945;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>unfold_locales</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>vload_rule</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>vstore_rule</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>vpto_assn_notZ</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span class="delimiter">;</span><span> </span><span>rule</span><span> </span><span>vpto_assn_this</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">datatype</span></span><span> </span><span>llvm_amemory</span><span> </span><span class="delimiter">=</span><span> </span><span>LLVM_AMEMORY</span><span> </span><span class="delimiter">(</span><span>the_amemory</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(nat &#8658; (nat &#8658; llvm_primval aval) &#215; int tsa_opt)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">instantiation</span></span><span> </span><span>llvm_amemory</span><span> </span><span class="delimiter">::</span><span> </span><span>unique_zero_sep_algebra</span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sep_disj_llvm_amemory a b &#8801; the_amemory a ## the_amemory b&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;plus_llvm_amemory a b &#8801; LLVM_AMEMORY (the_amemory a + the_amemory b)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;zero_llvm_amemory &#8801; LLVM_AMEMORY 0&quot;</span></span></span><span>
+</span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">instance</span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>standard</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sep_disj_llvm_amemory_def</span><span> </span><span>plus_llvm_amemory_def</span><span> </span><span>zero_llvm_amemory_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span> </span><span>llvm_amemory.expand</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>      
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>    
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>llvm_assn</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_amemory &#8658; bool&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_&#945; &#8801; LLVM_AMEMORY o ab.ba.&#945; o llvm_memory.the_memory&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_pto x p &#8801; (ab.ba.pto (llvm_val.the_val x) (llvm_ptr.the_ptr p)) o llvm_amemory.the_amemory&quot;</span></span></span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*definition &quot;llvm_is_base_ptr p &#8801; ab.is_base_ptr (llvm_ptr.the_ptr p)&quot;*)</span></span></span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_malloc_tag n p &#8801; ab.ba.tag n (llvm_ptr.the_ptr p) o llvm_amemory.the_amemory&quot;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">instantiation</span></span><span> </span><span>llvm_ptr</span><span> </span><span class="delimiter">::</span><span> </span><span>addr_algebra</span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;abase_llvm_ptr = abase o llvm_ptr.the_ptr&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;acompat_llvm_ptr a b &#8801; acompat (llvm_ptr.the_ptr a) (llvm_ptr.the_ptr b)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;adiff_llvm_ptr a b &#8801; adiff (llvm_ptr.the_ptr a) (llvm_ptr.the_ptr b)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;aidx_llvm_ptr a i &#8801; LLVM_PTR ((llvm_ptr.the_ptr a) +<span class="hidden">&#8681;</span><sub>a</sub> i)&quot;</span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">instance</span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>standard</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>abase_llvm_ptr_def</span><span> </span><span>acompat_llvm_ptr_def</span><span> </span><span>adiff_llvm_ptr_def</span><span> </span><span>aidx_llvm_ptr_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>part_equivpI</span><span> </span><span>sympI</span><span> </span><span>transpI</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>ab.block_ptr_imp_abase</span><span> </span><span>ab.is_block_ptr_simps</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>acompat_refl</span><span> </span><span>llvm_ptr.sel</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>acompat_sym</span><span> </span><span>acompat_trans</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>acompat_dom</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+  definition &quot;llvm_idx_ptr p i &#8801; LLVM_PTR (ab.idx_ptr (llvm_ptr.the_ptr p) i)&quot;
+  definition &quot;llvm_is_arr_ptr p &#8801; ab.is_arr_ptr (llvm_ptr.the_ptr p)&quot;
+  
+  lemma llvm_idx_ptr_add[simp]: &quot;llvm_idx_ptr (llvm_idx_ptr p i) j = llvm_idx_ptr p (i+j)&quot;
+    by (cases p) (auto simp: llvm_idx_ptr_def)
+  
+  lemma llvm_is_arr_ptr_idx[simp]: &quot;llvm_is_arr_ptr (llvm_idx_ptr p i) &#10231; llvm_is_arr_ptr p&quot;
+    by (cases p) (auto simp: llvm_idx_ptr_def llvm_is_arr_ptr_def)
+  *)</span></span></span></span></span><span>  
+</span><span>    
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>xfer_htriple</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;htriple ab.ba.&#945; P c Q&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P&#39; = P o llvm_amemory.the_amemory&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;c&#39; = llvm_zoom_base &#945; c&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;r. Q&#39; (&#945; r) = Q r o llvm_amemory.the_amemory&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;htriple llvm_&#945; P&#39; c&#39; Q&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>htriple_alt</span><span> </span><span>llvm_zoom_base_def</span><span> </span><span>llvm_&#945;_def</span><span> </span><span>wp_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>goal_cases</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>A</span><span class="delimiter">:</span><span> </span><span class="delimiter">(</span><span>1</span><span> </span><span>p</span><span> </span><span>s</span><span> </span><span>f</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>    
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">find_theorems</span></span><span> </span><span>llvm_memory.the_memory<span class="hidden">&#8681;</span><sub>L</sub></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">from</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;p##f&#8250;</span></span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;LLVM_AMEMORY (ab.ba.&#945; (get&#39; llvm_memory.the_memory<span class="hidden">&#8681;</span><sub>L</sub> s)) = p + f&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_amemory.the_amemory p ## llvm_amemory.the_amemory f&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ab.ba.&#945; (get&#39; llvm_memory.the_memory<span class="hidden">&#8681;</span><sub>L</sub> s) = llvm_amemory.the_amemory p + llvm_amemory.the_amemory f&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_disj_llvm_amemory_def</span><span> </span><span>plus_llvm_amemory_def</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>A</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">[</span><span>rule_format</span><span class="delimiter">]</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>mwp_cons</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>conjI</span><span class="delimiter">;</span><span> </span><span>fact</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp_all</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>full_types</span><span class="delimiter">)</span><span> </span><span>assms</span><span class="delimiter">(</span><span>4</span><span class="delimiter">)</span><span> </span><span>comp_apply</span><span> </span><span>llvm_amemory.sel</span><span> </span><span>plus_llvm_amemory_def</span><span> </span><span>sep_disj_llvm_amemory_def</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>  
+</span><span>    
+</span><span>    
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>llvm_load_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;htriple llvm_&#945; (llvm_pto x p) (llvm_load p) (&#955;r. &#8593;(r=x) ** llvm_pto x p)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>xfer_htriple</span><span class="delimiter">[</span><span>OF</span><span> </span><span>ab.ba.load_rule</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>llvm_pto_def</span><span> </span><span>llvm_load_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span> </span><span>pred_lift_extract_simps</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>llvm_store_unchecked_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;htriple llvm_&#945; (llvm_pto xx p) (llvm_store_unchecked x p) (&#955;_. llvm_pto x p)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>xfer_htriple</span><span class="delimiter">[</span><span>OF</span><span> </span><span>ab.ba.store_rule</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>llvm_pto_def</span><span> </span><span>llvm_store_unchecked_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span> </span><span>pred_lift_extract_simps</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>llvm_store_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;llvm_vstruct x = llvm_vstruct xx 
+    &#10233; htriple llvm_&#945; (llvm_pto xx p) (llvm_store x p) (&#955;_. llvm_pto x p)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>llvm_store_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>the_amemoryZ</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;the_amemory 0 = 0&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>zero_llvm_amemory_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>the_amemoryZ_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;the_amemory x = 0 &#10231; x=0&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>zero_llvm_amemory_def</span><span> </span><span>llvm_amemory.expand</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>xfer_sep_conj1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;((&#955;x. a (the_amemory x)) ** (&#955;x. b (the_amemory x))) = (a**b) o the_amemory&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>3</span><span> </span><span>3</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_conj_def</span><span> </span><span>sep_disj_llvm_amemory_def</span><span> </span><span>plus_llvm_amemory_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>full_types</span><span class="delimiter">)</span><span> </span><span>llvm_amemory.exhaust_sel</span><span> </span><span>llvm_amemory.sel</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>xfer_sep_conj2</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;((a o the_amemory) ** (b o the_amemory)) = (a**b) o the_amemory&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>xfer_sep_conj1</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>comp_def</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>xfer_sep_conj</span><span> </span><span class="delimiter">=</span><span> </span><span>xfer_sep_conj1</span><span> </span><span>xfer_sep_conj2</span><span>
+</span><span>            
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>xfer_sep_list_conj1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8896;*map (&#955;x. f x o the_amemory) l) = (&#8896;*map f l) o the_amemory&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>l</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>ext</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span> </span><span>xfer_sep_conj</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>xfer_sep_list_conj2</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8896;*map (&#955;x s. f x (the_amemory s)) l) = (&#8896;*map f l) o the_amemory&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>xfer_sep_list_conj1</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>comp_def</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>xfer_sep_list_conj</span><span> </span><span class="delimiter">=</span><span> </span><span>xfer_sep_list_conj1</span><span> </span><span>xfer_sep_list_conj2</span><span>  
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>xfer_sep_set_img1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8899;*x&#8712;I. f x o the_amemory) = (&#8899;*x&#8712;I. f x) o the_amemory&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;finite I&quot;</span></span></span><span class="delimiter">)</span><span>  
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>True</span><span> </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>ext</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>ext</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span> </span><span>xfer_sep_conj</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span> </span><span>auto</span><span>   
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>xfer_sep_set_img2</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8899;*x&#8712;I. (&#955;s. f x (the_amemory s))) = (&#8899;*x&#8712;I. f x) o the_amemory&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>xfer_sep_set_img1</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>comp_def</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>xfer_sep_set_img</span><span> </span><span class="delimiter">=</span><span> </span><span>xfer_sep_set_img1</span><span> </span><span>xfer_sep_set_img2</span><span>  
+</span><span>  
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>llvm_allocn_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;htriple llvm_&#945; 
+      &#9633; 
+      (llvm_allocn v n) 
+      (&#955;r. (&#8899;*i&#8712;{0..&lt;int n}. llvm_pto v (r +<span class="hidden">&#8681;</span><sub>a</sub> i)) 
+        ** llvm_malloc_tag (int n) r ** &#8593;(abase r))&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>xfer_htriple</span><span class="delimiter">[</span><span>OF</span><span> </span><span>ab.ba_allocn_rule</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>llvm_pto_def</span><span> </span><span>llvm_allocn_def</span><span> </span><span>llvm_malloc_tag_def</span><span> </span><span>abase_llvm_ptr_def</span><span> </span><span>aidx_llvm_ptr_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ext</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span> </span><span>pred_lift_extract_simps</span><span> </span><span>xfer_sep_set_img</span><span> </span><span>xfer_sep_conj</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>            
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>llvm_free_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;htriple llvm_&#945; 
+      ((&#8899;*i&#8712;{0..&lt;n}. EXS v. llvm_pto v (p +<span class="hidden">&#8681;</span><sub>a</sub> i)) 
+        ** llvm_malloc_tag n p)
+      (llvm_free p)
+      (&#955;_. &#9633;)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>xfer_htriple</span><span class="delimiter">[</span><span>OF</span><span> </span><span>ab.ba_freen_rule</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>p</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;llvm_ptr.the_ptr p&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>n</span><span class="delimiter">=</span><span>n</span><span class="delimiter">]</span><span class="delimiter">,</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>&#945;</span><span class="delimiter">=</span><span>id</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>p</span><span class="delimiter">;</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>llvm_pto_def</span><span> </span><span>llvm_free_def</span><span> </span><span>llvm_malloc_tag_def</span><span> </span><span>aidx_llvm_ptr_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>xfer_sep_set_img</span><span> </span><span>xfer_sep_conj</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>p</span><span class="delimiter">;</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>llvm_val.sel</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>llvm_checked_idx_ptr_rule</span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;abase p &#10233;
+      htriple llvm_&#945;
+        (llvm_pto v (p +<span class="hidden">&#8681;</span><sub>a</sub> i))
+        (llvm_checked_idx_ptr p i)
+        (&#955;r. &#8593;(r= p +<span class="hidden">&#8681;</span><sub>a</sub> i) ** llvm_pto v (p +<span class="hidden">&#8681;</span><sub>a</sub> i))
+    &quot;</span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>R</span><span class="delimiter">=</span><span>xfer_htriple</span><span class="delimiter">[</span><span>OF</span><span> </span><span>ab.checked_idx_ptr_rule</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>p</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;llvm_ptr.the_ptr p&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>i</span><span class="delimiter">=</span><span>i</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>xx</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;llvm_val.the_val v&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">,</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>&#945;</span><span class="delimiter">=</span><span>LLVM_PTR</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>R</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>llvm_checked_idx_ptr_def</span><span> </span><span>llvm_pto_def</span><span> </span><span>abase_llvm_ptr_def</span><span> </span><span>aidx_llvm_ptr_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>xfer_sep_conj</span><span> </span><span>sep_algebra_simps</span><span> </span><span>pred_lift_extract_simps</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    
+</span><span>  
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

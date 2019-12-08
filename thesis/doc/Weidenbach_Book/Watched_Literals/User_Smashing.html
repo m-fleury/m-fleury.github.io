@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory User_Smashing (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory User_Smashing</h1>
+
+<span class="command">theory</span> <span class="name">User_Smashing</span><br/>
+<span class="keyword">imports</span> <span class="name">Pure</span><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>User_Smashing</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Pure</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Alternative flex-flex smasher by Simon Wimmer *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  fun enumerate xs = fold (fn x =&gt; fn (i, xs) =&gt; (i +1, (x, i) :: xs)) xs (0, []) |&gt; snd
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  fun dummy_abs _ [] t = t
+    | dummy_abs n (T :: Ts) t = Abs (&quot;x&quot; ^ Int.toString n, T, dummy_abs (n + 1) Ts t)
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  fun common_prefix Ts (t1 as Abs (_, T, t)) (u1 as Abs (_, U, u)) =
+    if U = T then common_prefix (T :: Ts) t u else ([], t1, u1)
+    | common_prefix Ts t u = (Ts, t, u);
+
+  fun dest_app acc (t $ u) = dest_app (u :: acc) t
+    | dest_app acc t = (t, acc);
+
+  fun add_bound (Bound i, n) bs = (i, n) :: bs
+    | add_bound _ bs = bs;
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  fun smash_pair ctxt thm (t, u) =
+    let
+      val idx = Thm.maxidx_of thm + 1;
+      val ctxt&#39; = ctxt;
+      val (Ts, t1, _) = common_prefix [] t u;
+      val (tas, t2) = Term.strip_abs t;
+      val (uas, u2) = Term.strip_abs u;
+      val (tx as Var (_, T1), ts) = Term.strip_comb t2;
+      val (ux as Var (_, U1), us) = Term.strip_comb u2;
+      val Ts1 = Term.binder_types T1;
+      val Us1 = Term.binder_types U1;
+      val T = Term.fastype_of1 (Ts, t1);
+      val tshift = length tas - length Ts;
+      val ushift = length uas - length Ts;
+      val tbs = fold add_bound (enumerate (rev ts)) [] |&gt; map (apfst (fn i =&gt; i - tshift));
+      val ubs = fold add_bound (enumerate (rev us)) [] |&gt; map (apfst (fn i =&gt; i - ushift));
+      val bounds = inter (op =) (map fst tbs) (map fst ubs) |&gt; distinct (=);
+      val T&#39; = map (nth Ts) bounds ---&gt; T;
+      val v = Var ((&quot;simon&quot;, idx), T&#39;);
+      val tbs&#39; = map (fn i =&gt; find_first (fn (j, _) =&gt; i = j) tbs |&gt; the |&gt; snd |&gt; Bound) bounds;
+      val t&#39; = list_comb (v, tbs&#39;) |&gt; dummy_abs 0 Ts1;
+      (* Need to add bounds for superfluous abstractions here *)
+      val ubs&#39; = map (fn i =&gt; find_first (fn (j, _) =&gt; i = j) ubs |&gt; the |&gt; snd |&gt; Bound) bounds;
+      val u&#39; = list_comb (v, ubs&#39;) |&gt; dummy_abs 0 Us1;
+      val subst = [(Term.dest_Var tx, Thm.cterm_of ctxt&#39; t&#39;), (Term.dest_Var ux, Thm.cterm_of ctxt&#39; u&#39;)];
+    in
+      instantiate_normalize ([], subst) thm
+    end;
+    fun smash ctxt thm =
+      case (Thm.tpairs_of thm) of
+        [] =&gt; thm
+      | (p :: _) =&gt; smash_pair ctxt thm p;
+    fun smashed_attrib ctxt thm =
+      (NONE, SOME (smash ctxt thm));
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  val smash_new_rule = Seq.single oo smash;
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

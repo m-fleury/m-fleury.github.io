@@ -1,0 +1,644 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Basic_VCG (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Basic_VCG</h1>
+
+<span class="command">theory</span> <span class="name">Basic_VCG</span><br/>
+<span class="keyword">imports</span> <a href="Defer_Slot.html"><span class="name">Defer_Slot</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Generic VCG Framework&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Basic_VCG</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span> </span><span>Defer_Slot</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  This theory provides a generic VCG framework. The main features are:
+  
+  &#9642; Automatic creation of framed rules from frame-rules and vcg-rules:
+    The frame-rules are combined with the vcg rules to form the actual rule to be applied.
+  
+  &#9642; Backtracking control via rule priorities and PRECOND-tag:
+      &#9642; The rules are ordered by user-specifiable priorities
+      &#9642; Assumptions marked with PRECOND must be solved in order for the rule to be applicable.
+        The VCG is the iterated on the remaining subgoals. 
+    
+  &#9642; Solver infrastructure. The user can register solvers, that are activated 
+    for subgoals that match a solver-specific shape.
+
+&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ML_file</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;subgoal_focus_some.ML&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>vcg_tag_defs</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Definitions of internal tags&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>vcg_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PROTECT x &#8801; x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>PROTECT_cong</span><span class="delimiter">[</span><span>cong</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PROTECT x = PROTECT x&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">..</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>PROTECTI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#934; &#10233; PROTECT &#934;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>PROTECTD</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PROTECT &#934; &#10233; &#934;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>PROTECT_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>vcg_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CONCLUSION x &#8801; x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>CONCLUSIONI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#934; &#10233; CONCLUSION &#934;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>CONCLUSIOND</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CONCLUSION &#934; &#10233; &#934;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>CONCLUSION_def</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>recover_CONCLUSIONE</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;&#172; CONCLUSION P; &#172; thesis &#10233; P&#10215; &#10233; thesis&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>CONCLUSION_def</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>CONCLUSION_intro</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;CONCLUSION True&quot;</span></span></span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;P. &#8704;x. CONCLUSION (P x) &#10233; CONCLUSION (&#8704;x. P x)&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;P Q. &#10214; P &#10233; CONCLUSION Q &#10215; &#10233; CONCLUSION (P&#10230;Q)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>CONCLUSION_def</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+    structure VCG_Lib = struct
+    
+      fun simp_only_tac thms ctxt = simp_tac (put_simpset HOL_basic_ss ctxt 
+        addsimps thms)
+    
+      fun simp_named_thms_tac ctxt n = simp_only_tac (Named_Theorems.get ctxt n) ctxt  
+
+      fun full_simp_only_tac thms ctxt = full_simp_tac (put_simpset HOL_basic_ss ctxt 
+        addsimps thms)
+    
+      fun full_simp_named_thms_tac ctxt n = full_simp_only_tac (Named_Theorems.get ctxt n) ctxt  
+
+      fun asm_simp_only_tac thms ctxt = asm_simp_tac (put_simpset HOL_basic_ss ctxt 
+        addsimps thms)
+    
+      fun asm_simp_named_thms_tac ctxt n = asm_simp_only_tac (Named_Theorems.get ctxt n) ctxt  
+      
+
+      fun rewrite_only_conv thms ctxt = Simplifier.rewrite (put_simpset HOL_basic_ss ctxt 
+        addsimps thms)
+                  
+          
+      (* Apply conversion on given constant and its arguments *)
+      fun tag_conv name cv ct = case head_of (Thm.term_of ct) of
+        Const (name&#39;,_) =&gt; if name=name&#39; then cv ct else raise CTERM (&quot;tag_conv &quot; ^ name, [ct])
+      | _ =&gt; raise CTERM (&quot;tag_conv &quot; ^ name, [ct])  
+        
+  
+      (* Apply conversion on all premises tagged with constant (and Trueprop!)*)
+      fun in_tag_prems_conv name cv = Conv.params_conv ~1 (
+        fn ctxt =&gt; Conv.prems_conv ~1 (
+          Conv.try_conv (HOLogic.Trueprop_conv (tag_conv name (cv ctxt)))
+        )
+      )
+
+      (* Simplify only given tag in premises *)
+      fun simplify_tag_tac name ctxt = CONVERSION (in_tag_prems_conv name (Simplifier.rewrite) ctxt)
+      
+      (* Simplify premises, may solve goal *)
+      fun simplify_prems_tac ctxt = 
+        resolve_tac ctxt @{thms PROTECTD} THEN&#39; asm_full_simp_tac ctxt THEN_ALL_NEW resolve_tac ctxt @{thms PROTECTI}
+      
+        
+      (* Recover conclusion if the argument tactic put it into the assumptions in negated form.
+        rc_tac is invoked on goal with recovered conclusion, if recovery took place.
+        It&#39;s allowed for tac to solve the goal, in which case no recovery is attempted.
+        
+        This tactic is useful to clarify subgoals, but with the guarantee that the 
+        conclusion is preserved.
+        
+        Note that you should have the CONCLUSION_intro rule.
+        
+      *)  
+      fun RECOVER_CONCLUSION&#39; rc_tac tac ctxt = 
+        resolve_tac ctxt @{thms CONCLUSIOND}
+        THEN&#39; tac
+        THEN_ALL_NEW (
+          resolve_tac ctxt @{thms CONCLUSIONI}
+          ORELSE&#39;
+          eresolve_tac ctxt @{thms recover_CONCLUSIONE} THEN&#39; rc_tac
+        )
+        
+      val RECOVER_CONCLUSION = RECOVER_CONCLUSION&#39; (K all_tac)
+        
+      
+      local
+        fun apply_decl_attribute thm (attr:attribute) context =
+          attr (context,thm) |&gt; fst |&gt; the_default context
+    
+      in          
+        fun chain_decl_attribs attrs : attribute = fn (context,thm) =&gt;
+          (SOME (fold (apply_decl_attribute thm) attrs context), NONE)
+    
+        fun parse_attribs ctxt attrs = map (Attrib.attribute ctxt) attrs
+        
+        fun chained_decl_attr ctxt attrs = chain_decl_attribs (parse_attribs ctxt attrs)
+      end    
+      
+      
+      
+    end
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Tag for preconditions that must be solved in order for rule to apply *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>vcg_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PRECOND &#934; &#8801; &#934;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>PRECONDI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#934; &#10233; PRECOND &#934;&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>PRECOND_def</span><span class="delimiter">)</span><span>  
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>PRIO</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::numeral &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>vcg_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PRIO _ &#8801; True&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>PRIOI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PRIO i&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>PRIO_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>vcg_normalize_simps</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Additional normalization rules&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>vcg_normalize_congs</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Additional normalization congruences&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>vcg_normalize_nosplits</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Split rules to be removed for normalization&#8250;</span></span></span><span> 
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO/FIXME: How to specify the positive set here? Can we erase all split rules? *)</span></span></span></span></span><span>
+</span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>if_split</span><span class="delimiter">[</span><span>vcg_normalize_nosplits</span><span class="delimiter">]</span><span>
+</span><span>    
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+    Either apply decomposition rule, 
+    or apply a frame-rule instantiated with a rule
+  *)</span></span></span></span></span><span>
+</span><span>     
+</span><span>  </span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>vcg_decomp_rules</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>vcg_decomp_erules</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>vcg_rules</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>vcg_frame_rules</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>vcg_frame_erules</span><span>
+</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>VCG_DECOMP_RULE</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bool &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>vcg_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;VCG_DECOMP_RULE x &#8801; x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>VCG_DECOMP_ERULE</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bool &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>vcg_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;VCG_DECOMP_ERULE x &#8801; x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>VCG_RULE</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bool &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>vcg_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;VCG_RULE x &#8801; x&quot;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> 
+</span><span>    </span><span>VCG_DECOMP_RULEI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#10233; VCG_DECOMP_RULE x&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>VCG_DECOMP_RULED</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;VCG_DECOMP_RULE x &#10233; x&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>VCG_DECOMP_ERULEI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#10233; VCG_DECOMP_ERULE x&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>VCG_DECOMP_ERULED</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;VCG_DECOMP_ERULE x &#10233; x&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>VCG_RULEI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#10233; VCG_RULE x&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>VCG_RULED</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;VCG_RULE x &#10233; x&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+    structure Basic_VCG = struct
+      structure Static_Xform_Data = Generic_Data
+      (
+        type T = (Proof.context -&gt; conv) Name_Space.table
+        val empty = Name_Space.empty_table &quot;static rule transformers&quot;
+        val merge = Name_Space.merge_tables
+        val extend = I
+      );
+    
+      
+      fun print_rule_xformers verbose ctxt = let
+        val table = Static_Xform_Data.get (Context.Proof ctxt)
+        fun pretty_xformer (name,_) = Pretty.mark_str name
+      in
+        Pretty.writeln_chunks (map pretty_xformer (Name_Space.markup_table verbose ctxt table))
+      end
+      
+      fun static_xform_rl ctxt = let 
+        val table = Static_Xform_Data.get (Context.Proof ctxt)
+        val cnvs = Name_Space.fold_table (fn (_,cnv) =&gt; fn s =&gt; cnv ctxt :: s) table []
+      in
+        fold (Conv.fconv_rule) cnvs
+      end  
+    
+      fun add_static_xformer bnd cnv context =
+        Static_Xform_Data.map (Name_Space.define context true (bnd,cnv) #&gt; snd) context
+    
+      fun get_prio_thm ctxt thm = 
+        case Thm.prems_of thm of 
+          @{mpat &quot;Trueprop (PRIO (numeral ?p))&quot;}::_ =&gt; 
+            (case try HOLogic.dest_numeral p of
+              SOME pr =&gt; (pr,thm OF @{thms PRIOI})
+            | NONE =&gt; (
+              Pretty.block [Pretty.str &quot;Invalid Priority: &quot;, Syntax.pretty_term ctxt p]
+              |&gt; Pretty.string_of |&gt; warning;
+              (100,thm)
+            ))  
+        | _ =&gt; (100,thm)
+            
+      fun mk_framed_rl_aux fr_thm thm = let
+        val n = Thm.nprems_of fr_thm
+        
+        fun tr 0 _ = NONE
+          | tr n ls = 
+              case try (op OF) (fr_thm,ls) of 
+                SOME thm =&gt; SOME thm 
+              | NONE =&gt; tr (n-1) (asm_rl::ls)
+        
+      in
+        tr n [thm]
+      end
+
+      fun mk_framed_rl ctxt = let
+        val simplify_thm = (static_xform_rl ctxt)
+      in
+        fn fr_thm =&gt; fn thm =&gt; 
+          mk_framed_rl_aux fr_thm thm
+          |&gt; map_option simplify_thm
+
+      end
+      
+      fun frame_rl ctxt = let
+        val fr_thms = Named_Theorems.get ctxt @{named_theorems vcg_frame_rules}
+        val fr_ethms = Named_Theorems.get ctxt @{named_theorems vcg_frame_erules}
+        
+        val mk_frl = mk_framed_rl ctxt
+      
+      in
+        fn thm =&gt;                 
+          (map_filter (fn fr_thm =&gt; mk_frl fr_thm thm) fr_thms
+          |&gt; map (fn x =&gt; (false,x)))
+          @
+          (map_filter (fn fr_thm =&gt; mk_frl fr_thm thm) fr_ethms
+          |&gt; map (fn x =&gt; (true,x)))
+      
+      end
+      
+      fun get_rules ctxt = let
+        datatype rl_mode = RULE | ERULE | FRAME
+      
+        val rls1 = Named_Theorems.get ctxt @{named_theorems vcg_decomp_rules}
+        val rls1e = Named_Theorems.get ctxt @{named_theorems vcg_decomp_erules}
+        val rls2 = Named_Theorems.get ctxt @{named_theorems vcg_rules}
+
+        val rls = 
+            map (fn thm =&gt; (RULE,get_prio_thm ctxt thm)) rls1 
+          @ map (fn thm =&gt; (ERULE,get_prio_thm ctxt thm)) rls1e 
+          @ map (fn thm =&gt; (FRAME,get_prio_thm ctxt thm)) rls2 
+        |&gt; sort (fn ((_,(i,_)), (_,(j,_))) =&gt; int_ord (i,j) |&gt; rev_order)
+        |&gt; map (fn (f,(_,thm)) =&gt; (f,thm))
+
+        val mk_frl = frame_rl ctxt
+        
+        val rls = map 
+          (fn (f,thm) =&gt; 
+            case f of
+              FRAME =&gt; mk_frl thm
+            | RULE =&gt; [(false,thm)]
+            | ERULE =&gt; [(true,thm)]
+          ) rls
+        |&gt; flat
+      in
+        rls
+      end
+      
+      val clear_rules = 
+        Context.proof_map (
+          Named_Theorems.clear @{named_theorems vcg_decomp_rules}
+          #&gt; Named_Theorems.clear @{named_theorems vcg_decomp_erules}
+          #&gt; Named_Theorems.clear @{named_theorems vcg_rules})
+
+      fun all_framed_rls ctxt =
+        get_rules ctxt |&gt; filter (not o fst) |&gt; map snd
+        
+      fun all_framed_erls ctxt =
+        get_rules ctxt |&gt; filter fst |&gt; map snd
+          
+          
+      fun vcg_rl_from_ctxt_tac ctxt = biresolve_tac ctxt (get_rules ctxt)
+        (* TODO/ FIXME: Use a net! *)
+              
+      fun vcg_rl_from_prems_tac ctxt = let
+        val ctxt = clear_rules ctxt
+        
+        val ntadd = Context.proof_map oo Named_Theorems.add_thm
+        
+        fun is_vcg_rl _ ct = let
+          val t = Thm.term_of ct
+            |&gt; Logic.strip_assums_concl
+        in
+          case t of
+          @{mpat &quot;Trueprop (VCG_DECOMP_RULE _)&quot;} =&gt; true
+        | @{mpat &quot;Trueprop (VCG_DECOMP_ERULE _)&quot;} =&gt; true
+        | @{mpat &quot;Trueprop (VCG_RULE _)&quot;} =&gt; true
+        | _ =&gt; false
+        end
+        
+        fun declare_vcg_rl thm ctxt = case Thm.concl_of thm of
+          @{mpat &quot;Trueprop (VCG_DECOMP_RULE _)&quot;} =&gt; let
+              val thm = thm RS @{thm VCG_DECOMP_RULED}
+              val ctxt = ntadd @{named_theorems vcg_decomp_rules} thm ctxt
+            in ctxt end
+        | @{mpat &quot;Trueprop (VCG_DECOMP_ERULE _)&quot;} =&gt; let
+              val thm = thm RS @{thm VCG_DECOMP_ERULED}
+              val ctxt = ntadd @{named_theorems vcg_decomp_erules} thm ctxt
+            in ctxt end
+        | @{mpat &quot;Trueprop (VCG_RULE _)&quot;} =&gt; let
+              val thm = thm RS @{thm VCG_RULED}
+              val ctxt = ntadd @{named_theorems vcg_rules} thm ctxt
+            in ctxt end
+        | _ =&gt; raise THM (&quot;declare_vcg_rl: Not a vcg-rule&quot;,~1,[thm])
+    
+      
+      in
+        Subgoal_Focus_Some.FOCUS_SOME_PREMS is_vcg_rl (fn {context=ctxt, prems, ...} =&gt; let
+          val ctxt = fold declare_vcg_rl prems ctxt
+        in
+          FIRSTGOAL (vcg_rl_from_ctxt_tac ctxt)
+        end
+        ) ctxt
+      end
+                  
+      fun vcg_rl_tac ctxt = vcg_rl_from_ctxt_tac ctxt ORELSE&#39; vcg_rl_from_prems_tac ctxt
+        (* This uses rules from premises only as a fallback.
+          TODO: Another option would be to always look for rules in premises,
+            and treat them like any other rule!
+        *)
+
+      structure Solver_Data = Generic_Data (* TODO: Non-canonical (possibly wrong) use of binding *)
+      (
+        type T = (thm * bool * binding * (Proof.context -&gt; int -&gt; tactic)) Item_Net.T;
+        val empty: T = Item_Net.init (fn (a,b) =&gt; #3 a = #3 b) (single o Thm.concl_of o #1);             
+        val extend = I;
+        val merge : T * T -&gt; T = Item_Net.merge;
+      );
+
+      fun try_solvers_dflt keep dflt_tac ctxt = let
+        val net = Solver_Data.get (Context.Proof ctxt)
+      in
+        SUBGOAL (fn (prem,i) =&gt; let 
+          val krls = Item_Net.retrieve_matching net (Logic.strip_assums_concl prem)
+          val tacs = 
+            map (fn (thm,is_xform,_,tac) =&gt; 
+                (if not is_xform andalso not keep then SOLVED&#39; else I) 
+                (CHANGED o (resolve_tac ctxt [thm] THEN&#39; tac ctxt))
+                (* TODO: Is this CHANGED actually needed? *)
+              ) krls
+          @ [(if not keep then SOLVED&#39; else I) (dflt_tac ctxt)]
+        in
+          APPEND_LIST&#39; tacs i
+        end)
+      end
+            
+      fun try_solvers keep ctxt = try_solvers_dflt keep (K (K no_tac)) ctxt
+      
+      fun try_solve ctxt = try_solvers true ctxt
+      fun solve ctxt = DETERM o (try_solvers false ctxt)
+      
+      fun try_solve_dflt dflt_tac ctxt = try_solvers_dflt true dflt_tac ctxt
+      fun solve_dflt dflt_tac ctxt = DETERM o (try_solvers_dflt false dflt_tac ctxt)
+      
+      fun gen_add_solver (thm,is_xform,name,solver) = 
+        (Solver_Data.map (Item_Net.update (thm,is_xform,name,solver)))
+        
+      fun add_solver (thms,name,solver) = fold (fn thm =&gt; gen_add_solver (thm,false,name,solver)) thms
+      fun add_xformer (thms,name,solver) = fold (fn thm =&gt; gen_add_solver (thm,true,name,solver)) thms
+
+      fun rem_solver name = 
+        (Solver_Data.map (Item_Net.remove (asm_rl,false,name,K (K no_tac))))
+      val get_solvers = Context.Proof #&gt; Solver_Data.get #&gt; Item_Net.content
+
+      fun print_solvers ctxt = let      
+        val solvers = get_solvers ctxt
+        fun pretty_solver (thm,is_xform,name,_) = Pretty.block [
+          Binding.pretty name,Pretty.brk 1,Pretty.str (if is_xform then &quot;(xform)&quot; else &quot;(solve)&quot;),Pretty.str &quot;:&quot;,Pretty.brk 1, Thm.pretty_thm ctxt thm]
+      in 
+        Pretty.fbreaks (map pretty_solver solvers) |&gt; Pretty.block |&gt; Pretty.string_of |&gt; tracing;
+        solvers
+      end      
+
+      fun solve_precond_tac ctxt =
+        resolve_tac ctxt @{thms PRECONDI} THEN_ELSE&#39; (solve ctxt, K all_tac)
+      
+      fun step_precond_tac ctxt tac = 
+        tac THEN_ALL_NEW_FWD solve_precond_tac ctxt
+
+      fun vcg_normalize_tac ctxt = let
+        val ctxt = ctxt
+          addsimps Named_Theorems.get ctxt @{named_theorems vcg_normalize_simps}
+          |&gt; fold Simplifier.add_cong (Named_Theorems.get ctxt @{named_theorems vcg_normalize_congs})
+          |&gt; fold Splitter.del_split (Named_Theorems.get ctxt @{named_theorems vcg_normalize_nosplits})
+          
+        fun is_Trueprop @{mpat &quot;Trueprop _&quot;} = true | is_Trueprop _ = false
+      in
+        CONCL_COND&#39; (is_Trueprop) THEN_ELSE&#39; (VCG_Lib.RECOVER_CONCLUSION (clarsimp_tac ctxt) ctxt, K all_tac)
+      end 
+        
+      fun vcg_step_tac ctxt = let
+      in
+        vcg_normalize_tac ctxt THEN_ALL_NEW (
+          step_precond_tac ctxt (vcg_rl_tac ctxt)
+          (*ORELSE&#39; REPEAT_DETERM1 o (match_tac ctxt @{thms conjI impI allI exI})*)
+          ORELSE&#39; solve ctxt
+        )
+      end  
+        
+      val defer_if_no_schematics_tac = SUBGOAL (fn (t,i) =&gt; 
+        if has_Var t then no_tac
+        else Defer_Slot.to_slot_tac i
+      ) 
+      
+      val cfg_defer_goals = 
+        Attrib.setup_config_bool @{binding vcg_defer_goals} (K false)
+      
+                      
+      val local_setup = I
+        #&gt; Local_Theory.add_thms_dynamic (@{binding vcg_framed_rules}, all_framed_rls o Context.proof_of)  
+        #&gt; Local_Theory.add_thms_dynamic (@{binding vcg_framed_erules}, all_framed_erls o Context.proof_of)  
+      
+      
+    end
+    
+  &#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">local_setup</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Basic_VCG.local_setup&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>vcg_ensure_defer_slot</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; SIMPLE_METHOD (
+    if Config.get ctxt Basic_VCG.cfg_defer_goals then Defer_Slot.ensure_slot_tac else all_tac
+  ))&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>vcg_try_solve</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; SIMPLE_METHOD&#39; (TRY o resolve_tac ctxt @{thms PRECONDI} THEN&#39; Basic_VCG.try_solve ctxt))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>vcg_solve</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; SIMPLE_METHOD&#39; (TRY o resolve_tac ctxt @{thms PRECONDI} THEN&#39; Basic_VCG.solve ctxt))&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>vcg_rl_internal</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; SIMPLE_METHOD&#39; (Basic_VCG.vcg_rl_tac ctxt))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>vcg_step_internal</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; SIMPLE_METHOD&#39; (Basic_VCG.vcg_step_tac ctxt))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>vcg_normalize</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; SIMPLE_METHOD&#39; (Basic_VCG.vcg_normalize_tac ctxt))&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">attribute_setup</span></span><span> </span><span>vcg_static_xformed</span><span> </span><span class="delimiter">=</span><span> 
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (Thm.rule_attribute [] (fn context =&gt; Basic_VCG.static_xform_rl (Context.proof_of context)))&#8250;</span></span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Apply static rule transformations&#8250;</span></span></span><span>
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">method</span></span><span> </span><span>vcg_rl</span><span> </span><span class="delimiter">=</span><span> </span><span>vcg_ensure_defer_slot</span><span class="delimiter">,</span><span> </span><span>vcg_rl_internal</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">method</span></span><span> </span><span>vcg_step</span><span> </span><span class="delimiter">=</span><span> </span><span>vcg_ensure_defer_slot</span><span class="delimiter">,</span><span> </span><span>vcg_step_internal</span><span>  
+</span><span>        
+</span><span>  </span><span class="keyword1"><span class="command">method</span></span><span> </span><span>vcg_solve_precond</span><span> </span><span class="delimiter">=</span><span> </span><span>then_else</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;rule PRECONDI&#8250;</span></span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;vcg_solve&#8250;</span></span></span><span> </span><span>succeed</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">method</span></span><span> </span><span>vcg</span><span> </span><span class="delimiter">=</span><span> </span><span>vcg_ensure_defer_slot</span><span class="delimiter">,</span><span> </span><span>vcg_step_internal</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span>  
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Tag for solving by assumption*)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>vcg_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;SOLVE_ASM &#934; &#8801; &#934;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>SOLVE_ASMI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#934; &#10233; SOLVE_ASM &#934;&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>SOLVE_ASM_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+  definition [vcg_tag_defs]: &quot;SOLVE_SIMP &#934; &#8801; &#934;&quot;
+  lemma SOLVE_SIMPI: &quot;&#934; &#10233; SOLVE_SIMP &#934;&quot; by (auto simp: SOLVE_SIMP_def)
+  *)</span></span></span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>thin_TrueE</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;True; P&#10215; &#10233; P&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>imp_trans</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;A &#10230; B &#10233; B &#10230; C &#10233; A &#10230; C&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>imp_ball_cong</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;&#8896;x. x&#8712;S &#10233; P x &#10230; P&#39; x &#10215; &#10233; (&#8704;x&#8712;S. P x) &#10230; (&#8704;x&#8712;S. P&#39; x)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>imp_all_cong</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;&#8896;x. P x &#10230; P&#39; x &#10215; &#10233; (&#8704;x. P x) &#10230; (&#8704;x. P&#39; x)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">named_theorems_rev</span></span><span> 
+</span><span>        </span><span>vcg_prep_ext_rules</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Normalization rules to prepare external solving&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>vcg_prep_ext_congs</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Congruence rules for external solving normalization&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* named_theorems_rev vcg_prep_ext_start_rules &#8249;Rules to start external solving normalization&#8250; *)</span></span></span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>vcg_prep_ext_congs</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>Set.conj_mono</span><span> </span><span>imp_ball_cong</span><span> </span><span>imp_all_cong</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;EXT_TAG P &#8801; P&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>EXT_TAGI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P &#10233; EXT_TAG P&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>EXT_TAG_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>EXT_TAGD</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;EXT_TAG P &#10233; P&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>EXT_TAG_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>EXT_TAG_fold</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Trueprop P &#8801; Trueprop (EXT_TAG P)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>EXT_TAG_def</span><span> </span><span class="keyword1"><span class="command">.</span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>vcg_prep_ext_start</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; EXT_TAG P; P &#10230; Q &#10215; &#10233; Q&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>blast</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>EXT_TAGD</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+    structure VCG_External_Solving = struct
+    
+      fun tag_prems_tac ctxt = let open Conv in CONVERSION (
+        params_conv ~1 (fn _ =&gt; prems_conv ~1 (try_conv (rewr_conv @{thm EXT_TAG_fold}))) ctxt
+      ) end
+    
+      fun so_norm_tac ctxt = let
+      
+        val refl_thms = @{thms imp_refl}
+        val trans_thms = @{thms imp_trans}
+        val cong_thms = Named_Theorems_Rev.get ctxt @{named_theorems_rev vcg_prep_ext_congs}
+        val rule_thms = Named_Theorems_Rev.get ctxt @{named_theorems_rev vcg_prep_ext_rules}
+          |&gt; map (Local_Defs.unfold ctxt @{thms atomize_imp})
+      
+        val refl = SOLVED&#39; (resolve_tac ctxt refl_thms)
+        val congs = resolve_tac ctxt cong_thms
+        val transs = resolve_tac ctxt trans_thms
+        val rules = resolve_tac ctxt rule_thms
+        
+        fun rec_tac i st = let
+          val app_cong = congs THEN_ALL_NEW_FWD rec_tac
+          val app_rl = rules
+        in
+          REPEAT_DETERM&#39; (CHANGED o (transs THEN&#39; SOLVED&#39; (app_cong ORELSE&#39; app_rl))) THEN&#39; 
+          refl
+        end i st 
+      in 
+        rec_tac
+      end
+    
+      fun prepare_subgoal_tac ctxt = let
+        val norm_tac = dresolve_tac ctxt @{thms vcg_prep_ext_start} THEN&#39; SOLVED&#39; (so_norm_tac ctxt)
+      in
+        tag_prems_tac ctxt
+        THEN&#39; REPEAT_DETERM&#39; norm_tac 
+        THEN&#39; REPEAT_DETERM&#39; (eresolve_tac ctxt @{thms thin_TrueE conjE impE exE})
+      end
+    end
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>vcg_prepare_external</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; SIMPLE_METHOD&#39; (VCG_External_Solving.prepare_subgoal_tac ctxt))&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>vcg_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;SOLVE_AUTO &#934; &#8801; &#934;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>SOLVE_AUTOI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#934; &#10233; SOLVE_AUTO &#934;&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>SOLVE_AUTO_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>vcg_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;SOLVE_DEFAULT_AUTO &#934; &#8801; &#934;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>SOLVE_DEFAULT_AUTOI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#934; &#10233; SOLVE_DEFAULT_AUTO &#934;&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>SOLVE_DEFAULT_AUTO_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>vcg_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;SOLVE_AUTO_DEFER &#934; &#8801; &#934;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>SOLVE_AUTO_DEFERI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#934; &#10233; SOLVE_AUTO_DEFER &#934;&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>SOLVE_AUTO_DEFER_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>SOLVE_AUTO_DEFERD</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;SOLVE_AUTO_DEFER &#934; &#10233; &#934;&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>SOLVE_AUTO_DEFER_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>vcg_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;NORMALIZE &#934; &#8801; &#934;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>NORMALIZEI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#934; &#10233; NORMALIZE &#934;&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>NORMALIZE_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fun solve_auto_try_defer_tac ctxt = if Config.get ctxt Basic_VCG.cfg_defer_goals then
+          resolve_tac ctxt @{thms SOLVE_AUTO_DEFERD} THEN&#39; Basic_VCG.defer_if_no_schematics_tac
+        else K no_tac&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;K (Basic_VCG.add_solver (@{thms SOLVE_ASMI},@{binding solve_asm},fn ctxt =&gt; assume_tac ctxt ORELSE&#39; resolve_tac ctxt @{thms TrueI refl order_refl}))&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;K (Basic_VCG.add_solver (@{thms SOLVE_AUTOI},@{binding solve_auto},
+    fn ctxt =&gt; (VCG_External_Solving.prepare_subgoal_tac ctxt THEN&#39; SELECT_GOAL (auto_tac ctxt))))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;K (Basic_VCG.add_solver (@{thms SOLVE_AUTO_DEFERI},@{binding solve_auto_defer},fn ctxt =&gt; 
+    VCG_External_Solving.prepare_subgoal_tac ctxt THEN&#39; (
+      SOLVED&#39; (SELECT_GOAL (auto_tac ctxt)) 
+      ORELSE&#39; solve_auto_try_defer_tac ctxt
+      ORELSE&#39; (SELECT_GOAL (auto_tac ctxt))
+    )))
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;K (Basic_VCG.add_solver (@{thms SOLVE_DEFAULT_AUTOI},@{binding solve_default_auto},fn ctxt =&gt; 
+      VCG_External_Solving.prepare_subgoal_tac ctxt THEN&#39;
+      (SOLVED&#39; (Basic_VCG.try_solve_dflt (SELECT_GOAL o auto_tac) ctxt)
+        ORELSE&#39; solve_auto_try_defer_tac ctxt
+        ORELSE&#39; (Basic_VCG.try_solve_dflt (SELECT_GOAL o auto_tac) ctxt)
+      )))&#8250;</span></span></span><span>
+</span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;K (Basic_VCG.add_xformer (@{thms NORMALIZEI},@{binding xform_normalize},fn ctxt =&gt; Basic_VCG.vcg_normalize_tac ctxt))&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;K (Basic_VCG.add_solver (@{thms Defer_Slot.remove_slot},@{binding remove_empty_defer_slot},fn ctxt =&gt; K all_tac))&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">ML_val</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Basic_VCG.get_solvers @{context}&#8250;</span></span></span><span>
+</span><span>  
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">method</span></span><span> </span><span>vcg&#39;</span><span> </span><span class="delimiter">=</span><span> </span><span>match</span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>vcg_defer_goals</span><span> </span><span class="delimiter">=</span><span> </span><span>true</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>_</span><span> </span><span class="delimiter">&#8658;</span><span> 
+</span><span>    </span><span>vcg</span><span class="delimiter">,</span><span> 
+</span><span>    </span><span>defer_slot_dest</span><span class="delimiter">?</span><span class="delimiter">,</span><span>
+</span><span>    </span><span>all</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(rule SOLVE_AUTO_DEFERI)?&#8250;</span></span></span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">method</span></span><span> </span><span>vcg_step&#39;</span><span> </span><span class="delimiter">=</span><span> </span><span>match</span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>vcg_defer_goals</span><span> </span><span class="delimiter">=</span><span> </span><span>true</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>_</span><span> </span><span class="delimiter">&#8658;</span><span> 
+</span><span>    </span><span>defer_slot_ensure</span><span class="delimiter">,</span><span>
+</span><span>    </span><span>vcg_step</span><span>
+</span><span>  
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Static rule simplifier *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>vcg_static_rl_simps</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Rewrite rules to be applied to 
+    framed rules, to prune trivial cases, etc.&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>dflt_prune_thm_simps</span><span class="delimiter">[</span><span>vcg_static_rl_simps</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> 
+</span><span>    </span><span>triv_forall_equality</span><span>  </span><span class="comment">&#8213; &#8249;prunes params&#8250;</span><span>
+</span><span>    </span><span>True_implies_equals</span><span> </span><span>implies_True_equals</span><span>  </span><span class="comment">&#8213; &#8249;prune &#8249;True&#8250; in asms&#8250;</span><span>
+</span><span>    </span><span>False_implies_equals</span><span>  </span><span class="comment">&#8213; &#8249;prune &#8249;False&#8250; in asms&#8250;</span><span>
+</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;K (Basic_VCG.add_static_xformer @{binding static_rule_simplifier} (
+    fn ctxt =&gt; Simplifier.full_rewrite 
+     (put_simpset HOL_basic_ss ctxt addsimps Named_Theorems.get ctxt @{named_theorems vcg_static_rl_simps})  
+  ))&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+  named_theorems vcg_struct_simps &#8249;Simplification rules on command structure&#8250;
+  *)</span></span></span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>conjI</span><span class="delimiter">[</span><span>vcg_decomp_rules</span><span class="delimiter">]</span><span>
+</span><span>  
+</span><span>      
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IsaSAT_Propagate_Conflict_SML (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IsaSAT_Propagate_Conflict_SML</h1>
+
+<span class="command">theory</span> <span class="name">IsaSAT_Propagate_Conflict_SML</span><br/>
+<span class="keyword">imports</span> <a href="IsaSAT_Propagate_Conflict.html"><span class="name">IsaSAT_Propagate_Conflict</span></a> <a href="IsaSAT_Inner_Propagation_SML.html"><span class="name">IsaSAT_Inner_Propagation_SML</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IsaSAT_Propagate_Conflict_SML</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>IsaSAT_Propagate_Conflict</span><span> </span><span>IsaSAT_Inner_Propagation_SML</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>length_ll_fs_heur_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo length_ll_fs_heur)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;(S, L). nat_of_lit L &lt; length (get_watched_wl_heur S)]<span class="hidden">&#8681;</span><sub>a</sub>
+      isasat_unbounded_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>length_ll_fs_heur_alt_def</span><span> </span><span>get_watched_wl_heur_def</span><span> </span><span>isasat_unbounded_assn_def</span><span>
+</span><span>    </span><span>length_ll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>length_ll_fs_heur_code.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>length_aa64_u32</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#39;a::heap array_list64) array &#8658; uint32 &#8658; uint64 Heap&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length_aa64_u32 xs i = do {
+     x &#8592; nth_u_code xs i;
+    arl64_length x}&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>length_aa64_rule</span><span class="delimiter">[</span><span>sep_heap_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;b &lt; length xs &#10233; (b&#39;, b) &#8712; uint32_nat_rel &#10233; &lt;arrayO_assn (arl64_assn R) xs a&gt; length_aa64_u32 a b&#39;
+    &lt;&#955;r. arrayO_assn (arl64_assn R) xs a * &#8593; (nat_of_uint64 r = length_ll xs b)&gt;<span class="hidden">&#8681;</span><sub>t</sub>&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>length_aa64_u32_def</span><span> </span><span>nth_u_code_def</span><span> </span><span>Array.nth&#39;_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span> </span><span>flip</span><span class="delimiter">:</span><span> </span><span>nat_of_uint32_code</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>br_def</span><span> </span><span>uint32_nat_rel_def</span><span> </span><span>length_ll_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>arrayO_except_assn_array0_index</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">,</span><span> </span><span>of</span><span> </span><span>b</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>nat_of_uint32_code</span><span> </span><span>br_def</span><span> </span><span>uint32_nat_rel_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arrayO_except_assn_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>length_aa64_u32_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry length_aa64_u32, uncurry (RETURN &#8728;&#8728; length_ll)) &#8712;
+     [&#955;(xs, i). i &lt; length xs]<span class="hidden">&#8681;</span><sub>a</sub> (arrayO_assn (arl64_assn R))<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; uint64_nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref_to_hoare</span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>uint32_nat_rel_def</span><span> </span><span>br_def</span><span> </span><span>uint64_nat_rel_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>length_ll_fs_heur_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo length_ll_fs_heur)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;(S, L). nat_of_lit L &lt; length (get_watched_wl_heur S)]<span class="hidden">&#8681;</span><sub>a</sub>
+      isasat_bounded_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; uint64_nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>length_ll_fs_heur_alt_def</span><span> </span><span>get_watched_wl_heur_def</span><span> </span><span>isasat_bounded_assn_def</span><span>
+</span><span>    </span><span>length_ll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>length_ll_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>length_ll_fs_heur_fast_code.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>unit_propagation_inner_loop_body_wl_heur</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>unit_propagation_inner_loop_wl_loop_D</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry unit_propagation_inner_loop_wl_loop_D_heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> isasat_unbounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> nat_assn *a nat_assn *a isasat_unbounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>unit_propagation_inner_loop_wl_loop_D_heur_def</span><span> </span><span>PR_CONST_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>watched_by_nth_watched_app</span><span> </span><span>watched_app_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>length_ll_fs_heur_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>nth_ll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>swap_ll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>delete_index_and_swap_update_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>append_update_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>is_None_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>get_conflict_wl_is_None_heur_alt_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>length_ll_fs_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>unit_propagation_inner_loop_wl_loop_D.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>unit_propagation_inner_loop_wl_loop_D_fast</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry unit_propagation_inner_loop_wl_loop_D_heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;(L, S). length (get_clauses_wl_heur S) &#8804; uint64_max]<span class="hidden">&#8681;</span><sub>a</sub>
+      unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> isasat_bounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; uint64_nat_assn *a uint64_nat_assn *a isasat_bounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>unit_propagation_inner_loop_wl_loop_D_heur_def</span><span> </span><span>PR_CONST_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>watched_by_nth_watched_app</span><span> </span><span>watched_app_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>length_ll_fs_heur_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>nth_ll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>swap_ll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>delete_index_and_swap_update_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>append_update_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>is_None_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>get_conflict_wl_is_None_heur_alt_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>length_ll_fs_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>zero_uint64_nat_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>unit_propagation_inner_loop_wl_loop_D_heur_fast</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>unit_propagation_inner_loop_wl_loop_D_fast.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>length_ll_fs_heur</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>unit_propagation_inner_loop_wl_loop_D_heur</span><span> </span><span>cut_watch_list_heur2</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>cut_watch_list_heur2_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry3 cut_watch_list_heur2&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub>
+     isasat_unbounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> isasat_unbounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>length_ll_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cut_watch_list_heur2_def</span><span> </span><span>isasat_unbounded_assn_def</span><span> </span><span>length_ll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>update_ll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>nth_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>shorten_take_ll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>cut_watch_list_heur2_code.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span> </span><span>shorten_take_aa64_u32</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;shorten_take_aa64_u32 L j W =  do {
+      (a, n) &#8592; nth_u_code W L;
+      Array_upd_u L (a, j) W
+    }&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>shorten_take_aa_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry2 shorten_take_aa64_u32, uncurry2 (RETURN ooo shorten_take_ll)) &#8712;
+     [&#955;((L, j), W). j &#8804; length (W ! L) &#8743; L &lt; length W]<span class="hidden">&#8681;</span><sub>a</sub>
+    uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (arrayO_assn (arl64_assn R))<span class="hidden">&#8679;</span><sup>d</sup> &#8594; arrayO_assn (arl64_assn R)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>shorten_take_aa64_u32_def</span><span> </span><span>shorten_take_ll_def</span><span> </span><span>nth_u_code_def</span><span> </span><span>Array.nth&#39;_def</span><span>
+</span><span>    </span><span>comp_def</span><span> </span><span>nat_of_uint32_code</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>Array_upd_u_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref_to_hoare</span><span> </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>uint32_nat_rel_def</span><span> </span><span>br_def</span><span> </span><span>uint64_nat_rel_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">find_theorems</span></span><span> </span><span>shorten_take_ll</span><span> </span><span>arl64_assn</span><span>
+</span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>shorten_take_aa_hnr</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>cut_watch_list_heur2_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry3 cut_watch_list_heur2&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;(((j, w), L), S). length (watched_by_int S L) &#8804; uint64_max-4]<span class="hidden">&#8681;</span><sub>a</sub>
+     uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub>
+     isasat_bounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; isasat_bounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>length_ll_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span>uint64_max_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span>length_rll_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cut_watch_list_heur2_def</span><span> </span><span>isasat_bounded_assn_def</span><span> </span><span>length_ll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>update_ll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>nth_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>shorten_take_ll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>one_uint64_nat_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>length_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>cut_watch_list_heur2_fast_code.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>unit_propagation_inner_loop_wl_D_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry unit_propagation_inner_loop_wl_D_heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> isasat_unbounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> isasat_unbounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>PR_CONST_def</span><span> </span><span>unit_propagation_inner_loop_wl_D_heur_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>unit_propagation_inner_loop_wl_D_code.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>unit_propagation_inner_loop_wl_D_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry unit_propagation_inner_loop_wl_D_heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;(L, S). length (get_clauses_wl_heur S) &#8804; uint64_max]<span class="hidden">&#8681;</span><sub>a</sub>
+        unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> isasat_bounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; isasat_bounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>nat_of_uint64_conv_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>PR_CONST_def</span><span> </span><span>unit_propagation_inner_loop_wl_D_heur_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>unit_propagation_inner_loop_wl_D_fast_code.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>select_and_remove_from_literals_to_update_wl_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;select_and_remove_from_literals_to_update_wl_heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_unbounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> isasat_unbounded_assn *a unat_lit_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>uint32_nat_assn_plus</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>select_and_remove_from_literals_to_update_wl_heur_alt_def</span><span> </span><span>isasat_unbounded_assn_def</span><span>
+</span><span>    </span><span>one_uint32_nat_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>select_and_remove_from_literals_to_update_wl_code.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>select_and_remove_from_literals_to_update_wlfast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;select_and_remove_from_literals_to_update_wl_heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_bounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> isasat_bounded_assn *a unat_lit_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>uint32_nat_assn_plus</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>select_and_remove_from_literals_to_update_wl_heur_alt_def</span><span> </span><span>isasat_bounded_assn_def</span><span>
+</span><span>    </span><span>one_uint32_nat_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>select_and_remove_from_literals_to_update_wlfast_code.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>literals_to_update_wl_literals_to_update_wl_empty_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o literals_to_update_wl_literals_to_update_wl_empty&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;S. isa_length_trail_pre (get_trail_wl_heur S)]<span class="hidden">&#8681;</span><sub>a</sub> isasat_unbounded_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; bool_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>literals_to_update_wl_literals_to_update_wl_empty_alt_def</span><span>
+</span><span>    </span><span>isasat_unbounded_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>literals_to_update_wl_literals_to_update_wl_empty_code.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>literals_to_update_wl_literals_to_update_wl_empty_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o literals_to_update_wl_literals_to_update_wl_empty&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;S. isa_length_trail_pre (get_trail_wl_heur S)]<span class="hidden">&#8681;</span><sub>a</sub> isasat_bounded_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; bool_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>literals_to_update_wl_literals_to_update_wl_empty_alt_def</span><span>
+</span><span>    </span><span>isasat_bounded_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>literals_to_update_wl_literals_to_update_wl_empty_fast_code.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>literals_to_update_wl_literals_to_update_wl_empty</span><span>
+</span><span>  </span><span>select_and_remove_from_literals_to_update_wl_heur</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>unit_propagation_outer_loop_wl_D_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unit_propagation_outer_loop_wl_D_heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_unbounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> isasat_unbounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>unit_propagation_outer_loop_wl_D_invI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>unit_propagation_outer_loop_wl_D_heur_def</span><span>
+</span><span>    </span><span>literals_to_update_wl_literals_to_update_wl_empty_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>unit_propagation_outer_loop_wl_D_code.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>unit_propagation_outer_loop_wl_D_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unit_propagation_outer_loop_wl_D_heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;S. length (get_clauses_wl_heur S) &#8804; uint64_max]<span class="hidden">&#8681;</span><sub>a</sub> isasat_bounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; isasat_bounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>unit_propagation_outer_loop_wl_D_heur_fast</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>unit_propagation_outer_loop_wl_D_invI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>unit_propagation_outer_loop_wl_D_heur_def</span><span>
+</span><span>    </span><span>literals_to_update_wl_literals_to_update_wl_empty_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>unit_propagation_outer_loop_wl_D_fast_code.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

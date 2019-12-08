@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Hex_Words (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Hex_Words</h1>
+
+<span class="command">theory</span> <span class="name">Hex_Words</span><br/>
+<span class="keyword">imports</span> <a href="../../AFP/Refine_Monadic/Word.html"><span class="name">Word</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+ * Copyright 2014, NICTA
+ *
+ * This software may be distributed and modified according to the terms of
+ * the BSD 2-Clause license. Note that NO WARRANTY is provided.
+ * See &quot;LICENSE_BSD2.txt&quot; for details.
+ *
+ * @TAG(NICTA_BSD)
+ *)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Print Words in Hex&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Hex_Words</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;HOL-Word.Word&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Print words in hex.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* mostly clagged from Num.thy *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">typed_print_translation</span></span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+let
+  fun dest_num (Const (@{const_syntax Num.Bit0}, _) $ n) = 2 * dest_num n
+    | dest_num (Const (@{const_syntax Num.Bit1}, _) $ n) = 2 * dest_num n + 1
+    | dest_num (Const (@{const_syntax Num.One}, _)) = 1;
+
+  fun dest_bin_hex_str tm =
+  let
+    val num = dest_num tm;
+    val pre = if num &lt; 10 then &quot;&quot; else &quot;0x&quot;
+  in
+    pre ^ (Int.fmt StringCvt.HEX num)
+  end;
+
+  fun num_tr&#39; sign ctxt T [n] =
+    let
+      val k = dest_bin_hex_str n;
+      val t&#39; = Syntax.const @{syntax_const &quot;_Numeral&quot;} $
+        Syntax.free (sign ^ k);
+    in
+      case T of
+        Type (@{type_name fun}, [_, T&#39; as Type(&quot;Word.word&quot;,_)]) =&gt;
+          if not (Config.get ctxt show_types) andalso can Term.dest_Type T&#39;
+          then t&#39;
+          else Syntax.const @{syntax_const &quot;_constrain&quot;} $ t&#39; $
+                            Syntax_Phases.term_of_typ ctxt T&#39;
+      | T&#39; =&gt; if T&#39; = dummyT then t&#39; else raise Match
+    end;
+in [(@{const_syntax numeral}, num_tr&#39; &quot;&quot;)] end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Frame_Infer (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Frame_Infer</h1>
+
+<span class="command">theory</span> <span class="name">Frame_Infer</span><br/>
+<span class="keyword">imports</span> <a href="Sep_Algebra_Add.html"><span class="name">Sep_Algebra_Add</span></a> <a href="Basic_VCG.html"><span class="name">Basic_VCG</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Frame Inference&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Frame_Infer</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Sep_Algebra_Add&quot;</span></span></span><span> </span><span>Basic_VCG</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Separation Algebra Specific Setup of VCG&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>vcg_prep_ext_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>pure_part_split_conj</span><span>  
+</span><span>  
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Entails Connective&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;entails&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a::sep_algebra &#8658; bool) &#8658; _ &#8658; _&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infix</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8866;&quot;</span></span></span><span> </span><span>25</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P &#8866; Q &#8801; &#8704;s. P s &#10230; Q s&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>entails_refl</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">!</span><span class="delimiter">,</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P &#8866; P&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>entails_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>entails_false</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sep_false &#8866; Q&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>entails_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>entails_trans</span><span class="delimiter">[</span><span>trans</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P &#8866; Q &#10233; Q &#8866; R &#10233; P &#8866; R&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>entails_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>entails_mp</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;Q &#8866; Q&#39;; P &#8866; Q &#8743;* F&#10215; &#10233; P &#8866; Q&#39; &#8743;* F&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>entails_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>sep_conj_impl1</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>conj_entails_mono</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P&#8866;P&#39; &#10233; Q&#8866;Q&#39; &#10233; P**Q &#8866; P&#39;**Q&#39;&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>entails_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>sep_conj_impl</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>entails_exI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P&#8866;Q x &#10233; P&#8866;(EXS x. Q x)&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>mono_tags</span><span class="delimiter">,</span><span> </span><span>lifting</span><span class="delimiter">)</span><span> </span><span>entails_def</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>entails_pureI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;pure_part P &#10233; P&#8866;Q&#10215; &#10233; P&#8866;Q&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>entails_def</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>pure_partI</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>entails_lift_extract_simps</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8593;&#934; &#8866; Q) &#10231; (&#934; &#10230; &#9633; &#8866; Q)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8593;&#934;**P &#8866; Q) &#10231; (&#934; &#10230; P &#8866; Q)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>entails_def</span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span> </span><span>pred_lift_extract_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>entails_eq_iff</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;A=B &#10231; (A&#8866;B) &#8743; (B&#8866;A)&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>entails_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>entails_eqI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; A&#8866;B; B&#8866;A &#10215; &#10233; A=B&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>entails_eq_iff</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_sep_red P&#39; Q&#39; P Q &#10231; (&#8704;Ps Qs. (P&#39;**Ps&#8866;Q&#39;**Qs) &#10230; (P**Ps&#8866;Q**Qs))&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_sep_redI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;&#8896;Ps Qs. P&#39;**Ps&#8866;Q&#39;**Qs &#10233; P**Ps&#8866;Q**Qs &#10215; &#10233; is_sep_red P&#39; Q&#39; P Q&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_sep_red_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_sep_redD</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;is_sep_red P&#39; Q&#39; P Q; P&#39;**Ps&#8866;Q&#39;**Qs&#10215; &#10233; P**Ps&#8866;Q**Qs&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_sep_red_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span>
+</span><span>  
+</span><span>    
+</span><span>  
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Tags for Frame Inference&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FRI_END &#8801; &#9633;&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FRAME_INFER P Qs F &#8801; P &#8866; Qs ** F&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>fri_prems_cong</span><span> </span><span class="delimiter">=</span><span> </span><span>arg_cong</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>f</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;&#955;P. FRAME_INFER P _ _&quot;</span></span></span><span class="delimiter">]</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fri_prems_cong_meta</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P&#8801;P&#39; &#10233; FRAME_INFER P Q F &#8801; FRAME_INFER P&#39; Q F&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>fri_concls_cong</span><span> </span><span class="delimiter">=</span><span> </span><span>arg_cong</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>f</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;&#955;P. FRAME_INFER _ P _&quot;</span></span></span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fri_prepare</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FRAME_INFER Ps (Qs**FRI_END) F &#10233; FRAME_INFER Ps Qs F&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>FRI_END_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fri_prepare_round</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FRAME_INFER (&#9633;**Ps) Qs F &#10233; FRAME_INFER Ps Qs F&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fri_end</span><span class="delimiter">:</span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Potential premises get solved by entails_refl. *)</span></span></span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Ps &#8866; F &#10233; FRAME_INFER Ps FRI_END F&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>FRAME_INFER_def</span><span> </span><span>FRI_END_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fri_step_rl</span><span class="delimiter">:</span><span>  
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P &#8866; Q&quot;</span></span></span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Gets instantiated with frame_infer_rules *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FRAME_INFER Ps Qs F&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FRAME_INFER (P**Ps) (Q**Qs) F&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>FRAME_INFER_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>conj_entails_mono</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fri_reduce_rl</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_sep_red P&#39; Q&#39; P Q&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FRAME_INFER (P&#39;**Ps) (Q&#39;**Qs) F&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FRAME_INFER (P**Ps) (Q**Qs) F&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>FRAME_INFER_def</span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>is_sep_redD</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Configurable Rule Sets&#8250;</span></span></span><span>   
+</span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>fri_prepare_simps</span><span>
+</span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>fri_rules</span><span>
+</span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>fri_red_rules</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fri_empty_concl_simp</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#9633; ** FRI_END) = FRI_END&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>fri_prepare_simps</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>sep_conj_assoc</span><span> </span><span>sep_conj_empty</span><span> </span><span>sep_conj_empty&#39;</span><span> </span><span>sep_conj_exists</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>entails_refl</span><span class="delimiter">[</span><span>fri_rules</span><span class="delimiter">]</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fri_exI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FRAME_INFER Ps (Qs x) F &#10233; FRAME_INFER Ps (EXS x. Qs x) F&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>FRAME_INFER_def</span><span> </span><span>sep_algebra_simps</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>entails_exI</span><span class="delimiter">)</span><span> 
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;ML Code&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+
+  structure Frame_Infer = struct
+    open VCG_Lib
+    
+    (**** Utilities *)
+    
+    val simp_ai_tac = simp_only_tac @{thms sep_conj_assoc sep_conj_empty sep_conj_empty&#39;}
+    val simp_a_tac = simp_only_tac @{thms sep_conj_assoc}
+    
+    val rewrite_a_conv = rewrite_only_conv @{thms sep_conj_assoc}
+    val rewrite_ai_conv = rewrite_only_conv @{thms sep_conj_assoc sep_conj_empty sep_conj_empty&#39;}
+    
+
+    (**** Rotation Tactic *)
+    
+    local  
+      fun eq_rotate1_tac ctxt = CONVERSION (Refine_Util.HOL_concl_conv (
+          fn ctxt =&gt; Conv.arg1_conv (
+            Conv.rewr_conv @{thm sep_conj_commute[THEN eq_reflection]}
+            then_conv Simplifier.rewrite (put_simpset HOL_basic_ss ctxt addsimps @{thms sep_conj_assoc})
+          )) ctxt)
+    
+      fun eq_rotateN_tac ctxt n = WITH_concl (fn 
+        @{mpat &quot;Trueprop (?lhs = _)&quot;} =&gt; let
+          val nc = length (SepConj.break_sep_conj lhs)
+          val n = n mod nc
+          
+          fun tc 0 = K all_tac
+            | tc n = eq_rotate1_tac ctxt THEN&#39; tc (n-1)
+          
+        in tc n end
+      | _ =&gt; K no_tac  
+      )
+            
+      (*    
+      fun eq_rotateN_tac _ 0 = K all_tac      
+        | eq_rotateN_tac ctxt n = eq_rotate1_tac ctxt THEN&#39; eq_rotateN_tac ctxt (n-1)
+      *)
+
+    in      
+      (* 
+        Takes a congruence rule of the form a=b &#10233; h a = h b,
+        then expects a subgoal of the form h (a<span class="hidden">&#8681;</span><sub>1</sub>**...**a<span class="hidden">&#8681;</span><sub>n</sub>), and produces
+        a sequence of new subgoals h (...) corresponding to all rotations of the a<span class="hidden">&#8681;</span><sub>i</sub>s.
+      *)          
+      fun rotations_tac cong_rls ctxt = let
+        val cong_rls = map_filter (try (fn thm =&gt; @{thm iffD2} OF [thm])) cong_rls
+      in   
+        resolve_tac ctxt cong_rls
+        THEN&#39;
+        WITH_concl (
+          fn @{mpat &#8249;Trueprop (?lhs = _)&#8250;} =&gt; let 
+              val n = length (SepConj.break_sep_conj lhs)
+              fun tac n = eq_rotateN_tac ctxt n
+              val tacs = map tac (0 upto n-1)
+            in
+              APPEND_LIST&#39; tacs
+            end 
+          |  _ =&gt; K no_tac
+        ) 
+        THEN&#39; 
+        resolve_tac ctxt @{thms refl}
+      end  
+        
+      fun rotate_tac cong_rls ctxt n = let
+        val cong_rls = map_filter (try (fn thm =&gt; @{thm iffD2} OF [thm])) cong_rls
+      in   
+        resolve_tac ctxt cong_rls  
+        THEN&#39; eq_rotateN_tac ctxt n
+        THEN&#39; resolve_tac ctxt @{thms refl}
+      end
+        
+    end 
+        
+    (**** Frame Inference Tactic *)
+    fun start_tac ctxt = 
+            asm_simp_named_thms_tac ctxt @{named_theorems fri_prepare_simps}
+      THEN&#39; REPEAT&#39; (resolve_tac ctxt @{thms fri_exI})
+      THEN&#39; resolve_tac ctxt @{thms fri_prepare}
+      THEN&#39; simp_only_tac @{thms sep_conj_assoc fri_empty_concl_simp} ctxt
+  
+    fun end_tac ctxt =   
+      simp_ai_tac ctxt
+      THEN&#39; resolve_tac ctxt @{thms fri_end}
+      THEN&#39; resolve_tac ctxt @{thms entails_refl}
+      
+      
+    fun start_round_tac ctxt =
+      simp_ai_tac ctxt
+      THEN&#39; resolve_tac ctxt @{thms fri_prepare_round}
+      THEN&#39; simp_a_tac ctxt
+  
+    fun solve_round_thms ctxt = let  
+      val thms1 = Named_Theorems.get ctxt @{named_theorems fri_rules}
+        |&gt; map (fn thm =&gt; @{thm fri_step_rl} OF [thm])
+
+      val thms2 = Named_Theorems.get ctxt @{named_theorems fri_red_rules}
+        |&gt; map (fn thm =&gt; @{thm fri_reduce_rl} OF [thm])
+    in thms1@thms2 end
+      
+    fun solve_round_tac ctxt = let
+      val thms = solve_round_thms ctxt
+    in
+      Basic_VCG.step_precond_tac ctxt (resolve_tac ctxt thms)
+    end 
+
+    fun round_tac_aux ctxt = 
+      start_round_tac ctxt
+      THEN&#39; rotations_tac @{thms fri_prems_cong} ctxt 
+      THEN&#39; solve_round_tac ctxt
+      
+    fun round_tac ctxt = 
+      round_tac_aux ctxt 
+      ORELSE&#39; (CHANGED o asm_full_simp_tac ctxt ORELSE&#39; round_tac_aux ctxt)
+              
+    fun infer_tac ctxt = start_tac ctxt THEN&#39; REPEAT&#39; (end_tac ctxt ORELSE&#39; round_tac ctxt)
+  
+    (**** Debugging Tactics *)
+    fun dbg_solve_round_tac ctxt = let
+      val thms = solve_round_thms ctxt
+    in
+      Basic_VCG.step_precond_tac ctxt (resolve_tac ctxt thms)
+      ORELSE&#39; resolve_tac ctxt thms
+    end 
+      
+    fun dbg_round_tac_aux ctxt = 
+      start_round_tac ctxt
+      THEN&#39; rotations_tac @{thms fri_prems_cong} ctxt
+      THEN&#39; dbg_solve_round_tac ctxt
+
+    fun dbg_round_tac ctxt = 
+      dbg_round_tac_aux ctxt 
+      ORELSE&#39; (CHANGED o asm_full_simp_tac ctxt ORELSE&#39; dbg_round_tac_aux ctxt)
+             
+  end      
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Methods&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;FRAME P Q F &#8801; P &#8866; Q ** F&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ENTAILS P Q &#8801; P &#8866; Q&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ENTAILSD</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ENTAILS P Q &#10233; P &#8866; Q&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>ENTAILS_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fri_startI</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;pure_part P &#10233; FRAME_INFER P Q F&#10215; &#10233; FRAME P Q F&quot;</span></span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;pure_part P &#10233; FRAME_INFER P Q &#9633;&#10215; &#10233; ENTAILS P Q&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>FRAME_INFER_def</span><span> </span><span>FRAME_def</span><span> </span><span>ENTAILS_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>entails_pureI</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>fri_rotations</span><span> </span><span class="delimiter">=</span><span> 
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(Attrib.thms &gt;&gt; (fn cong_rls =&gt; fn ctxt =&gt; SIMPLE_METHOD&#39; (Frame_Infer.rotations_tac cong_rls ctxt )))&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Generate sequence of rotations wrt. specified congruence rule&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>fri_rotate</span><span> </span><span class="delimiter">=</span><span> 
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(Attrib.thms -- Scan.lift (Scan.optional (Parse.$$$ &quot;:&quot; |-- Parse.int) 1) &gt;&gt; 
+    (fn (cong_rls,n) =&gt; fn ctxt =&gt; SIMPLE_METHOD&#39; (Frame_Infer.rotate_tac cong_rls ctxt n)))&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Rotate left n steps wrt. specified congruence rule&#8250;</span></span></span><span>
+</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>fri_keep_aux</span><span> </span><span class="delimiter">=</span><span> 
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(Scan.succeed (fn ctxt =&gt; SIMPLE_METHOD&#39; (Frame_Infer.infer_tac ctxt)))&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Frame Inference, solve from left to right, as far as possible&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method</span></span><span> </span><span>fri_keep</span><span> </span><span class="delimiter">=</span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>fri_startI</span><span class="delimiter">)</span><span class="delimiter">?</span><span class="delimiter">;</span><span> </span><span>fri_keep_aux</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">method</span></span><span> </span><span>fri</span><span> </span><span class="delimiter">=</span><span> </span><span>fri_keep</span><span class="delimiter">;</span><span>fail</span><span>  
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>fri_dbg_step</span><span> </span><span class="delimiter">=</span><span> 
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(Scan.succeed (fn ctxt =&gt; SIMPLE_METHOD&#39; (Frame_Infer.dbg_round_tac ctxt)))&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Frame Inference, one round, keep unsolved goals&#8250;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>fri_dbg_end</span><span> </span><span class="delimiter">=</span><span> 
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(Scan.succeed (fn ctxt =&gt; SIMPLE_METHOD&#39; (Frame_Infer.end_tac ctxt)))&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Frame Inference, end inference&#8250;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Solver Setup&#8250;</span></span></span><span>  
+</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  K (Basic_VCG.add_solver (@{thms fri_startI},@{binding infer_frame},Frame_Infer.infer_tac))
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>fri_dbg_start</span><span> </span><span class="delimiter">=</span><span> 
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(Scan.succeed (fn ctxt =&gt; SIMPLE_METHOD&#39; (TRY o resolve_tac ctxt @{thms fri_startI} THEN&#39; Frame_Infer.start_tac ctxt)))&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Frame Inference, start&#8250;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Solving Pure Assertions&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fri_pure_rl</span><span class="delimiter">[</span><span>fri_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PRECOND (SOLVE_DEFAULT_AUTO &#934;) &#10233; &#9633;&#8866;&#8593;&#934;&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sep_algebra_simps</span><span> </span><span>vcg_tag_defs</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>pred_lift_ASM</span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;&#8593;<span class="hidden">&#8681;</span><sub>a</sub>_&quot;</span></span></span><span> </span><span class="delimiter">[</span><span>100</span><span class="delimiter">]</span><span> </span><span>100</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8593;<span class="hidden">&#8681;</span><sub>a</sub>&#934; &#8801; &#8593;SOLVE_ASM &#934;&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>pred_lift_AUTO_DEFER</span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;&#8593;<span class="hidden">&#8681;</span><sub>d</sub>_&quot;</span></span></span><span> </span><span class="delimiter">[</span><span>100</span><span class="delimiter">]</span><span> </span><span>100</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8593;<span class="hidden">&#8681;</span><sub>d</sub>&#934; &#8801; &#8593;SOLVE_AUTO_DEFER &#934;&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>pred_lift_AUTO</span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;&#8593;<span class="hidden">&#8681;</span><sub>!</sub>_&quot;</span></span></span><span> </span><span class="delimiter">[</span><span>100</span><span class="delimiter">]</span><span> </span><span>100</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8593;<span class="hidden">&#8681;</span><sub>!</sub>&#934; &#8801; &#8593;SOLVE_AUTO &#934;&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Extraction&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;A transformer that applies a configurable set of simplification rules 
+  only to certrain parts of the subgoal, as specified by a configurable set of
+  congruence rules. Afterwards, VCG normalization is performed.
+  
+  The envisaged use of this transformer is to process the 
+  postcondition of a Hoare-triple when it is transformed to the current symbolic state,
+  extracting all pure content.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>fri_extract_congs</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Congruence rules for extraction&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>fri_extract_simps</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Simplification rules for extraction&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>fri_basic_extract_simps</span><span> </span><span class="delimiter">=</span><span> </span><span>pred_lift_move_front_simps</span><span> </span><span>sep_conj_exists</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>EXTRACT</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bool &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="delimiter">[</span><span>vcg_tag_defs</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;EXTRACT x &#8801; x&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> 
+</span><span>  </span><span>EXTRACTI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#10233; EXTRACT x&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>EXTRACTD</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;EXTRACT x &#10233; x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>vcg_tag_defs</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  structure Fri_Extract = struct
+    (* TODO: Move *)
+    (* Conversion wrt. congruence rule. The rule must have the form a&#8801;b &#10233; c&#8801;d. *)
+    fun cong_rl_conv (conv:conv) rule ct = let
+      val rule = Thm.incr_indexes (Thm.maxidx_of_cterm ct + 1) rule;
+      val lhs = Thm.cprop_of rule |&gt; Thm.dest_implies |&gt; snd |&gt; Thm.dest_equals_lhs;
+      val rule = Thm.rename_boundvars (Thm.term_of lhs) (Thm.term_of ct) rule;
+      val rule =
+        Thm.instantiate (Thm.match (lhs, ct)) rule
+          handle Pattern.MATCH =&gt; raise CTERM (&quot;cong_rl_conv&quot;, [lhs, ct]);
+      
+      val lhs&#39; = Thm.cprop_of rule |&gt; Thm.dest_implies |&gt; fst |&gt; Thm.dest_equals_lhs;
+          
+    in rule OF [conv lhs&#39;] end
+    
+    fun cong_rls_conv conv rules = 
+      Conv.first_conv (map (cong_rl_conv conv) rules)
+
+    fun extract_basic_tac ctxt thms = let
+      val ctxt = Named_Simpsets.put @{named_simpset Main_ss} ctxt addsimps @{thms fri_basic_extract_simps} addsimps thms
+      val cong_thms = Named_Theorems.get ctxt @{named_theorems fri_extract_congs}
+    in
+      CONVERSION (Conv.top_sweep_conv (fn ctxt =&gt; cong_rls_conv (Simplifier.rewrite ctxt) cong_thms) ctxt) 
+    end
+            
+    fun extract_tac ctxt thms =
+      extract_basic_tac ctxt (
+          Named_Theorems.get ctxt @{named_theorems fri_extract_simps} 
+        @ Named_Theorems.get ctxt @{named_theorems vcg_tag_defs} 
+        @ thms
+        )
+          
+  end
+    
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  let
+  in K (I 
+  #&gt; Basic_VCG.add_xformer (@{thms EXTRACTI},@{binding extract_xformer}, fn ctxt =&gt; 
+        Fri_Extract.extract_tac ctxt []
+        THEN&#39; Basic_VCG.vcg_normalize_tac ctxt
+      )
+  ) end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>fri_extract_basic</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.lift (Args.mode &quot;no_norm&quot;) -- Attrib.thms 
+  &gt;&gt; (fn (no_norm,thms) =&gt; fn ctxt =&gt; SIMPLE_METHOD&#39; ( 
+    Fri_Extract.extract_basic_tac ctxt thms   
+    THEN&#39; (if no_norm then K all_tac else Basic_VCG.vcg_normalize_tac ctxt)
+  ))&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Extraction of pure content, only basic rules&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>fri_extract</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.lift (Args.mode &quot;no_norm&quot;) -- Attrib.thms 
+  &gt;&gt; (fn (no_norm,thms) =&gt; fn ctxt =&gt; SIMPLE_METHOD&#39; ( 
+    Fri_Extract.extract_tac ctxt thms   
+    THEN&#39; (if no_norm then K all_tac else Basic_VCG.vcg_normalize_tac ctxt)
+  ))&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Extraction of pure content&#8250;</span></span></span><span>
+</span><span>
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Basic Methods&#8250;</span></span></span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>entails_pre_cong</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;A=B &#10233; (A&#8866;C) = (B&#8866;C)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span> 
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>entails_post_cong</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;B=C &#10233; (A&#8866;B) = (A&#8866;C)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span> 
+</span><span>  
+</span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>conj_entails_mono</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sep_drule</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;A &#8866; B &#10233; B &#8866; Q &#10233; A &#8866; Q&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;A &#8866; B &#10233; B**F &#8866; Q &#10233; A**F &#8866; Q&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>entails_trans</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>entails_mp</span><span> </span><span>entails_trans</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sep_rule</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;A &#8866; B &#10233; P &#8866; A &#10233; P &#8866; B&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;A &#8866; B &#10233; P &#8866; A**F &#10233; P &#8866; B**F&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>entails_trans</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>entails_mp</span><span> </span><span>entails_trans</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sep_drule</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Attrib.thms &gt;&gt; (fn thms =&gt; fn ctxt =&gt; SIMPLE_METHOD&#39; (let
+  val thms = map_product (fn a =&gt; try (fn b =&gt; a OF [b])) @{thms sep_drule} thms
+    |&gt; map_filter I
+ in 
+  Frame_Infer.rotations_tac @{thms entails_pre_cong} ctxt
+  THEN&#39; resolve_tac ctxt thms 
+  THEN&#39; Frame_Infer.simp_a_tac ctxt
+ end))&#8250;</span></span></span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sep_rule</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Attrib.thms &gt;&gt; (fn thms =&gt; fn ctxt =&gt; SIMPLE_METHOD&#39; (let
+  val thms = map_product (fn a =&gt; try (fn b =&gt; a OF [b])) @{thms sep_rule} thms
+    |&gt; map_filter I
+ in 
+  Frame_Infer.rotations_tac @{thms entails_post_cong} ctxt
+  THEN&#39; resolve_tac ctxt thms 
+  THEN&#39; Frame_Infer.simp_a_tac ctxt
+ end))&#8250;</span></span></span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Utilities&#8250;</span></span></span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fri_red_img_is</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PRECOND (SOLVE_AUTO (k&#8712;I)) &#10233; is_sep_red (&#8899;*i&#8712;I-{k}. P i) &#9633; (&#8899;*i&#8712;I. P i) (P k)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>is_sep_redI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>conj_entails_mono</span><span> </span><span>sep_set_img_remove</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fri_red_img_si</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PRECOND (SOLVE_AUTO (k&#8712;I)) &#10233; is_sep_red &#9633; (&#8899;*i&#8712;I-{k}. P i) (P k) (&#8899;*i&#8712;I. P i)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>is_sep_redI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>conj_entails_mono</span><span> </span><span>entails_refl</span><span> </span><span>sep.add.left_neutral</span><span> </span><span>sep.mult.left_commute</span><span> </span><span>sep.mult_commute</span><span> </span><span>sep_set_img_remove</span><span class="delimiter">)</span><span>
+</span><span>        
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fri_red_img_ss</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PRECOND (SOLVE_AUTO (I&#8745;I&#39; &#8800; {})) &#10233; is_sep_red (&#8899;*i&#8712;I-I&#39;. P i) (&#8899;*i&#8712;I&#39;-I. P i) (&#8899;*i&#8712;I. P i) (&#8899;*i&#8712;I&#39;. P i)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vcg_tag_defs</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>is_sep_redI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>Ps</span><span> </span><span>Qs</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;I &#8745; I&#39; &#8800; {}&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>A</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8899;*i&#8712;I - I&#39;. P i) &#8743;* Ps &#8866; (&#8899;*i&#8712;I&#39; - I. P i) &#8743;* Qs&quot;</span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>DJ</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(I-I&#39;) &#8745; (I&#8745;I&#39;) = {}&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(I&#39;-I) &#8745; (I&#8745;I&#39;) = {}&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>II</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(I-I&#39;) &#8746; (I&#8745;I&#39;) = I&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(I&#39;-I) &#8746; (I&#8745;I&#39;) = I&#39;&quot;</span></span></span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8899;*i&#8712;I. P i) &#8743;* Ps &#8866; (&#8899;*i&#8712;I&#39;. P i) &#8743;* Qs&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sep_set_img_union</span><span class="delimiter">[</span><span>OF</span><span> </span><span>DJ</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">,</span><span> </span><span>simplified</span><span> </span><span>II</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sep_set_img_union</span><span class="delimiter">[</span><span>OF</span><span> </span><span>DJ</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span class="delimiter">,</span><span> </span><span>simplified</span><span> </span><span>II</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>A</span><span> </span><span>conj_entails_mono</span><span> </span><span>entails_def</span><span> </span><span>semigroup.assoc</span><span> </span><span>sep.mult.semigroup_axioms</span><span> </span><span>sep.mult_commute</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>fri_red_img</span><span> </span><span class="delimiter">=</span><span> </span><span>fri_red_img_is</span><span> </span><span>fri_red_img_si</span><span> </span><span>fri_red_img_ss</span><span>
+</span><span> 
+</span><span> 
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

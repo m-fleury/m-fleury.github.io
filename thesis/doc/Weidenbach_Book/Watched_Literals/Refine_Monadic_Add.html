@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Refine_Monadic_Add (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Refine_Monadic_Add</h1>
+
+<span class="command">theory</span> <span class="name">Refine_Monadic_Add</span><br/>
+<span class="keyword">imports</span> <a href="Refine_Monadic_Thin.html"><span class="name">Refine_Monadic_Thin</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Move to Refine-Monadic *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Refine_Monadic_Add</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Refine_Monadic_Thin</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bind_res_singleton</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bind (RES {x}) f = f x&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>pw_eq_iff</span><span> </span><span>refine_pw_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>option_rel_inv_conv</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;(x,Some v&#39;)&#8712;&#10216;V&#10217;option_rel &#10231; (&#8707;v. x=Some v &#8743; (v,v&#39;)&#8712;V)&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;(Some v,x&#39;)&#8712;&#10216;V&#10217;option_rel &#10231; (&#8707;v&#39;. x&#39;=Some v&#39; &#8743; (v,v&#39;)&#8712;V)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>x</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>x&#39;</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;monadic_WHILEIT I b f s &#8801; do {
+    RECT (&#955;D s. do {
+      ASSERT (I s);
+      bv &#8592; b s;
+      if bv then do {
+        s &#8592; f s;
+        D s
+      } else do {RETURN s}
+    }) s
+  }&quot;</span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>WHILEIT_to_monadic</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;WHILEIT I b f s = monadic_WHILEIT I (&#955;s. RETURN (b s)) f s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>WHILEIT_def</span><span> </span><span>monadic_WHILEIT_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>WHILEI_body_def</span><span> </span><span>bind_ASSERT_eq_if</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>cong</span><span class="delimiter">:</span><span> </span><span>if_cong</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>monadic_WHILEIT_refine</span><span class="delimiter">[</span><span>refine</span><span class="delimiter">]</span><span class="delimiter">:</span><span>  
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>refine</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(s&#39;,s) &#8712; R&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>refine</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s&#39; s. &#10214; (s&#39;,s)&#8712;R; I s &#10215; &#10233; I&#39; s&#39;&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>refine</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s&#39; s. &#10214; (s&#39;,s)&#8712;R; I s; I&#39; s&#39; &#10215; &#10233; b&#39; s&#39; &#8804;&#8659;bool_rel (b s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>refine</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s&#39; s. &#10214; (s&#39;,s)&#8712;R; I s; I&#39; s&#39;; nofail (b s); inres (b s) True &#10215; &#10233; f&#39; s&#39; &#8804;&#8659;R (f s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;monadic_WHILEIT I&#39; b&#39; f&#39; s&#39; &#8804;&#8659;R (monadic_WHILEIT I b f s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>monadic_WHILEIT_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>refine_rcg</span><span> </span><span>bind_refine&#39;</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">?</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>monadic_WHILEIT_refine_WHILEIT</span><span class="delimiter">[</span><span>refine</span><span class="delimiter">]</span><span class="delimiter">:</span><span>  
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>refine</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(s&#39;,s) &#8712; R&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>refine</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s&#39; s. &#10214; (s&#39;,s)&#8712;R; I s &#10215; &#10233; I&#39; s&#39;&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>THEN</span><span> </span><span>order_trans</span><span class="delimiter">,</span><span>refine_vcg</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s&#39; s. &#10214; (s&#39;,s)&#8712;R; I s; I&#39; s&#39; &#10215; &#10233; b&#39; s&#39; &#8804; SPEC (&#955;r. r = b s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>refine</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s&#39; s. &#10214; (s&#39;,s)&#8712;R; I s; I&#39; s&#39;; b s &#10215; &#10233; f&#39; s&#39; &#8804;&#8659;R (f s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;monadic_WHILEIT I&#39; b&#39; f&#39; s&#39; &#8804;&#8659;R (WHILEIT I b f s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>WHILEIT_to_monadic</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">?</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>monadic_WHILEIT_refine_WHILET</span><span class="delimiter">[</span><span>refine</span><span class="delimiter">]</span><span class="delimiter">:</span><span>  
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>refine</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(s&#39;,s) &#8712; R&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>THEN</span><span> </span><span>order_trans</span><span class="delimiter">,</span><span>refine_vcg</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s&#39; s. &#10214; (s&#39;,s)&#8712;R &#10215; &#10233; b&#39; s&#39; &#8804; SPEC (&#955;r. r = b s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>refine</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s&#39; s. &#10214; (s&#39;,s)&#8712;R; b s &#10215; &#10233; f&#39; s&#39; &#8804;&#8659;R (f s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;monadic_WHILEIT (&#955;_. True) b&#39; f&#39; s&#39; &#8804;&#8659;R (WHILET b f s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>WHILET_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">?</span><span class="delimiter">)</span><span>  
+</span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Move *)</span></span></span></span></span><span>    
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>monadic_WHILEIT_unfold</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;monadic_WHILEIT I b f s = do { ASSERT (I s); bb&#8592;b s; if bb then do { s &#8592; f s; monadic_WHILEIT I b f s } else RETURN s }&quot;</span></span></span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>monadic_WHILEIT_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>RECT_unfold</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>refine_mono</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Move *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>WHILEIT_refine_new_invar&#39;</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>R0</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;I&#39; x&#39; &#10233; (x,x&#39;)&#8712;R&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>INV0</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; I&#39; x&#39;; (x,x&#39;)&#8712;R &#10215; &#10233; I x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>COND_REF</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x x&#39;. &#10214; (x,x&#39;)&#8712;R; I x; I&#39; x&#39; &#10215; &#10233; b x = b&#39; x&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>STEP_REF</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x x&#39;. &#10214; (x,x&#39;)&#8712;R; b x; b&#39; x&#39;; I x; I&#39; x&#39; &#10215; &#10233; f x &#8804; &#8659;R (f&#39; x&#39;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>STEP_INV</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x x&#39;. &#10214; (x,x&#39;)&#8712;R; b x; b&#39; x&#39;; I x; I&#39; x&#39; &#10215; &#10233; f x &#8804;<span class="hidden">&#8681;</span><sub>n</sub> SPEC I&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;WHILEIT I b f x &#8804;&#8659;R (WHILEIT I&#39; b&#39; f&#39; x&#39;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>WHILEIT_refine_genR</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> 
+</span><span>    </span><span>I</span><span class="delimiter">=</span><span>I</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>I&#39;</span><span class="delimiter">=</span><span>I&#39;</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>x&#39;</span><span class="delimiter">=</span><span>x&#39;</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>x</span><span class="delimiter">=</span><span>x</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>R</span><span class="delimiter">=</span><span>R</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>b</span><span class="delimiter">=</span><span>b</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>b&#39;</span><span class="delimiter">=</span><span>b&#39;</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>f&#39;</span><span class="delimiter">=</span><span>f&#39;</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>f</span><span class="delimiter">=</span><span>f</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>R&#39;</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;{ (c,a). (c,a)&#8712;R &#8743; I c }&quot;</span></span></span><span>
+</span><span>    </span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span>STEP_INV</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>leofD</span><span class="delimiter">[</span><span>rotated</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>add_invar_refineI</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="delimiter">(</span><span>do_notation</span><span class="delimiter">)</span><span> </span><span>bind_doN</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bind_doN &#8801; Refine_Basic.bind&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">notation</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">output</span></span><span class="delimiter">)</span><span> </span><span>bind_doN</span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infixr</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10524;&quot;</span></span></span><span> </span><span>54</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">notation</span></span><span> </span><span class="delimiter">(</span><span>ASCII</span><span> </span><span class="keyword2"><span class="keyword">output</span></span><span class="delimiter">)</span><span> </span><span>bind_doN</span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infixr</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&gt;&gt;=&quot;</span></span></span><span> </span><span>54</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">nonterminal</span></span><span> </span><span>doN_binds</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>doN_bind</span><span>
+</span><span class="keyword1"><span class="command">syntax</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;_doN_block&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;doN_binds &#8658; &#39;a&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;doN {//(2  _)//}&quot;</span></span></span><span> </span><span class="delimiter">[</span><span>12</span><span class="delimiter">]</span><span> </span><span>62</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;_doN_bind&quot;</span></span></span><span>  </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[pttrn, &#39;a] &#8658; doN_bind&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;(2_ &#8592;/ _)&quot;</span></span></span><span> </span><span>13</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;_doN_let&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[pttrn, &#39;a] &#8658; doN_bind&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;(2let _ =/ _)&quot;</span></span></span><span> </span><span class="delimiter">[</span><span>1000</span><span class="delimiter">,</span><span> </span><span>13</span><span class="delimiter">]</span><span> </span><span>13</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;_doN_then&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; doN_bind&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;_&quot;</span></span></span><span> </span><span class="delimiter">[</span><span>14</span><span class="delimiter">]</span><span> </span><span>13</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;_doN_final&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; doN_binds&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;_&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;_doN_cons&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[doN_bind, doN_binds] &#8658; doN_binds&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;_;//_&quot;</span></span></span><span> </span><span class="delimiter">[</span><span>13</span><span class="delimiter">,</span><span> </span><span>12</span><span class="delimiter">]</span><span> </span><span>12</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;_thenM&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[&#39;a, &#39;b] &#8658; &#39;c&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infixr</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10914;&quot;</span></span></span><span> </span><span>54</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">syntax</span></span><span> </span><span class="delimiter">(</span><span>ASCII</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;_doN_bind&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[pttrn, &#39;a] &#8658; doN_bind&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;(2_ &lt;-/ _)&quot;</span></span></span><span> </span><span>13</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;_thenM&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[&#39;a, &#39;b] &#8658; &#39;c&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infixr</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&gt;&gt;&quot;</span></span></span><span> </span><span>54</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">translations</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;_doN_block (_doN_cons (_doN_then t) (_doN_final e))&quot;</span></span></span><span>
+</span><span>    </span><span class="delimiter">&#8652;</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CONST bind_doN t (&#955;_. e)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;_doN_block (_doN_cons (_doN_bind p t) (_doN_final e))&quot;</span></span></span><span>
+</span><span>    </span><span class="delimiter">&#8652;</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CONST bind_doN t (&#955;p. e)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;_doN_block (_doN_cons (_doN_let p t) bs)&quot;</span></span></span><span>
+</span><span>    </span><span class="delimiter">&#8652;</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;let p = t in _doN_block bs&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;_doN_block (_doN_cons b (_doN_cons c cs))&quot;</span></span></span><span>
+</span><span>    </span><span class="delimiter">&#8652;</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;_doN_block (_doN_cons b (_doN_final (_doN_block (_doN_cons c cs))))&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;_doN_cons (_doN_let p t) (_doN_final s)&quot;</span></span></span><span>
+</span><span>    </span><span class="delimiter">&#8652;</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;_doN_final (let p = t in s)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;_doN_block (_doN_final e)&quot;</span></span></span><span> </span><span class="delimiter">&#8640;</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;e&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(m &#10914; n)&quot;</span></span></span><span> </span><span class="delimiter">&#8640;</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(m &#10524; (&#955;_. n))&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>Nil_eq_upt_conv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[] = [l..&lt;h] &#10231; l&#8805;h&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>upt_eq_Nil_conv</span><span> </span><span>zero_le</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>eq_upt_Cons_conv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll#xs = [l..&lt;h] &#10231; (l&lt;h &#8743; ll=l &#8743; xs = [l+1..&lt;h])&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>upt_eq_Cons_conv</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Move! Ultimately, we want sepref-rules and a foreach-statement *)</span></span></span></span></span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nfoldli_upt_by_while</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;nfoldli [l..&lt;h] c f &#963; =
+  doN { (_,&#963;)&#8592;WHILET (&#955;(i,&#963;). i&lt;h &#8743; c &#963;) (&#955;(i,&#963;). doN { &#963; &#8592; f i &#963;; ASSERT (i&lt;h); RETURN (i+1,&#963;) }) (l,&#963;); RETURN &#963; }
+  &quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[l..&lt;h]&quot;</span></span></span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>l</span><span> </span><span>&#963;</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>Nil</span><span> </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?case</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>Nil_eq_upt_conv</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>WHILET_unfold</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Cons</span><span> </span><span>ll</span><span> </span><span>xs</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>Cons.hyps</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;l&lt;h&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ll=l&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[l..&lt;h] = l#[l+1..&lt;h]&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;xs=[l+1..&lt;h]&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>upt_eq_Cons_conv</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>IH</span><span> </span><span class="delimiter">=</span><span> </span><span>Cons.hyps</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Suc l&quot;</span></span></span><span class="delimiter">,</span><span>simplified</span><span class="delimiter">,</span><span>abs_def</span><span class="delimiter">]</span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>Cons.hyps</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>WHILET_unfold</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>IH</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    
+</span><span class="keyword1"><span class="command">qed</span></span><span>    
+</span><span>
+</span><span>  
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

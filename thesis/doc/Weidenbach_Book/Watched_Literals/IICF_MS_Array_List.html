@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IICF_MS_Array_List (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IICF_MS_Array_List</h1>
+
+<span class="command">theory</span> <span class="name">IICF_MS_Array_List</span><br/>
+<span class="keyword">imports</span> <a href="IICF_Array.html"><span class="name">IICF_Array</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IICF_MS_Array_List</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;../Intf/IICF_List&quot;</span></span></span><span> </span><span>IICF_Array</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ms_irel M N &#8801; br (&#955;(l,xs). take l xs) (&#955;(l,xs). l&#8804;N &#8743; N = length xs &#8743; N&lt;M)&quot;</span></span></span><span>
+</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ms_empty N &#8801; RETURN (0::nat,replicate N init)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ms_is_empty &#8801; &#955;(l,_). RETURN (l=0)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ms_length &#8801; &#955;(l,_). RETURN l&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ms_push_back &#8801; &#955;(l,xs) x. ASSERT (l &lt; length xs) &#10914; RETURN (l+1,xs[l:=x])&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ms_last &#8801; &#955;(l,xs). ASSERT (0&lt;l &#8743; l&#8804;length xs) &#10914; RETURN (xs!(l-1))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ms_butlast &#8801; &#955;(l,xs). ASSERT (l&gt;0) &#10914; RETURN (l-1,xs)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ms_get &#8801; &#955;(l,xs) i. ASSERT (i&lt;length xs) &#10914; RETURN (xs!i)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ms_set &#8801; &#955;(l,xs) i x. ASSERT (i&lt;length xs) &#10914; RETURN (l,xs[i:=x])&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">context</span></span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  
+</span><span>    </span><span class="keyword2"><span class="keyword">private</span></span><span> </span><span class="keyword1"><span class="command">method</span></span><span> </span><span>ms_prove_refine</span><span> </span><span class="delimiter">=</span><span> 
+</span><span>      </span><span class="delimiter">(</span><span>unfold</span><span> </span><span>ms_irel_def</span><span> </span><span>curry0_def</span><span class="delimiter">;</span><span>
+</span><span>        </span><span>intro</span><span> </span><span>nres_relI</span><span> </span><span>fun_relI</span><span> </span><span>frefI</span><span class="delimiter">;</span><span>
+</span><span>        </span><span>simp</span><span class="delimiter">?</span><span class="delimiter">;</span><span>
+</span><span>        </span><span>refine_vcg</span><span class="delimiter">?</span><span class="delimiter">;</span><span>
+</span><span>        </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>in_br_conv</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ms_empty_correct</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;N&lt;M &#10233; (ms_empty N,mop_list_empty) &#8712; &#10216;ms_irel M N&#10217;nres_rel&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_empty_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>ms_prove_refine</span><span>
+</span><span>      
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ms_is_empty_correct</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(ms_is_empty,mop_list_is_empty) &#8712; ms_irel M N &#8594; &#10216;bool_rel&#10217;nres_rel&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_is_empty_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>ms_prove_refine</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ms_length_correct</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(ms_length,mop_list_length) &#8712; ms_irel M N &#8594; &#10216;nat_rel&#10217;nres_rel&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_length_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>ms_prove_refine</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ms_push_back_correct</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(uncurry ms_push_back,uncurry mop_list_append) 
+      &#8712; [&#955;(xs,x). length xs &lt; N]<span class="hidden">&#8681;</span><sub>f</sub> (ms_irel M N &#215;<span class="hidden">&#8681;</span><sub>r</sub> Id) &#8594; &#10216;ms_irel M N&#10217;nres_rel&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_push_back_def</span><span> 
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>take_update_last</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>ms_prove_refine</span><span> 
+</span><span>      
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ms_last_correct</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(ms_last,mop_list_last)&#8712;ms_irel M N &#8594; &#10216;Id&#10217;nres_rel&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_last_def</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>last_take_nth_conv</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>ms_prove_refine</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ms_butlast_correct</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(ms_butlast,mop_list_butlast)&#8712;ms_irel M N &#8594; &#10216;ms_irel M N&#10217;nres_rel&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_butlast_def</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>butlast_take</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>ms_prove_refine</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ms_get_correct</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(ms_get,mop_list_get)&#8712;ms_irel M N &#8594; nat_rel &#8594; &#10216;Id&#10217;nres_rel&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_get_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>ms_prove_refine</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ms_set_correct</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(ms_set,mop_list_set)&#8712;ms_irel M N &#8594; nat_rel &#8594; Id &#8594; &#10216;ms_irel M N&#10217;nres_rel&quot;</span></span></span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_set_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>ms_prove_refine</span><span>
+</span><span>    
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span class="delimiter">(</span><span class="tfree">&#39;l</span><span class="delimiter">,</span><span class="tfree">&#39;a</span><span class="delimiter">)</span><span> </span><span>marl</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;l word &#215; &#39;a ptr&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ms_irel_prenorm</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;((l,xs),xs&#39;)&#8712;ms_irel M N&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;length xs = N &#8743; l=length xs&#39; &#8743; length xs&#39;&#8804;N &#8743; N &lt; M&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_irel_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>in_br_conv</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">context</span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>M</span><span> </span><span class="delimiter">::</span><span> </span><span>nat</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">defines</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M &#8801; max_snat (LENGTH (&#39;l::len2))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">notes</span></span><span> </span><span class="delimiter">[</span><span>fcomp_prenorm_simps</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>ms_irel_prenorm</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>M</span><span class="delimiter">=</span><span>M</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;marl2_assn &#8801; snat_assn&#39; TYPE(&#39;l) &#215;<span class="hidden">&#8681;</span><sub>a</sub> array_assn id_assn&quot;</span></span></span><span>
+</span><span>  
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>marl_empty_impl</span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ms_empty&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(snat_assn&#39; TYPE(&#39;l))<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> marl2_assn&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_empty_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>sepref_import_param</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>IdI</span><span class="delimiter">[</span><span>of</span><span> </span><span>init</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(&#39;l)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>array_fold_custom_replicate</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>      
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;marl_empty_aux (N::nat) &#8801; op_list_empty&quot;</span></span></span><span>  
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">sepref_decl_op</span></span><span> </span><span>marl_empty</span><span class="delimiter">:</span><span> </span><span>marl_empty_aux</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat_rel &#8594; &#10216;A&#10217;list_rel&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ms_empty_correct&#39;</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(ms_empty,RETURN o op_marl_empty) 
+      &#8712; [&#955;N. N&lt;M]<span class="hidden">&#8681;</span><sub>f</sub><span class="hidden">&#8681;</span><sub>d</sub> nat_rel &#8594; (&#955;N. &#10216;ms_irel M N&#10217;nres_rel)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>frefI</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>ms_empty_correct</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*    
+    definition &quot;marl_assn&#39; TYPE(&#39;l) N A &#8801; hr_comp (hr_comp marl2_assn (ms_irel (max_snat LENGTH(&#39;l)) N))
+                                     (&#10216;the_pure A&#10217;list_rel)&quot; 
+    *)</span></span></span></span></span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;marl_assn&#39; TYPE(&#39;l) A &#8801; hrr_comp nat_rel
+                                    (&#955;N. hr_comp marl2_assn (ms_irel M N))
+                                    (&#955;_. &#10216;the_pure A&#10217;list_rel)&quot;</span></span></span><span>
+</span><span>                                         
+</span><span>    </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>fcomp_norm_unfold</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>marl_assn&#39;_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">,</span><span> </span><span>folded</span><span> </span><span>M_def</span><span class="delimiter">]</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>marl_assn&#39;_fold&#39;</span><span class="delimiter">[</span><span>fcomp_norm_unfold</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;hr_comp (hr_comp (snat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> array_assn id_assn) (ms_irel M N)) (&#10216;the_pure A&#10217;list_rel)
+        = marl_assn&#39; TYPE(&#39;l) A N&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>marl_assn&#39;_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>hrr_comp_def</span><span> 
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fun_eq_iff</span><span> </span><span>sep_algebra_simps</span><span> </span><span>pred_lift_extract_simps</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>non_dep_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>metis</span><span class="delimiter">+</span><span>
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span>marl_empty</span><span class="delimiter">:</span><span> </span><span>marl_empty_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>ms_empty_correct&#39;</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span> 
+</span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>marl_is_empty_impl</span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span>ms_is_empty</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;marl2_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_is_empty_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(&#39;l)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref_dbg_keep</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>      
+</span><span>    </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>ismop</span><span class="delimiter">)</span><span> </span><span>marl_is_empty_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>ms_is_empty_correct</span><span class="delimiter">[</span><span>of</span><span> </span><span>M</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>      
+</span><span>    </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>marl_length_impl</span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span>ms_length</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;marl2_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> snat_assn&#39; TYPE(&#39;l)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_length_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>ismop</span><span class="delimiter">)</span><span> </span><span>marl_length_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>ms_length_correct</span><span class="delimiter">[</span><span>of</span><span> </span><span>M</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>marl_push_back_impl</span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry ms_push_back&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[&#955;((l,a),_). length a &lt; M ]<span class="hidden">&#8681;</span><sub>a</sub> marl2_assn<span class="hidden">&#8679;</span><sup>d</sup>*<span class="hidden">&#8681;</span><sub>a</sub>id_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; marl2_assn&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_push_back_def</span><span> </span><span>M_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(&#39;l)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref_dbg_keep</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>ismop</span><span class="delimiter">)</span><span> </span><span>marl_push_back_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>ms_push_back_correct</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>M</span><span class="delimiter">=</span><span>M</span><span class="delimiter">]</span><span class="delimiter">]</span><span>  
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>parametricity</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>IdI</span><span class="delimiter">[</span><span>of</span><span> </span><span>N</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      
+</span><span>      
+</span><span>    </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>marl_last_impl</span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;ms_last&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;marl2_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> id_assn&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_last_def</span><span> </span><span>M_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(&#39;l)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref_dbg_keep</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>ismop</span><span class="delimiter">)</span><span> </span><span>marl_last_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>ms_last_correct</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>M</span><span class="delimiter">=</span><span>M</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>      
+</span><span>    </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>marl_butlast_impl</span><span> </span><span class="delimiter">[</span><span>llvm_code</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;ms_butlast&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;marl2_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> marl2_assn&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_butlast_def</span><span> </span><span>M_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(&#39;l)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref_dbg_keep</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>ismop</span><span class="delimiter">)</span><span> </span><span>marl_butlast_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>ms_butlast_correct</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>M</span><span class="delimiter">=</span><span>M</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>      
+</span><span>    
+</span><span>    </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>marl_get_impl</span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry ms_get&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;marl2_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (snat_assn&#39; TYPE(&#39;l))<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> id_assn&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_get_def</span><span> </span><span>M_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref_dbg_keep</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>ismop</span><span class="delimiter">)</span><span> </span><span>marl_get_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>ms_get_correct</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>M</span><span class="delimiter">=</span><span>M</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>      
+</span><span>    </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>marl_set_impl</span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> 
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry2 ms_set&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;marl2_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (snat_assn&#39; TYPE(&#39;l))<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> id_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> marl2_assn&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ms_set_def</span><span> </span><span>M_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref_dbg_keep</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">sepref_decl_impl</span></span><span> </span><span class="delimiter">(</span><span>ismop</span><span class="delimiter">)</span><span> </span><span>marl_set_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>ms_set_correct</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>M</span><span class="delimiter">=</span><span>M</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>          
+</span><span>     
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fold_marl_empty</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;[] = op_marl_empty N&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;RETURN [] = mop_marl_empty N&quot;</span></span></span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;op_list_empty = op_marl_empty N&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mop_list_empty = mop_marl_empty N&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Move *)</span></span></span></span></span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">schematic_goal</span></span><span> </span><span class="delimiter">[</span><span>sepref_frame_free_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;MK_FREE (marl_assn&#39; TYPE(&#39;l::len2) A N) ?f&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>marl_assn&#39;_fold&#39;</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref_dbg_side</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>marl_assn&#39;_boundsD</span><span class="delimiter">[</span><span>sepref_bounds_dest</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>     </span><span class="string"><span class="delete"><span class="delete">&quot;rdomp (marl_assn&#39; TYPE(&#39;l::len2) A N) xs &#10233; length xs &#8804; N &#8743; N &lt; max_snat LENGTH(&#39;l)&quot;</span></span></span><span>  
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>marl_assn&#39;_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span>sepref_bounds_dest</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>ms_irel_prenorm</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref_bounds</span><span>
+</span><span>      
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bind_assoc_tagged</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bind$(bind$m$f)$g = bind$m$(&#955;<span class="hidden">&#8681;</span><sub>2</sub>x. bind$(f$x)$g)&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>autoref_tag_defs</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span> 
+</span><span>      
+</span><span>    
+</span><span>    
+</span><span class="keyword1"><span class="command">experiment</span></span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>    
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>test</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#955;N. (do {
+    let x = op_marl_empty N;
+    RETURN (x@[1::nat])
+  })&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[&#955;N. N&#8805;10]<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>d</sub> (snat_assn&#39; TYPE(64))<span class="hidden">&#8679;</span><sup>k</sup> &#8594; marl_assn&#39; TYPE(64) (snat_assn&#39; TYPE(64))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(64)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>    
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

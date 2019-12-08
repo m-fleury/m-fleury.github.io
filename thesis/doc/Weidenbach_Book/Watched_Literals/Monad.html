@@ -1,0 +1,995 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Monad (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Monad</h1>
+
+<span class="command">theory</span> <span class="name">Monad</span><br/>
+<span class="keyword">imports</span> <a href="Basic_Imports.html"><span class="name">Basic_Imports</span></a> <a href="ELenses.html"><span class="name">ELenses</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Nterm-Fail-Exception-State Monad&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Monad</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span>
+</span><span>  </span><span>Basic_Imports</span><span> </span><span>ELenses</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Additions to Partial Function&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">context</span></span><span> </span><span>partial_function_definitions</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>monotoneI</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8896;x. mono_body (&#955;f. F f x)) &#10233; monotone le_fun le_fun F&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>monotone_def</span><span> </span><span>fun_ord_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fp_unfold</span><span class="delimiter">:</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8801; fixp_fun F&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8896;x. mono_body (&#955;f. F f x))&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f x = F f x&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span>mono_body_fixp</span><span class="delimiter">[</span><span>of</span><span> </span><span>F</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fun_ordD</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fun_ord le f g &#10233; le (f x) (g x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fun_ord_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fun_ord_mono_alt</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;monotone le (fun_ord le&#39;) f &#10231; (&#8704;x. monotone le le&#39; (&#955;y. f y x))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>mono_tags</span><span class="delimiter">,</span><span> </span><span>lifting</span><span class="delimiter">)</span><span> </span><span>fun_ord_def</span><span> </span><span>monotone_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>pf_mono_prover</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (SIMPLE_METHOD&#39; o Subgoal.FOCUS_PREMS (fn {context=ctxt,...} =&gt; CHANGED (ALLGOALS (Partial_Function.mono_tac ctxt))))&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+    fun discharge_monos ctxt thm = let
+      fun aux ctxt thm = let
+        val prems = Thm.prems_of thm
+
+        fun prove_simple tac t ctxt = Goal.prove ctxt [] [] t (fn {context=ctxt, ...} =&gt; ALLGOALS (tac ctxt))
+
+
+        (*val mono_tac = Subgoal.FOCUS (fn {context=ctxt,...} =&gt; CHANGED (ALLGOALS (Partial_Function.mono_tac ctxt)))*)
+        fun mono_tac ctxt = CHANGED o (Partial_Function.mono_tac ctxt)
+
+        fun cinst (t as @{mpat &quot;&#8896;_. monotone (fun_ord _) _ _&quot;}) = the_default asm_rl (try (prove_simple mono_tac t) ctxt)
+          | cinst _ = asm_rl
+
+        val insts = map cinst prems
+
+        val thm = thm OF insts
+      in
+        thm
+      end
+    in
+      (* Avoid surprises with schematic variables being instantiated *)
+      singleton (Variable.trade (map o aux) ctxt) thm
+    end
+
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">attribute_setup</span></span><span> </span><span>discharge_monos</span><span>
+</span><span>    </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (Thm.rule_attribute [] (discharge_monos o Context.proof_of))&#8250;</span></span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Try to discharge monotonicity premises&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Monad Definition&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Inner Type&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">datatype</span></span><span> </span><span class="delimiter">(</span><span>discs_sels</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span class="tfree">&#39;a</span><span class="delimiter">,</span><span class="tfree">&#39;e</span><span class="delimiter">,</span><span class="tfree">&#39;s</span><span class="delimiter">,</span><span class="tfree">&#39;f</span><span class="delimiter">)</span><span> </span><span>mres</span><span> </span><span class="delimiter">=</span><span> </span><span>NTERM</span><span> </span><span class="delimiter">|</span><span> </span><span>FAIL</span><span> </span><span class="delimiter">(</span><span>the_failure</span><span class="delimiter">:</span><span> </span><span class="tfree">&#39;f</span><span class="delimiter">)</span><span> </span><span class="delimiter">|</span><span> </span><span>EXC</span><span> </span><span class="tfree">&#39;e</span><span> </span><span class="delimiter">(</span><span>the_state</span><span class="delimiter">:</span><span> </span><span class="tfree">&#39;s</span><span class="delimiter">)</span><span> </span><span class="delimiter">|</span><span> </span><span>SUCC</span><span> </span><span class="tfree">&#39;a</span><span> </span><span class="delimiter">(</span><span>the_state</span><span class="delimiter">:</span><span> </span><span class="tfree">&#39;s</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">datatype</span></span><span> </span><span class="delimiter">(</span><span class="tfree">&#39;a</span><span class="delimiter">,</span><span class="tfree">&#39;e</span><span class="delimiter">,</span><span class="tfree">&#39;s</span><span class="delimiter">,</span><span class="tfree">&#39;f</span><span class="delimiter">)</span><span> </span><span>M</span><span> </span><span class="delimiter">=</span><span> </span><span>M</span><span> </span><span class="delimiter">(</span><span>run</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;s &#8658; (&#39;a,&#39;e,&#39;s,&#39;f) mres&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;map_mres_state f &#8801; map_mres id id f id&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;map_mres_fail f &#8801; map_mres id id id f&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>map_mres_state_invert</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*&quot;map_mres_state f m = NTERM &#10231; m = NTERM&quot;*)</span></span></span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;map_mres_state f m = FAIL msg &#10231; m = FAIL msg&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;map_mres_state f m = EXC e s &#10231; (&#8707;ss. s=f ss &#8743; m = EXC e ss)&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;map_mres_state f m = SUCC x s &#10231; (&#8707;ss. s=f ss &#8743; m = SUCC x ss)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>m</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>map_mres_fail_invert</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*&quot;map_mres_state f m = NTERM &#10231; m = NTERM&quot;*)</span></span></span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;map_mres_fail f m = FAIL msg &#10231; (&#8707;msg&#39;. msg = f msg&#39; &#8743; m = FAIL msg&#39;)&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;map_mres_fail f m = EXC e s &#10231; m = EXC e s&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;map_mres_fail f m = SUCC x s &#10231; m = SUCC x s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>m</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>M_eqI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">?</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; &#8896;s. run m s = run m&#39; s &#10215; &#10233; m=m&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>m</span><span class="delimiter">;</span><span> </span><span>cases</span><span> </span><span>m&#39;</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Ordering Structure&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mres_ord &#8801; flat_ord NTERM&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mres_lub &#8801; flat_lub NTERM&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mres_mono &#8801; monotone (fun_ord mres_ord) mres_ord&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_ord &#8801; img_ord run (fun_ord mres_ord)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_lub &#8801; img_lub run M (fun_lub mres_lub)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_mono &#8801; monotone (fun_ord M_ord) M_ord&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>M</span><span class="delimiter">:</span><span>
+</span><span>    </span><span>partial_function_definitions</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_ord&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_lub&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>partial_function_image</span><span> </span><span>partial_function_lift</span><span> </span><span>flat_interpretation</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>M.expand</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Basic Combinators&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>REC</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;REC &#8801; M.fixp_fun&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>internal_nterm</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;internal_nterm &#8801; M (&#955;_. NTERM)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fail</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fail msg &#8801; M (&#955;_. FAIL msg)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>return</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;return x &#8801; M (SUCC x)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>bind</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bind m f &#8801; M (&#955;s. case run m s of SUCC x s &#8658; run (f x) s | NTERM &#8658; NTERM | FAIL msg &#8658; FAIL msg | EXC e s &#8658; EXC e s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>get</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;get &#8801; M (&#955;s. SUCC s s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>set</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;set s &#8801; M (&#955;_. SUCC () s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>raise</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;raise e &#8801; M (EXC e)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>handle</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;handle m h &#8801; M (&#955;s. case run m s of EXC e s &#8658; run (h e) s | SUCC x s &#8658; SUCC x s | NTERM &#8658; NTERM | FAIL msg &#8658; FAIL msg)&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>mblock</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mblock begin end m &#8801; M (map_mres_state end o run m o begin)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>mfail</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mfail f m &#8801; M (map_mres_fail f o run m)&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Derived, but required for some laws.&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;map_state f &#8801; bind get (set o f)&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Syntax&#8250;</span></span></span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="delimiter">(</span><span>do_notation</span><span class="delimiter">)</span><span> </span><span>bind_doI</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bind_doI &#8801; bind&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="delimiter">(</span><span>do_notation</span><span class="delimiter">)</span><span> </span><span>then_doI</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;then_doI m f &#8801; bind_doI m (&#955;_. f)&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">notation</span></span><span> </span><span>bind_doI</span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infixr</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10524;&quot;</span></span></span><span> </span><span>54</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">notation</span></span><span> </span><span>then_doI</span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infixr</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10914;&quot;</span></span></span><span> </span><span>54</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">nonterminal</span></span><span> </span><span>doI_binds</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>doI_bind</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">syntax</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;_doI_block&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;doI_binds &#8658; &#39;a&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;doM {//(2  _)//}&quot;</span></span></span><span> </span><span class="delimiter">[</span><span>12</span><span class="delimiter">]</span><span> </span><span>62</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;_doI_bind&quot;</span></span></span><span>  </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[pttrn, &#39;a] &#8658; doI_bind&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;(2_ &#8592;/ _)&quot;</span></span></span><span> </span><span>13</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;_doI_let&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[pttrn, &#39;a] &#8658; doI_bind&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;(2let _ =/ _)&quot;</span></span></span><span> </span><span class="delimiter">[</span><span>1000</span><span class="delimiter">,</span><span> </span><span>13</span><span class="delimiter">]</span><span> </span><span>13</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;_doI_then&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; doI_bind&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;_&quot;</span></span></span><span> </span><span class="delimiter">[</span><span>14</span><span class="delimiter">]</span><span> </span><span>13</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;_doI_final&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; doI_binds&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;_&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;_doI_cons&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[doI_bind, doI_binds] &#8658; doI_binds&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;_;//_&quot;</span></span></span><span> </span><span class="delimiter">[</span><span>13</span><span class="delimiter">,</span><span> </span><span>12</span><span class="delimiter">]</span><span> </span><span>12</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*&quot;_thenM&quot; :: &quot;[&#39;a, &#39;b] &#8658; &#39;c&quot; (infixr &quot;&#10914;&quot; 54)*)</span></span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">syntax</span></span><span> </span><span class="delimiter">(</span><span>ASCII</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;_doI_bind&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[pttrn, &#39;a] &#8658; doI_bind&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="string"><span class="delete"><span class="delete">&quot;(2_ &lt;-/ _)&quot;</span></span></span><span> </span><span>13</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*&quot;_thenM&quot; :: &quot;[&#39;a, &#39;b] &#8658; &#39;c&quot; (infixr &quot;&gt;&gt;&quot; 54)*)</span></span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">translations</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;_doI_block (_doI_cons (_doI_then t) (_doI_final e))&quot;</span></span></span><span>
+</span><span>      </span><span class="delimiter">&#8652;</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CONST then_doI t e&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;_doI_block (_doI_cons (_doI_bind p t) (_doI_final e))&quot;</span></span></span><span>
+</span><span>      </span><span class="delimiter">&#8652;</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;CONST bind_doI t (&#955;p. e)&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;_doI_block (_doI_cons (_doI_let p t) bs)&quot;</span></span></span><span>
+</span><span>      </span><span class="delimiter">&#8652;</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;let p = t in _doI_block bs&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;_doI_block (_doI_cons b (_doI_cons c cs))&quot;</span></span></span><span>
+</span><span>      </span><span class="delimiter">&#8652;</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;_doI_block (_doI_cons b (_doI_final (_doI_block (_doI_cons c cs))))&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;_doI_cons (_doI_let p t) (_doI_final s)&quot;</span></span></span><span>
+</span><span>      </span><span class="delimiter">&#8652;</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;_doI_final (let p = t in s)&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;_doI_block (_doI_final e)&quot;</span></span></span><span> </span><span class="delimiter">&#8640;</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;e&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Monad Laws&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>map_state_laws</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;map_state (&#955;x. x) = return ()&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;map_state id = return ()&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;map_state (&#955;_. c) = set c&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>return_def</span><span> </span><span>bind_def</span><span> </span><span>map_state_def</span><span> </span><span>get_def</span><span> </span><span>set_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bind_laws</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;bind m return = m&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;bind (return x) f = f x&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;bind (bind m (&#955;x. f x)) g = bind m (&#955;x. bind (f x) g)&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;bind (fail msg) f = fail msg&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;bind (internal_nterm) f = internal_nterm&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;bind (raise e) f = raise e&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>bind_def</span><span> </span><span>return_def</span><span> </span><span>fail_def</span><span> </span><span>raise_def</span><span> </span><span>internal_nterm_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>m</span><span class="delimiter">;</span><span> </span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.split</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>handle_laws</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;handle (return x) h = return x&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;handle (fail msg) h = fail msg&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;handle (internal_nterm) h = internal_nterm&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;handle (raise e) h = h e&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;handle m raise = m&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;handle (handle m (&#955;e. h e)) i = handle m (&#955;e. handle (h e) i)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>handle_def</span><span> </span><span>return_def</span><span> </span><span>fail_def</span><span> </span><span>raise_def</span><span> </span><span>internal_nterm_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.split</span><span> </span><span class="delimiter">|</span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>m</span><span class="delimiter">;</span><span> </span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.split</span><span class="delimiter">)</span><span class="delimiter">)</span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>state_laws</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;bind get set = return ()&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;bind get (&#955;s. bind (set s) (f s)) = bind get (&#955;s. f s ())&quot;</span></span></span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* From Lars Hupel&#39;s HOL-Library.State_Monad *)</span></span></span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;bind (set s) (&#955;_. set s&#39;) = set s&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;bind get (&#955;_. m) = m&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;bind (set s) (&#955;_. get) = bind (set s) (&#955;_. return s)&quot;</span></span></span><span>
+</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;handle get h = get&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;handle (set s) h = set s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>handle_def</span><span> </span><span>return_def</span><span> </span><span>bind_def</span><span> </span><span>get_def</span><span> </span><span>set_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mblock_laws</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mblock begin end (return x) = doM {map_state (end o begin); return x}&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mblock begin end (raise e) = doM {map_state (end o begin); raise e}&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mblock begin end (fail msg) = fail msg&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mblock begin end (internal_nterm) = internal_nterm&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mblock begin end (get) = doM { s&#8592;get; map_state (end o begin); return (begin s) }&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mblock begin end (set s) = set (end s)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>return_def</span><span> </span><span>fail_def</span><span> </span><span>raise_def</span><span> </span><span>mblock_def</span><span> </span><span>bind_def</span><span> </span><span>map_state_def</span><span> </span><span>get_def</span><span> </span><span>set_def</span><span> </span><span>internal_nterm_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.splits</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>ext</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mfail_laws</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mfail f (return x) = return x&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mfail f (raise e) = raise e&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mfail f (fail msg) = fail (f msg)&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mfail f (internal_nterm) = internal_nterm&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mfail f (get) = get&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mfail f (set s) = set s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>return_def</span><span> </span><span>fail_def</span><span> </span><span>raise_def</span><span> </span><span>mfail_def</span><span> </span><span>bind_def</span><span> </span><span>map_state_def</span><span> </span><span>get_def</span><span> </span><span>set_def</span><span> </span><span>internal_nterm_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.splits</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>ext</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>m_injects</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;return x = return x&#39; &#10231; x=x&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;raise e = raise e&#39; &#10231; e=e&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;fail msg = fail msg&#39; &#10231; msg=msg&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>return_def</span><span> </span><span>fail_def</span><span> </span><span>raise_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>fun_cong</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Recursion Setup&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Fixed-Point Induction&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>M_admissible_aux</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;x s. PQ x s NTERM&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M.admissible (&#955;f. &#8704;x s. PQ x s (run (f x) s))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>admissible_fun</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>unfold_locales</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>admissible_image</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>partial_function_lift</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>flat_interpretation</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>comp_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>ccpo.admissibleI</span><span> </span><span>chain_fun</span><span> </span><span>flat_lub_in_chain</span><span> </span><span>fun_lub_def</span><span> </span><span>mem_Collect_eq</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>M.expand</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>M_lub_fun_empty</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M.lub_fun {} x = M (&#955;_. NTERM)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>img_lub_def</span><span> </span><span>fun_lub_def</span><span> </span><span>flat_lub_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>REC_unfold</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>DEF</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8801; REC F&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>MONO</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. M.mono_body (&#955;fa. F fa x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f = F f&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>DEF</span><span> </span><span>M.mono_body_fixp</span><span> </span><span>MONO</span><span> </span><span>REC_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>REC_partial_rule</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>PQ</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;b &#8658; (&#39;c, &#39;d, &#39;b,&#39;f) mres &#8658; bool&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>F</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a &#8658; (&#39;c, &#39;d, &#39;b,&#39;f) M) &#8658; &#39;a &#8658; (&#39;c, &#39;d, &#39;b,&#39;f) M&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8801; REC F&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. M.mono_body (&#955;fa. F fa x)&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x s. PQ x s NTERM&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;f x s. &#10214;&#8896;x&#39; s&#39;. PQ x&#39; s&#39; (run (f x&#39;) s&#39;)&#10215; &#10233; PQ x s (run (F f x) s)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PQ x s (run (f x) s)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>ccpo.fixp_induct</span><span class="delimiter">[</span><span>OF</span><span> </span><span>M.ccpo</span><span> </span><span>M_admissible_aux</span><span> </span><span>M.monotoneI</span><span class="delimiter">,</span><span> </span><span>simplified</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>REC_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">declaration</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Partial_Function.init &quot;ners&quot; @{term M.fixp_fun}
+    @{term M.mono_body} @{thm M.fixp_rule_uc} @{thm M.fixp_induct_uc}
+    (NONE)&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Well-Founded Induction&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>REC_total_rule</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>PQ</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;b &#8658; (&#39;c, &#39;d, &#39;b,&#39;f) mres &#8658; bool&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>F</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a &#8658; (&#39;c, &#39;d, &#39;b,&#39;f) M) &#8658; &#39;a &#8658; (&#39;c, &#39;d, &#39;b,&#39;f) M&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>DEF</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8801; REC F&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>MONO</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. M.mono_body (&#955;fa. F fa x)&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>WF</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;wf R&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>STEP</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;f x s. &#10214;&#8896;x&#39; s&#39;. ((x&#39;,s&#39;),(x,s))&#8712;R &#10233; PQ x&#39; s&#39; (run (f x&#39;) s&#39;)&#10215; &#10233; PQ x s (run (F f x) s)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;PQ x s (run (f x) s)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>WF</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(x,s)&quot;</span></span></span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>x</span><span> </span><span>s</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>DEF</span><span> </span><span>M.mono_body_fixp</span><span> </span><span>MONO</span><span> </span><span>REC_def</span><span> </span><span>STEP</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Monotonicity Reasoner Setup&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>M_bind_mono</span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>mf</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_mono B&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>mg</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;y. M_mono (&#955;f. C y f)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_mono (&#955;f. bind (B f) (&#955;y. C y f))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>monotoneI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>monotoneD</span><span class="delimiter">[</span><span>OF</span><span> </span><span>mf</span><span class="delimiter">]</span><span> </span><span>monotoneD</span><span class="delimiter">[</span><span>OF</span><span> </span><span>mg</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>bind_def</span><span> </span><span>img_ord_def</span><span> </span><span>fun_ord_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>flat_ord_def</span><span> </span><span>run_def</span><span> </span><span>split</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>M.splits</span><span> </span><span>mres.splits</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>mres.inject</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>7</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>9</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>7</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>mres.inject</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>mres.inject</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>11</span><span class="delimiter">)</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>5</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>5</span><span class="delimiter">)</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>9</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>11</span><span class="delimiter">)</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>5</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>5</span><span class="delimiter">)</span><span> </span><span>mres.inject</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>M_handle_mono</span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>mf</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_mono B&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>mg</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;y. M_mono (&#955;f. C y f)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_mono (&#955;f. handle (B f) (&#955;y. C y f))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>monotoneI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>monotoneD</span><span class="delimiter">[</span><span>OF</span><span> </span><span>mf</span><span class="delimiter">]</span><span> </span><span>monotoneD</span><span class="delimiter">[</span><span>OF</span><span> </span><span>mg</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>handle_def</span><span> </span><span>img_ord_def</span><span> </span><span>fun_ord_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>flat_ord_def</span><span> </span><span>run_def</span><span> </span><span>split</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>M.splits</span><span> </span><span>mres.splits</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>mres.inject</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>7</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>9</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>7</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>mres.inject</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>11</span><span class="delimiter">)</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>5</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>5</span><span class="delimiter">)</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>9</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>11</span><span class="delimiter">)</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>5</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>5</span><span class="delimiter">)</span><span> </span><span>mres.inject</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>M.collapse</span><span> </span><span>M.sel</span><span> </span><span>mres.distinct</span><span class="delimiter">(</span><span>5</span><span class="delimiter">)</span><span> </span><span>mres.inject</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>run_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mblock_mono</span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_mono (&#955;fa. m fa)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_mono (&#955;fa. mblock begin end (m fa))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>monotoneI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>monotoneD</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mblock_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>flat_ord_def</span><span> </span><span>fun_ord_def</span><span> </span><span>img_ord_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span> </span><span>metis</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mfail_mono</span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_mono (&#955;fa. m fa)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_mono (&#955;fa. mfail f (m fa))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>monotoneI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>monotoneD</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mfail_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>flat_ord_def</span><span> </span><span>fun_ord_def</span><span> </span><span>img_ord_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span> </span><span>metis</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+    TODO: Make this proof generic, in partial_function_definitions or so.
+  *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>REC_mono_aux</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>MONO</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;D. monotone M.le_fun M.le_fun (B D)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;monotone M.le_fun (fun_ord M.le_fun) B&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;monotone M.le_fun M.le_fun (&#955;D. REC (B D))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>REC_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>monotoneI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>ccpo.fixp_lowerbound</span><span class="delimiter">[</span><span>OF</span><span> </span><span>M.ccpo</span><span> </span><span>MONO</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>ccpo.fixp_unfold</span><span class="delimiter">[</span><span>OF</span><span> </span><span>M.ccpo</span><span> </span><span>MONO</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>R</span><span class="delimiter">=</span><span>fun_ordD</span><span class="delimiter">[</span><span>of</span><span> </span><span>M.le_fun</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;B x&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;B y&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>R</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>monotoneD</span><span class="delimiter">[</span><span>OF</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>REC_mono</span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>MONO</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;D x. M.mono_body (&#955;E. B D E x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;E x. M_mono (&#955;D. B D E x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_mono (&#955;D. REC (B D) x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span>REC_mono_aux</span><span> </span><span>fun_ord_mono_alt</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>metis</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Reasoning Setup&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Simplifier Based&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>run_simps</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mwp m N F E S &#8801; case_mres N F E S m&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mwp_simps</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mwp NTERM N F E S = N&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mwp (FAIL msg) N F E S = F msg&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mwp (EXC e s) N F E S = E e s&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mwp (SUCC x s) N F E S = S x s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>mwp_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mwp_cong</span><span class="delimiter">[</span><span>cong</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;m=m&#39; &#10233; mwp m N F E S = mwp m&#39; N F E S&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mwp_eq_cases</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mwp m N F E S = r&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;m = NTERM &#10233; r = N &#10233; thesis&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;e. m = FAIL e &#10233; r = F e &#10233; thesis&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;e s. m = EXC e s &#10233; r = E e s &#10233; thesis&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;v s. m = SUCC v s &#10233; r = S v s &#10233; thesis&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span>thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mwp_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mwp_invert</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mwp (mwp m N F E S) N&#39; F&#39; E&#39; S&#39; =
+      (mwp m
+        (mwp N N&#39; F&#39; E&#39; S&#39;)
+        (&#955;x. mwp (F x) N&#39; F&#39; E&#39; S&#39;)
+        (&#955;e s. mwp (E e s) N&#39; F&#39; E&#39; S&#39;)
+        (&#955;x s. mwp (S x s) N&#39; F&#39; E&#39; S&#39;)
+      )&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>mwp_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mwp_eqI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;m=NTERM &#10233; N=N&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;f. m=FAIL f &#10233; F f = F&#39; f&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;e s. m=EXC e s &#10233; E e s = E&#39; e s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x s. m=SUCC x s &#10233; S x s = S&#39; x s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mwp m N F E S = mwp m N&#39; F&#39; E&#39; S&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>m</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mwp_cons</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mwp r N&#39; F&#39; E&#39; S&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;N&#39;&#10233;N&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;msg. F&#39; msg &#10233; F msg&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;e s. E&#39; e s &#10233; E e s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x s. S&#39; x s &#10233; S x s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mwp r N F E S&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>mwp_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.split</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mwp_map_mres_state</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mwp (map_mres_state f s) N F E S = mwp s N F (&#955;e s. E e (f s)) (&#955;r s. S r (f s))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>s</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mwp_triv</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mwp m top top top top&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mwp m True (&#955;_. True) (&#955;_ _. True) (&#955;_ _. True)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>m</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mwp_trivI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;N; &#8896;f. F f; &#8896;e s. E e s; &#8896;x s. S x s &#10215; &#10233; mwp m N F E S&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>m</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>    
+</span><span>    
+</span><span>    
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>flip_run_eq</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;SUCC r s&#39; = run c s &#10231; run c s = SUCC r s&#39;&quot;</span></span></span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;EXC e s&#39; = run c s &#10231; run c s = EXC e s&#39;&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>flip_mwp_eq</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;SUCC r s&#39; = mwp m N F E S &#10231; mwp m N F E S = SUCC r s&#39;&quot;</span></span></span><span> 
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;EXC e s&#39; = mwp m N F E S &#10231; mwp m N F E S = EXC e s&#39;&quot;</span></span></span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>basic_run_simps</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s. run (return x) s = SUCC x s&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s. run (fail msg) s = FAIL msg&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s. run (internal_nterm) s = NTERM&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s. run (raise e) s = EXC e s&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s. run (get) s = SUCC s s&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;s. run (set s&#39;) s = SUCC () s&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>return_def</span><span> </span><span>fail_def</span><span> </span><span>raise_def</span><span> </span><span>get_def</span><span> </span><span>set_def</span><span> </span><span>internal_nterm_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_Let</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (let x=v in f x) s = run (f v) s&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_bind</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (bind m f) s
+    = (mwp (run m s) NTERM (&#955;x. FAIL x) (&#955;e s. EXC e s) (&#955;x s. run (f x) s))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>bind_def</span><span> </span><span>mwp_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_handle</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (handle m h) s
+    = (mwp (run m s) NTERM (&#955;msg. FAIL msg) (&#955;e s. run (h e) s) (&#955;x s. SUCC x s))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>handle_def</span><span> </span><span>mwp_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_mblock</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (mblock b e m) s = map_mres_state e (run m (b s))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mblock_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_mfail</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (mfail f m) s = map_mres_fail f (run m s)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mfail_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_map_state</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (map_state f) s = SUCC () (f s)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>map_state_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lrmwpe_REC_partial</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8801; REC F&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (f x) s = r&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. M.mono_body (&#955;fa. F fa x)&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x s. P x s NTERM&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;f x s r. &#10214;&#8896;x&#39; s&#39; r&#39;. run (f x&#39;) s&#39; = r&#39; &#10233; P x&#39; s&#39; r&#39;; run (F f x) s = r &#10215; &#10233; P x s r&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P x s r&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>A</span><span> </span><span class="delimiter">=</span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>REC_partial_rule</span><span class="delimiter">[</span><span>OF</span><span> </span><span>A</span><span class="delimiter">(</span><span>1</span><span class="delimiter">,</span><span>3</span><span class="delimiter">)</span><span class="delimiter">,</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>PQ</span><span class="delimiter">=</span><span>P</span><span class="delimiter">,</span><span> </span><span>of</span><span> </span><span>x</span><span> </span><span>s</span><span class="delimiter">,</span><span> </span><span>unfolded</span><span> </span><span>A</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>fact</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>A</span><span class="delimiter">(</span><span>5</span><span class="delimiter">)</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lrmwpe_REC_total</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8801; REC F&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (f x) s = r&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. M.mono_body (&#955;fa. F fa x)&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;wf R&quot;</span></span></span><span>
+</span><span>        </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;f x s r. &#10214;&#8896;x&#39; s&#39; r&#39;. &#10214;run (f x&#39;) s&#39; = r&#39;; ((x&#39;,s&#39;), (x,s))&#8712;R&#10215; &#10233; P x&#39; s&#39; r&#39;; run (F f x) s = r &#10215; &#10233; P x s r&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P x s r&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>A</span><span> </span><span class="delimiter">=</span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>REC_total_rule</span><span class="delimiter">[</span><span>OF</span><span> </span><span>A</span><span class="delimiter">(</span><span>1</span><span class="delimiter">,</span><span>3</span><span class="delimiter">,</span><span>4</span><span class="delimiter">)</span><span class="delimiter">,</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>PQ</span><span class="delimiter">=</span><span>P</span><span class="delimiter">,</span><span> </span><span>of</span><span> </span><span>x</span><span> </span><span>s</span><span class="delimiter">,</span><span> </span><span>unfolded</span><span> </span><span>A</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>A</span><span class="delimiter">(</span><span>5</span><span class="delimiter">)</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mwp_inductI</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;r. run m s = r &#10233; mwp r N F E S&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mwp (run m s) N F E S&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Simulation&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sim m m&#39; &#8801; &#8704;s. mwp (run m s) top top (&#955;e s&#39;. run m&#39; s = EXC e s&#39;) (&#955;x s&#39;. run m&#39; s = SUCC x s&#39;)&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>sim_rules</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sim_refl</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">!</span><span class="delimiter">,</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sim m m&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sim_def</span><span> </span><span>mwp_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.split</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sim_fail</span><span class="delimiter">[</span><span>sim_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sim (fail msg) m&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sim_def</span><span> </span><span>fail_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sim_internal_nterm</span><span class="delimiter">[</span><span>sim_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sim (internal_nterm) m&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sim_def</span><span> </span><span>internal_nterm_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sim_return</span><span class="delimiter">[</span><span>sim_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x=x&#39; &#10233; sim (return x) (return x&#39;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sim_def</span><span> </span><span>run_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sim_get</span><span class="delimiter">[</span><span>sim_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sim get get&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sim_def</span><span> </span><span>run_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sim_set</span><span class="delimiter">[</span><span>sim_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;s=s&#39; &#10233; sim (set s) (set s&#39;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sim_def</span><span> </span><span>run_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sim_REC</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>DEF</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8801; REC F&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>DEF&#39;</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f&#39; &#8801; REC F&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>MONO</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. M.mono_body (&#955;f. F f x)&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. M.mono_body (&#955;f. F&#39; f x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>SIM</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;f f&#39; x. (&#8896;x. sim (f x) (f&#39; x)) &#10233; sim (F f x) (F&#39; f&#39; x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sim (f x) (f&#39; x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sim_def</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarify</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>mwp_inductI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>s</span><span> </span><span>r</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (f x) s = r&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mwp r top top (&#955;e s&#39;. run (f&#39; x) s = EXC e s&#39;) (&#955;xa s&#39;. run (f&#39; x) s = SUCC xa s&#39;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>lrmwpe_REC_partial</span><span class="delimiter">[</span><span>OF</span><span> </span><span>DEF</span><span> </span><span>_</span><span> </span><span>MONO</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">,</span><span> </span><span>consumes</span><span> </span><span>1</span><span class="delimiter">,</span><span> </span><span>case_names</span><span> </span><span>nterm</span><span> </span><span>step</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>nterm</span><span> </span><span>x</span><span> </span><span>s</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>      </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>step</span><span> </span><span>f</span><span> </span><span>x</span><span> </span><span>s</span><span> </span><span>r</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>REC_unfold</span><span class="delimiter">[</span><span>OF</span><span> </span><span>DEF&#39;</span><span> </span><span>MONO</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>REC_unfold</span><span class="delimiter">[</span><span>OF</span><span> </span><span>DEF&#39;</span><span> </span><span>MONO</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>SIM</span><span class="delimiter">[</span><span>of</span><span> </span><span>f</span><span> </span><span>f&#39;</span><span> </span><span>x</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sim_def</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sim_bind</span><span class="delimiter">[</span><span>sim_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sim m m&#39;&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. sim (f x) (f&#39; x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sim (bind m f) (bind m&#39; f&#39;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sim_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span> </span><span>mwp_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sim_handle</span><span class="delimiter">[</span><span>sim_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sim m m&#39;&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. sim (h x) (h&#39; x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sim (handle m h) (handle m&#39; h&#39;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sim_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span> </span><span>mwp_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sim_mblock</span><span class="delimiter">[</span><span>sim_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;sim m m&#39; &#10233; sim (mblock begin end m) (mblock begin end m&#39;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sim_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span> </span><span>mwp_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sim_mfail</span><span class="delimiter">[</span><span>sim_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;sim m m&#39; &#10233; sim (mfail fm m) (mfail fm m&#39;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sim_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span> </span><span>mwp_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Integration of Lenses&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Monadic mblock&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mmblock begin end m &#8801; doM {
+  s&#39; &#8592; begin;
+  s &#8592; get;
+  (x,s&#39;) &#8592; handle (
+    mblock (&#955;_. s&#39;) (&#955;_. s) (
+      handle
+        (doM { x&#8592;m; s&#39;&#8592;get; return (x,s&#39;) })
+        (&#955;e. doM { s&#39;&#8592;get; raise (e,s&#39;) })
+    )
+  ) (&#955;(e,s&#39;). doM { end s&#39;; raise e });
+
+  end s&#39;;
+  return x
+}&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_mmblock</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;run (mmblock begin end m) s = mwp (run begin s) NTERM FAIL EXC
+    (&#955;s&#39; s. mwp (run m s&#39;)
+      NTERM
+      FAIL
+      (&#955;e s&#39;. mwp (run (end s&#39;) s) NTERM FAIL EXC (&#955;_ s. EXC e s))
+      (&#955;x s&#39;. mwp (run (end s&#39;) s) NTERM FAIL EXC (&#955;_ s. SUCC x s))
+    )&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>mmblock_def</span><span> </span><span>run_simps</span><span> </span><span>mwp_def</span><span> </span><span>cong</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>mwp_cong</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.splits</span><span> </span><span>mres.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mmblock_mono</span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;monotone M.le_fun M_ord m &#10233; monotone M.le_fun M_ord (&#955;f. mmblock begin end (m f))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mmblock_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>pf_mono_prover</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Lifting from Sum-Type&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lift_sum m &#8801; case m of Inl f &#8658; fail f | Inr x &#8658; return x&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lift_sum_simps</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;lift_sum (Inl f) = fail f&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;lift_sum (Inr x) = return x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lift_sum_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_lift_sum</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;run (lift_sum m) s = (case m of Inl f &#8658; FAIL f | Inr x &#8658; SUCC x s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lift_sum_def</span><span> </span><span>run_simps</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>sum.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Lifting Lenses&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mget L s &#8801; lift_sum (eget L s)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mput L x s &#8801; lift_sum (eput L x s)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;use L &#8801; doM { s&#8592;get; mget L s }&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>assign</span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infix</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;::=&quot;</span></span></span><span> </span><span>51</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;assign L x &#8801; doM { s&#8592;get; s&#8592;mput L x s; set s }&quot;</span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+definition &quot;eget_cases L a f1 f2 &#8801; case eget L a of Inr b &#8658; f1 b | Inl e &#8658; f2 e&quot;
+
+lemma eget_cases_split:
+  &quot;P (eget_cases L a f1 f2) &#10231; (epre_get L a &#10230; P (f1 (eget&#39; L a))) &#8743; (&#8704;e. eget L a = Inl e &#10230; P (f2 e))&quot;
+  unfolding eget_cases_def by (auto split: sum.split)
+
+lemma eget_cases_split_asm:
+  &quot;P (eget_cases L a f1 f2) &#10231; &#172; ((epre_get L a &#8743; &#172;P (f1 (eget&#39; L a))) &#8744; (&#8707;e. eget L a = Inl e &#8743; &#172; P (f2 e)))&quot;
+  apply (subst eget_cases_split[of P]) by blast
+
+definition &quot;eput_cases L b a f1 f2 &#8801; case eput L b a of Inr a &#8658; f1 a | Inl e &#8658; f2 e&quot;
+
+lemma eput_cases_split:
+  &quot;P (eput_cases L b a f1 f2) &#10231; (epre_put_single_point L b a &#10230; P (f1 (eput&#39; L b a))) &#8743; (&#8704;e. eput L b a = Inl e &#10230; P (f2 e))&quot;
+  unfolding eput_cases_def
+  by (auto split: sum.split simp: eput_Inr_conv_sp)
+
+lemma eput_cases_split_asm:
+  &quot;P (eput_cases L b a f1 f2) &#10231; &#172;((epre_put_single_point L b a &#8743; &#172; P (f1 (eput&#39; L b a))) &#8744; (&#8707;e. eput L b a = Inl e &#8743; &#172; P (f2 e)))&quot;
+  apply (subst eput_cases_split[of P]) by blast
+
+lemmas epg_splits = eget_cases_split eget_cases_split_asm eput_cases_split eput_cases_split_asm
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="delimiter">(</span><span>input</span><span class="delimiter">)</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;eget_cases L s f1 f2 &#8801; case epre_get L s of None &#8658; f1 (eget&#39; L s) | Some e &#8658; f2 e&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="delimiter">(</span><span>input</span><span class="delimiter">)</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;eput_cases L x s f1 f2 &#8801; case epre_put L x s of None &#8658; f1 (eput&#39; L x s) | Some e &#8658; f2 e&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_mget</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;run (mget L s) xx = (eget_cases L s (&#955;x. SUCC x xx) (FAIL))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>mget_def</span><span> </span><span>run_simps</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>sum.splits</span><span> </span><span>option.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_mput</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;elens L &#10233; run (mput L x s) xx = (eput_cases L x s (&#955;x. SUCC x xx) FAIL)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>mput_def</span><span> </span><span>run_simps</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>sum.splits</span><span> </span><span>option.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_use</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;elens L &#10233; run (use L) s = (eget_cases L s (&#955;x. SUCC x s) FAIL)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>use_def</span><span> </span><span>run_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_assign</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;elens L &#10233; run (assign L x) s = eput_cases L x s (SUCC ()) FAIL&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>assign_def</span><span> </span><span>run_simps</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;zoom L m &#8801; mmblock (use L) (assign L) m&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_zoom</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;elens L&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;run (zoom L m) s = (
+    eget_cases L s
+      (&#955;ss. mwp (run m ss) NTERM FAIL (&#955;e ss. EXC e (eput&#39; L ss s)) (&#955;x ss. SUCC x (eput&#39; L ss s)))
+      FAIL
+    )&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>zoom_def</span><span> </span><span>run_simps</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>zoom_mono</span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;monotone M.le_fun M_ord m &#10233; monotone M.le_fun M_ord (&#955;f. zoom L (m f))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>zoom_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>pf_mono_prover</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>zoom_get_is_use</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;elens L &#10233; zoom L get = use L&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.split</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>zoom_set_is_assign</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ehlens L &#10233; zoom L (set x) = (L ::= x)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.split</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>zoom_comp_eq</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;elens L<span class="hidden">&#8681;</span><sub>1</sub>; elens L<span class="hidden">&#8681;</span><sub>2</sub>&#10215; &#10233; zoom (L<span class="hidden">&#8681;</span><sub>1</sub> &#8729; L<span class="hidden">&#8681;</span><sub>2</sub>) f = zoom L<span class="hidden">&#8681;</span><sub>1</sub> (zoom L<span class="hidden">&#8681;</span><sub>2</sub> f)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>rule</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.split</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Move 
+   TODO/FIXME: Simplifier should derive this on its own! *)</span></span></span></span></span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>eget_put_pre</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;elens L &#10233; epre_put L x s = None &#10233; epre_get L (eput&#39; L x s) = None&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>mono_tags</span><span class="delimiter">,</span><span> </span><span>lifting</span><span class="delimiter">)</span><span> </span><span>LENS_downstage</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>epre_get_def</span><span> </span><span>lens.simp_rls</span><span class="delimiter">(</span><span>4</span><span class="delimiter">)</span><span> </span><span>lower_epre_put&#39;</span><span> </span><span>lower_get_def</span><span> </span><span>lower_invert</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span>lower_lens_def</span><span> </span><span>not_None_eq</span><span> </span><span>pre_eq_conv</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>zoom_return</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;elens L&#10215; &#10233; zoom L (return x) = use L&#10914;return x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>M_eqI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span> </span><span>eget_put_pre</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.split</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>zoom_bind</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;elens L &#10233; zoom L (m&#10524;f) = zoom L m &#10524; zoom L o f&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>M_eqI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span> </span><span>eget_put_pre</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.split</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  
+</span><span>  
+</span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ap_state f &#8801; doM {s&#8592;get; set (f s)}&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>ap_lens</span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infix</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;%=&quot;</span></span></span><span> </span><span>51</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ap_lens L f &#8801; zoom L (ap_state f)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_ap_state</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (ap_state f) s = SUCC () (f s)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ap_state_def</span><span> </span><span>run_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_ap_lens</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;elens L
+  &#10233; run (L%=f) s = (eget_cases L s (&#955;ss. SUCC () (eput&#39; L (f ss) s)) FAIL)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ap_lens_def</span><span> </span><span>run_simps</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;map_lens L f s &#8801; doM {
+  x &#8592; mget L s;
+  x &#8592; f x;
+  mput L x s
+}&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>run_simps</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_map_lens</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;elens L &#10233; run (map_lens L f a) s = (
+    eget_cases L a (&#955;b.
+      mwp (run (f b) s) NTERM FAIL EXC (&#955;b s. SUCC (eput&#39; L b a) s))
+    ) FAIL&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>map_lens_def</span><span> </span><span>run_simps</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* For presentation in paper *)</span></span></span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;noexc m &#8801; &#8704;s. run m s &#8800; NTERM &#8743; &#172;is_EXC (run m s)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;elens L &#10233; use L = zoom L get&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ehlens L &#10233; (L ::= x) = (zoom L (set x))&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>  
+</span><span>  
+</span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Derived Constructs&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;While&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mwhile b f &#8801; REC (&#955;mwhile &#963;. doM { ctd &#8592; b &#963;; if ctd then doM {&#963;&#8592;f &#963;; mwhile &#963; } else return &#963; })&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mwhile&#39; b f &#8801; mwhile (&#955;_::unit. b) (&#955;_. f) ()&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sim_mwhile</span><span class="delimiter">[</span><span>sim_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;&#8896;&#963;. sim (b &#963;) (b&#39; &#963;); &#8896;&#963;. sim (f &#963;) (f&#39; &#963;)&#10215; &#10233; sim (mwhile b f &#963;) (mwhile b&#39; f&#39; &#963;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>sim_rules</span><span> </span><span>sim_REC</span><span class="delimiter">[</span><span>OF</span><span> </span><span>mwhile_def</span><span> </span><span>mwhile_def</span><span class="delimiter">,</span><span> </span><span>discharge_monos</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mwhile_mono</span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. M_mono (&#955;f. b f x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. M_mono (&#955;f. c f x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_mono (&#955;D. mwhile (b D) (c D) &#963;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>assms</span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mwhile_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>pf_mono_prover</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mwhile_invar_rule</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>LR</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (mwhile b f &#963;) s = r&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>NTERM</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P NTERM&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>INIT</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;I &#963; s&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>STEP</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;&#963; s. &#10214;I &#963; s&#10215;
+      &#10233; mwp (run (b &#963;) s)
+              True
+              (&#955;msg. P (FAIL msg))
+              (&#955;e s. P (EXC e s) )
+              (&#955;ctd s. if ctd then (
+                  mwp (run (f &#963;) s) True (&#955;msg. P (FAIL msg)) (&#955;e s. P (EXC e s)) I)
+                else P (SUCC &#963; s) ) &quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P r&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>LR</span><span> </span><span>INIT</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>lrmwpe_REC_partial</span><span class="delimiter">[</span><span>OF</span><span> </span><span>mwhile_def</span><span class="delimiter">,</span><span> </span><span>discharge_monos</span><span class="delimiter">,</span><span> </span><span>consumes</span><span> </span><span>1</span><span class="delimiter">,</span><span> </span><span>case_names</span><span> </span><span>nterm</span><span> </span><span>step</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>nterm</span><span> </span><span>x</span><span> </span><span>s</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>NTERM</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>      </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>step</span><span> </span><span>while</span><span> </span><span>x</span><span> </span><span>s</span><span> </span><span>r</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>STEP</span><span class="delimiter">[</span><span>OF</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;I x s&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span> </span><span>mwp_def</span><span> </span><span>NTERM</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.splits</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>mwhile_unfold</span><span class="delimiter">[</span><span>code</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>REC_unfold</span><span class="delimiter">[</span><span>OF</span><span> </span><span>mwhile_def</span><span class="delimiter">,</span><span> </span><span>discharge_monos</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Check&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fcheck e &#966; &#8801; if &#966; then return () else fail e&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fcheck_laws</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;fcheck e True = return ()&quot;</span></span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;fcheck e False = fail e&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fcheck_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_fcheck</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (fcheck f &#934;) s = (if &#934; then SUCC () s else FAIL f)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fcheck_def</span><span> </span><span>run_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Fold&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>mfold</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;mfold f [] s = return s&quot;</span></span></span><span>
+</span><span>  </span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mfold f (x#xs) s = doM {
+      s &#8592; f x s;
+      mfold f xs s
+  }&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mfold&#39; f xs &#8801; mfold (&#955;x _. f x) xs ()&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mfold_sim</span><span class="delimiter">[</span><span>sim_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>sim_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x s. sim (f x s) (f&#39; x s)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sim (mfold f xs s) (mfold f&#39; xs s)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>xs</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>s</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>sim_rules</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mfold_mono</span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;a &#963;. M_mono (&#955;fa. f fa a &#963;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_mono (&#955;D. mfold (f D) l &#963;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>l</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>&#963;</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>Nil</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span> </span><span>pf_mono_prover</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="delimiter">(</span><span>Cons</span><span> </span><span>a</span><span> </span><span>l</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span> </span><span>pf_mono_prover</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Map&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>mmap</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;mmap _ [] = return []&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mmap f (x#xs) = doM { x&#8592;f x; xs&#8592;mmap f xs; return (x#xs) }&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mmap_sim</span><span class="delimiter">[</span><span>sim_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. x&#8712;list.set xs &#10233; sim (f x) (f&#39; x)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sim (mmap f xs) (mmap f&#39; xs)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>xs</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>sim_rules</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mmap_mono</span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;a. M_mono (&#955;fa. f fa a)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M_mono (&#955;D. mmap (f D) xs)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>xs</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>Nil</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span> </span><span>pf_mono_prover</span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">[</span><span>partial_function_mono</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="delimiter">(</span><span>Cons</span><span> </span><span>a</span><span> </span><span>xs</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span> </span><span>pf_mono_prover</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_mmap_unit_state_idxD</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (mmap f xs) () = SUCC ys ()&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i&lt;length xs&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (f (xs!i)) () = SUCC (ys!i) ()&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>xs</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>i</span><span> </span><span>ys</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span> </span><span>nth_Cons</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>nat.splits</span><span> </span><span>elim</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>mwp_eq_cases</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_mmap_length_eq</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (mmap f xs) s = SUCC ys s&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;length ys = length xs&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>xs</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>ys</span><span> </span><span>s</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span> </span><span>elim</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>mwp_eq_cases</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_mmap_unit_state_elemD</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;run (mmap f xs) () = SUCC ys ()&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x&#8712;List.set xs&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;y&#8712;List.set ys. run (f x) () = SUCC y ()&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>in_set_conv_nth</span><span> </span><span>Bex_def</span><span> </span><span>run_mmap_unit_state_idxD</span><span> </span><span>run_mmap_length_eq</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_mmap_append</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;run (mmap f (xs@ys)) s = mwp (run (mmap f xs) s) NTERM FAIL EXC (&#955;rxs s.
+  mwp (run (mmap f ys) s) NTERM FAIL EXC (&#955;rys s. SUCC (rxs@rys) s))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>xs</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>s</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>run_simps</span><span> </span><span>mwp_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>mres.splits</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: What are good rules for mmap ? *)</span></span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Lookup&#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lookup f m s &#8801; case m s of None &#8658; fail f | Some x &#8658; return x&quot;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>run_lookup</span><span class="delimiter">[</span><span>run_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;run (lookup f m k) s = (case m k of None &#8658; FAIL f | Some v &#8658; SUCC v s)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lookup_def</span><span> </span><span>run_simps</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lookup_sim</span><span class="delimiter">[</span><span>sim_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#960; &#8838;<span class="hidden">&#8681;</span><sub>m</sub> &#960;&#39;&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sim (lookup f &#960; x2) (lookup f&#39; &#960;&#39; x2)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>map_leD</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sim_def</span><span> </span><span>run_simps</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.split</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Hiding too generic Names&#8250;</span></span></span><span>    
+</span><span>    
+</span><span class="keyword1"><span class="command">hide_const</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">open</span></span><span class="delimiter">)</span><span> </span><span>get</span><span> </span><span>set</span><span> </span><span>M.M</span><span>
+</span><span>    
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

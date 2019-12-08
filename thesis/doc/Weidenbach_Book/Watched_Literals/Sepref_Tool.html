@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Sepref_Tool (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Sepref_Tool</h1>
+
+<span class="command">theory</span> <span class="name">Sepref_Tool</span><br/>
+<span class="keyword">imports</span> <a href="Sepref_Definition.html"><span class="name">Sepref_Definition</span></a> <a href="Sepref_Intf_Util.html"><span class="name">Sepref_Intf_Util</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref Tool&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Sepref_Tool</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Sepref_Translate</span><span> </span><span>Sepref_Definition</span><span> </span><span>Sepref_Combinator_Setup</span><span> </span><span>Sepref_Intf_Util</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;In this theory, we set up the sepref tool.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref Method&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>CONS_init</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine &#915; c &#915;&#39; R a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#915;&#39; &#8866; &#915;c&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;a c. hn_ctxt R a c &#8866; hn_ctxt Rc a c&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;hn_refine &#915; c &#915;c&#39; Rc a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>hn_refine_cons</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>entails_refl</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>assms</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>hn_ctxt_def</span><span class="delimiter">]</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ID_init</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;ID a a&#39; TYPE(&#39;T); hn_refine &#915; c &#915;&#39; R a&#39;&#10215; 
+  &#10233; hn_refine &#915; c &#915;&#39; R a&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>TRANS_init</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214; hn_refine &#915; c &#915;&#39; R a; CNV c c&#39; &#10215; 
+  &#10233; hn_refine &#915; c&#39; &#915;&#39; R a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>infer_post_triv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P &#8866; P&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>entails_refl</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  structure Sepref = struct
+    structure sepref_preproc_simps = Named_Thms (
+      val name = @{binding sepref_preproc}
+      val description = &quot;Sepref: Preprocessor simplifications&quot;
+    )
+
+    structure sepref_opt_simps = Named_Thms (
+      val name = @{binding sepref_opt_simps}
+      val description = &quot;Sepref: Post-Translation optimizations, phase 1&quot;
+    )
+
+    structure sepref_opt_simps2 = Named_Thms (
+      val name = @{binding sepref_opt_simps2}
+      val description = &quot;Sepref: Post-Translation optimizations, phase 2&quot;
+    )
+
+    fun cons_init_tac ctxt = Sepref_Frame.weaken_post_tac ctxt THEN&#39; resolve_tac ctxt @{thms CONS_init}
+    fun cons_solve_tac dbg ctxt = let
+      val dbgSOLVED&#39; = if dbg then I else SOLVED&#39;
+    in
+      dbgSOLVED&#39; (
+        resolve_tac ctxt @{thms infer_post_triv}
+        ORELSE&#39; Sepref_Translate.side_frame_tac ctxt
+      )
+    end
+
+    fun preproc_tac ctxt = let
+      val ctxt = put_simpset HOL_basic_ss ctxt
+      val ctxt = ctxt addsimps (sepref_preproc_simps.get ctxt)  
+    in
+      Sepref_Rules.prepare_hfref_synth_tac ctxt THEN&#39;
+      Simplifier.simp_tac ctxt
+    end
+
+    fun id_tac determ ctxt = 
+      resolve_tac ctxt @{thms ID_init} 
+      THEN&#39; CONVERSION Thm.eta_conversion
+      THEN&#39; (if determ then DETERM else I) o Id_Op.id_tac Id_Op.Normal ctxt
+
+    fun id_init_tac ctxt = 
+      resolve_tac ctxt @{thms ID_init} 
+      THEN&#39; CONVERSION Thm.eta_conversion
+      THEN&#39; Id_Op.id_tac Id_Op.Init ctxt
+
+    fun id_step_tac ctxt = 
+      Id_Op.id_tac Id_Op.Step ctxt
+
+    fun id_solve_tac ctxt = 
+      Id_Op.id_tac Id_Op.Solve ctxt
+
+    (*fun id_param_tac ctxt = CONVERSION (Refine_Util.HOL_concl_conv 
+      (K (Sepref_Param.id_param_conv ctxt)) ctxt)*)
+
+    fun monadify_tac ctxt = Sepref_Monadify.monadify_tac ctxt
+
+    (*fun lin_ana_tac ctxt = Sepref_Lin_Ana.lin_ana_tac ctxt*)
+
+    fun trans_tac ctxt = Sepref_Translate.trans_tac ctxt
+
+    fun opt_tac ctxt = let 
+      val opt1_ss = put_simpset HOL_basic_ss ctxt
+        addsimps sepref_opt_simps.get ctxt
+        addsimprocs [@{simproc &quot;HOL.let_simp&quot;}]
+      |&gt; Simplifier.add_cong @{thm SP_cong}
+      |&gt; Simplifier.add_cong @{thm PR_CONST_cong}
+
+      val unsp_ss = put_simpset HOL_basic_ss ctxt addsimps @{thms SP_def}
+
+      val opt2_ss = put_simpset HOL_basic_ss ctxt
+        addsimps sepref_opt_simps2.get ctxt
+        addsimprocs [@{simproc &quot;HOL.let_simp&quot;}]
+
+    in 
+      simp_tac opt1_ss THEN&#39; simp_tac unsp_ss THEN&#39;
+      simp_tac opt2_ss THEN&#39; simp_tac unsp_ss THEN&#39;
+      CONVERSION Thm.eta_conversion THEN&#39;
+      resolve_tac ctxt @{thms CNV_I}
+    end
+
+    fun sepref_tac dbg ctxt = 
+      (K Sepref_Constraints.ensure_slot_tac) 
+      THEN&#39;
+      Sepref_Basic.PHASES&#39;
+        [ 
+          (&quot;preproc&quot;,preproc_tac,0),
+          (&quot;cons_init&quot;,cons_init_tac,2),
+          (&quot;id&quot;,id_tac true,0),
+          (&quot;monadify&quot;,monadify_tac false,0),
+          (&quot;opt_init&quot;,fn ctxt =&gt; resolve_tac ctxt @{thms TRANS_init},1),
+          (&quot;trans&quot;,trans_tac,~1),
+          (&quot;opt&quot;,opt_tac,~1),
+          (&quot;cons_solve1&quot;,cons_solve_tac false,~1),
+          (&quot;cons_solve2&quot;,cons_solve_tac false,~1),
+          (&quot;constraints&quot;,fn ctxt =&gt; K (Sepref_Constraints.solve_constraint_slot ctxt THEN Sepref_Constraints.remove_slot_tac),~1)
+        ] (Sepref_Basic.flag_phases_ctrl ctxt dbg) ctxt
+    
+    val setup = I
+      #&gt; sepref_preproc_simps.setup 
+      #&gt; sepref_opt_simps.setup 
+      #&gt; sepref_opt_simps2.setup
+  end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">setup</span></span><span> </span><span>Sepref.setup</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt;
+  SIMPLE_METHOD (DETERM (SOLVED&#39; (IF_EXGOAL (
+      Sepref.sepref_tac false ctxt  
+    )) 1)))&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Automatic refinement to Imperative/HOL&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_keep</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; let
+    (*val ctxt = Config.put Id_Op.cfg_id_debug true ctxt*)
+  in
+    SIMPLE_METHOD (IF_EXGOAL (Sepref.sepref_tac true ctxt) 1)
+  end)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Automatic refinement to Imperative/HOL, debug mode&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Default Optimizer Setup&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_opt_simps</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>Monad.bind_laws</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We allow the synthesized function to contain tagged function applications.
+  This is important to avoid higher-order unification problems when synthesizing
+  generic algorithms, for example the to-list algorithm for foreach-loops.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_opt_simps</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>Autoref_Tagging.APP_def</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="verbatim"><span class="delete"><span class="delete"><span class="delete"><span class="delete">{* Revert case-pulling done by monadify *}</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>case_prod_return_opt</span><span class="delimiter">[</span><span>sepref_opt_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;case_prod (&#955;a b. return (f a b)) p = return (case_prod f p)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>prod.split</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>case_option_return_opt</span><span class="delimiter">[</span><span>sepref_opt_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;case_option (return fn) (&#955;s. return (fs s)) v = return (case_option fn fs v)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.split</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>case_list_return</span><span class="delimiter">[</span><span>sepref_opt_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;case_list (return fn) (&#955;x xs. return (fc x xs)) l = return (case_list fn fc l)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.split</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>if_return</span><span class="delimiter">[</span><span>sepref_opt_simps</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;If b (return t) (return e) = return (If b t e)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="verbatim"><span class="delete"><span class="delete"><span class="delete"><span class="delete">{* In some cases, pushing in the returns is more convenient *}</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>case_prod_opt2</span><span class="delimiter">[</span><span>sepref_opt_simps2</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(&#955;x. return (case x of (a,b) &#8658; f a b)) 
+  = (&#955;(a,b). return (f a b))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Debugging Methods&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_preproc</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (fn ctxt =&gt; K (Sepref_Constraints.ensure_slot_tac) THEN&#39; Sepref.preproc_tac ctxt)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Preprocessing phase&#8250;</span></span></span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*method_setup sepref_dbg_id_param = &#8249;SIMPLE_METHOD_NOPARAM&#39; Sepref.id_param_tac&#8250;
+  &#8249;Sepref debug: Identify parameters phase&#8250;*)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_cons_init</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; Sepref.cons_init_tac&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Initialize consequence reasoning&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_id</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref.id_tac true)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Identify operations phase&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_id_keep</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Config.put Id_Op.cfg_id_debug true #&gt; Sepref.id_tac false)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Identify operations phase. Debug mode, keep intermediate subgoals on failure.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_monadify</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref.monadify_tac false)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Monadify phase&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_monadify_keep</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref.monadify_tac true)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Monadify phase&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_monadify_arity</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref_Monadify.arity_tac)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Monadify phase: Arity phase&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_monadify_comb</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref_Monadify.comb_tac)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Monadify phase: Comb phase&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_monadify_check_EVAL</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (K (CONCL_COND&#39; (not o Sepref_Monadify.contains_eval)))&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Monadify phase: check_EVAL phase&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_monadify_mark_params</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref_Monadify.mark_params_tac)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Monadify phase: mark_params phase&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_monadify_dup</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref_Monadify.dup_tac)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Monadify phase: dup phase&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_monadify_remove_pass</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref_Monadify.remove_pass_tac)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Monadify phase: remove_pass phase&#8250;</span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*method_setup sepref_dbg_lin_ana = &#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref.lin_ana_tac true)&#8250;
+  &#8249;Sepref debug: Linearity analysis phase&#8250;*)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_opt_init</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (fn ctxt =&gt; resolve_tac ctxt @{thms TRANS_init})&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Translation phase initialization&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_trans</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; Sepref.trans_tac&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Translation phase&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_opt</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (fn ctxt =&gt; 
+  Sepref.opt_tac ctxt
+  THEN&#39; CONVERSION Thm.eta_conversion
+  THEN&#39; TRY o resolve_tac ctxt @{thms CNV_I}
+)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Optimization phase&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_cons_solve</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref.cons_solve_tac false)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Solve post-consequences&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_cons_solve_keep</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref.cons_solve_tac true)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Solve post-consequences, keep intermediate results&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_constraints</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (fn ctxt =&gt; IF_EXGOAL (K (
+    Sepref_Constraints.solve_constraint_slot ctxt
+    THEN Sepref_Constraints.remove_slot_tac
+  )))&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Solve accumulated constraints&#8250;</span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+  apply sepref_dbg_preproc
+  apply sepref_dbg_cons_init
+  apply sepref_dbg_id
+  apply sepref_dbg_monadify
+  apply sepref_dbg_opt_init
+  apply sepref_dbg_trans
+  apply sepref_dbg_opt
+  apply sepref_dbg_cons_solve
+  apply sepref_dbg_cons_solve
+  apply sepref_dbg_constraints
+
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_id_init</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; Sepref.id_init_tac&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Initialize operation identification phase&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_id_step</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; Sepref.id_step_tac&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Single step operation identification phase&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_id_solve</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; Sepref.id_solve_tac&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Complete current operation identification goal&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_trans_keep</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; Sepref_Translate.trans_keep_tac&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Translation phase, stop at failed subgoal&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_trans_step</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; Sepref_Translate.trans_step_tac&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Translation step&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_trans_step_keep</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; Sepref_Translate.trans_step_keep_tac&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Translation step, keep unsolved subgoals&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_side</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (fn ctxt =&gt; REPEAT_ALL_NEW_FWD (Sepref_Translate.side_cond_dispatch_tac false (K no_tac) ctxt))&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_side_unfold</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref_Translate.side_unfold_tac)&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_side_keep</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (fn ctxt =&gt; REPEAT_ALL_NEW_FWD (Sepref_Translate.side_cond_dispatch_tac true (K no_tac) ctxt))&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_side_bounds</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref_Translate.bounds_tac)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_prepare_frame</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; Sepref_Frame.prepare_frame_tac&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Prepare frame inference&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_frame</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref_Frame.frame_tac (Sepref_Translate.side_fallback_tac))&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Frame inference&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_merge</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref_Frame.merge_tac (Sepref_Translate.side_fallback_tac))&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Frame inference, merge&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_frame_step</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref_Frame.frame_step_tac (Sepref_Translate.side_fallback_tac) false)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Frame inference, single-step&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_dbg_frame_step_keep</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (Sepref_Frame.frame_step_tac (Sepref_Translate.side_fallback_tac) true)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref debug: Frame inference, single-step, keep partially solved side conditions&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Utilities&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Manual hfref-proofs&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_to_hnr</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;SIMPLE_METHOD_NOPARAM&#39; (fn ctxt =&gt; 
+  Sepref.preproc_tac ctxt THEN&#39; Sepref_Frame.weaken_post_tac ctxt)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref: Convert to hnr-goal and weaken postcondition&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>sepref_to_hoare</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  let
+    fun sepref_to_hoare_tac ctxt = let
+      val ss = put_simpset HOL_basic_ss ctxt
+        addsimps @{thms hn_ctxt_def pure_def}
+
+    in
+      Sepref.preproc_tac ctxt 
+      THEN&#39; Sepref_Frame.weaken_post_tac ctxt 
+      THEN&#39; resolve_tac ctxt @{thms hn_refineI}
+      THEN&#39; asm_full_simp_tac ss
+    end  
+  in
+    SIMPLE_METHOD_NOPARAM&#39; sepref_to_hoare_tac
+  end
+&#8250;</span></span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref: Convert to hoare-triple&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Copying of Parameters&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fold_COPY</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x = COPY x&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>COPY</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Copy is treated as normal operator, and one can just declare rules for it! &#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hnr_pure_COPY</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;CONSTRAINT is_pure R &#10233; (return, RETURN o COPY) &#8712; R<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> R&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>hfrefI</span><span> </span><span>hn_refineI</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_pure_conv</span><span> </span><span>pure_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>  
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hn_id</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#955;x. return x,RETURN o id) &#8712; A<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> A&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Destructors&#8250;</span></span></span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>hn_MK_FREEI</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(free,RETURN o freea) &#8712; A<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> unit_assn&quot;</span></span></span><span>  
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;MK_FREE A free&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>  
+</span><span>  </span><span class="keyword1"><span class="command">note</span></span><span> </span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>assms</span><span class="delimiter">[</span><span>to_hnr</span><span class="delimiter">,</span><span> </span><span>THEN</span><span> </span><span>hn_refineD</span><span class="delimiter">,</span><span> </span><span>unfolded</span><span> </span><span>hn_ctxt_def</span><span> </span><span>invalid_assn_def</span><span> </span><span>pure_def</span><span class="delimiter">,</span><span> </span><span>simplified</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>rule</span><span> </span><span>vcg</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>  
+</span><span>  
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>MK_FREE_hrcompI</span><span class="delimiter">[</span><span>sepref_frame_free_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;MK_FREE A f&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;MK_FREE (hr_comp A R) f&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">note</span></span><span> </span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>assms</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>MK_FREED</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>rule</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>hr_comp_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>vcg</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>MK_FREE_hrrcompI</span><span class="delimiter">[</span><span>sepref_frame_free_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. MK_FREE (A x) f&quot;</span></span></span><span> 
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;MK_FREE (hrr_comp S A R x) f&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">note</span></span><span> </span><span class="delimiter">[</span><span>vcg_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>assms</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>MK_FREED</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>rule</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>hrr_comp_def</span><span> </span><span>hr_comp_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span class="delimiter">;</span><span> </span><span>safe</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>vcg</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Short-Circuit Boolean Evaluation&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Convert boolean operators to short-circuiting. 
+  When applied before monadify, this will generate a short-circuit execution.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>short_circuit_conv</span><span class="delimiter">:</span><span>  
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(a &#8743; b) &#10231; (if a then b else False)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(a &#8744; b) &#10231; (if a then True else b)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(a&#10230;b) &#10231; (if a then b else True)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Eliminating higher-order&#8250;</span></span></span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Add similar rules for other cases! *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ho_prod_move</span><span class="delimiter">[</span><span>sepref_preproc</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;case_prod (&#955;a b x. f x a b) = (&#955;p x. case_prod (f x) p)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>o_apply</span><span class="delimiter">[</span><span>sepref_preproc</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

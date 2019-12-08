@@ -1,0 +1,464 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IsaSAT_Restart (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IsaSAT_Restart</h1>
+
+<span class="command">theory</span> <span class="name">IsaSAT_Restart</span><br/>
+<span class="keyword">imports</span> <a href="IsaSAT_Restart_Heuristics.html"><span class="name">IsaSAT_Restart_Heuristics</span></a> <a href="IsaSAT_CDCL.html"><span class="name">IsaSAT_CDCL</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IsaSAT_Restart</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>IsaSAT_Restart_Heuristics</span><span> </span><span>IsaSAT_CDCL</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>cdcl_twl_stgy_restart_abs_wl_heur_inv</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_stgy_restart_abs_wl_heur_inv S<span class="hidden">&#8681;</span><sub>0</sub> brk T n &#10231;
+    (&#8707;S<span class="hidden">&#8681;</span><sub>0</sub>&#39; T&#39;. (S<span class="hidden">&#8681;</span><sub>0</sub>, S<span class="hidden">&#8681;</span><sub>0</sub>&#39;) &#8712; twl_st_heur &#8743; (T, T&#39;) &#8712; twl_st_heur &#8743;
+      cdcl_twl_stgy_restart_abs_wl_D_inv S<span class="hidden">&#8681;</span><sub>0</sub>&#39; brk T&#39; n)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_wl_heur</span><span>
+</span><span>   </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;twl_st_wl_heur &#8658; twl_st_wl_heur nres&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_stgy_restart_prog_wl_heur S<span class="hidden">&#8681;</span><sub>0</sub> = do {
+    (brk, T, _) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup>&#955;(brk, T, n). cdcl_twl_stgy_restart_abs_wl_heur_inv S<span class="hidden">&#8681;</span><sub>0</sub> brk T n<span class="hidden">&#8662;</span></sup>
+      (&#955;(brk, _). &#172;brk)
+      (&#955;(brk, S, n).
+      do {
+        T &#8592; unit_propagation_outer_loop_wl_D_heur S;
+        (brk, T) &#8592; cdcl_twl_o_prog_wl_D_heur T;
+        (T, n) &#8592; restart_prog_wl_D_heur T n brk;
+        RETURN (brk, T, n)
+      })
+      (False, S<span class="hidden">&#8681;</span><sub>0</sub>::twl_st_wl_heur, 0);
+    RETURN T
+  }&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_wl_heur_cdcl_twl_stgy_restart_prog_wl_D</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(cdcl_twl_stgy_restart_prog_wl_heur, cdcl_twl_stgy_restart_prog_wl_D) &#8712;
+    twl_st_heur &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;twl_st_heur&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_wl_heur_def</span><span> </span><span>cdcl_twl_stgy_restart_prog_wl_D_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_rcg</span><span>
+</span><span>        </span><span>restart_prog_wl_D_heur_restart_prog_wl_D2</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down_curry2</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>cdcl_twl_o_prog_wl_D_heur_cdcl_twl_o_prog_wl_D2</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>cdcl_twl_stgy_prog_wl_D_heur_cdcl_twl_stgy_prog_wl_D</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>unit_propagation_outer_loop_wl_D_heur_unit_propagation_outer_loop_wl_D</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>WHILEIT_refine</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>R</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bool_rel &#215;<span class="hidden">&#8681;</span><sub>r</sub> twl_st_heur &#215;<span class="hidden">&#8681;</span><sub>r</sub> nat_rel&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_stgy_restart_abs_wl_heur_inv_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fast_number_of_iterations</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8658; bool&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fast_number_of_iterations n &#10231; n &lt; uint64_max &gt;&gt; 1&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_early_wl_heur</span><span>
+</span><span>   </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;twl_st_wl_heur &#8658; twl_st_wl_heur nres&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_stgy_restart_prog_early_wl_heur S<span class="hidden">&#8681;</span><sub>0</sub> = do {
+    ebrk &#8592; RETURN (&#172;isasat_fast S<span class="hidden">&#8681;</span><sub>0</sub>);
+    (ebrk, brk, T, n) &#8592;
+     WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup>&#955;(ebrk, brk, T, n). cdcl_twl_stgy_restart_abs_wl_heur_inv S<span class="hidden">&#8681;</span><sub>0</sub> brk T n &#8743;
+        (&#172;ebrk &#10230;isasat_fast T) &#8743; length (get_clauses_wl_heur T) &#8804; uint64_max<span class="hidden">&#8662;</span></sup>
+      (&#955;(ebrk, brk, _). &#172;brk &#8743; &#172;ebrk)
+      (&#955;(ebrk, brk, S, n).
+      do {
+        ASSERT(&#172;brk &#8743; &#172;ebrk);
+        ASSERT(length (get_clauses_wl_heur S) &#8804; uint64_max);
+        T &#8592; unit_propagation_outer_loop_wl_D_heur S;
+        ASSERT(length (get_clauses_wl_heur T) &#8804; uint64_max);
+        ASSERT(length (get_clauses_wl_heur T) = length (get_clauses_wl_heur S));
+        (brk, T) &#8592; cdcl_twl_o_prog_wl_D_heur T;
+        ASSERT(length (get_clauses_wl_heur T) &#8804; uint64_max);
+        (T, n) &#8592; restart_prog_wl_D_heur T n brk;
+	ebrk &#8592; RETURN (&#172;isasat_fast T);
+        RETURN (ebrk, brk, T, n)
+      })
+      (ebrk, False, S<span class="hidden">&#8681;</span><sub>0</sub>::twl_st_wl_heur, 0);
+    ASSERT(length (get_clauses_wl_heur T) &#8804; uint64_max &#8743;
+        get_old_arena T = []);
+    if &#172;brk then do {
+       T &#8592; isasat_fast_slow T;
+       (brk, T, _) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup>&#955;(brk, T, n). cdcl_twl_stgy_restart_abs_wl_heur_inv S<span class="hidden">&#8681;</span><sub>0</sub> brk T n<span class="hidden">&#8662;</span></sup>
+	         (&#955;(brk, _). &#172;brk)
+	         (&#955;(brk, S, n).
+	         do {
+	           T &#8592; unit_propagation_outer_loop_wl_D_heur S;
+	           (brk, T) &#8592; cdcl_twl_o_prog_wl_D_heur T;
+	           (T, n) &#8592; restart_prog_wl_D_heur T n brk;
+	           RETURN (brk, T, n)
+	         })
+	         (False, T, n);
+       RETURN T
+    }
+    else isasat_fast_slow T
+  }&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_early_wl_heur_cdcl_twl_stgy_restart_prog_early_wl_D</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>r</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;r &#8804; uint64_max&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(cdcl_twl_stgy_restart_prog_early_wl_heur, cdcl_twl_stgy_restart_prog_early_wl_D) &#8712;
+   twl_st_heur&#39;&#39;&#39; r &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;twl_st_heur&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_early_wl_D_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_stgy_restart_prog_early_wl_D S<span class="hidden">&#8681;</span><sub>0</sub> = do {
+      ebrk &#8592; RES UNIV;
+      (ebrk, brk, T, n) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup>&#955;(_, brk, T, n). cdcl_twl_stgy_restart_abs_wl_D_inv S<span class="hidden">&#8681;</span><sub>0</sub> brk T n<span class="hidden">&#8662;</span></sup>
+	        (&#955;(ebrk, brk, _). &#172;brk &#8743; &#172;ebrk)
+	        (&#955;(_, brk, S, n).
+	        do {
+	          T &#8592; unit_propagation_outer_loop_wl_D S;
+	          (brk, T) &#8592; cdcl_twl_o_prog_wl_D T;
+	          (T, n) &#8592; restart_prog_wl_D T n brk;
+	          ebrk &#8592; RES UNIV;
+	          RETURN (ebrk, brk, T, n)
+	        })
+	        (ebrk, False, S<span class="hidden">&#8681;</span><sub>0</sub>::nat twl_st_wl, 0);
+      if &#172;brk then do {
+        T &#8592; RETURN T;
+	(brk, T, _) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup>&#955;(brk, T, n). cdcl_twl_stgy_restart_abs_wl_D_inv S<span class="hidden">&#8681;</span><sub>0</sub> brk T n<span class="hidden">&#8662;</span></sup>
+	  (&#955;(brk, _). &#172;brk)
+	  (&#955;(brk, S, n).
+	  do {
+	    T &#8592; unit_propagation_outer_loop_wl_D S;
+	    (brk, T) &#8592; cdcl_twl_o_prog_wl_D T;
+	    (T, n) &#8592; restart_prog_wl_D T n brk;
+	    RETURN (brk, T, n)
+	  })
+	  (False, T::nat twl_st_wl, n);
+	RETURN T
+      }
+      else RETURN T
+    }&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>S<span class="hidden">&#8681;</span><sub>0</sub></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_early_wl_D_def</span><span> </span><span>nres_monad1</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>refine0</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN (&#172;isasat_fast x) &#8804; &#8659;
+      {(b, b&#39;). b = b&#39; &#8743; (b = (&#172;isasat_fast x))} (RES UNIV)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>RETURN_RES_refine</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>refine0</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_fast_slow x1e
+      &#8804; &#8659; {(S, S&#39;). S = x1e &#8743; S&#39; = x1b}
+	   (RETURN x1b)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x1e</span><span> </span><span>x1b</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>isasat_fast_slow_alt_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>twl_st_heur&#39;&#39;</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(x1e, x1b) &#8712; twl_st_heur &#10233;
+    (x1e, x1b)
+    &#8712; twl_st_heur&#39;&#39;
+        (dom_m (get_clauses_wl x1b))
+        (length (get_clauses_wl_heur x1e))&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x1e</span><span> </span><span>x1b</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>twl_st_heur&#39;&#39;&#39;</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(x1e, x1b) &#8712; twl_st_heur&#39;&#39; &#119967; r &#10233;
+    (x1e, x1b)
+    &#8712; twl_st_heur&#39;&#39;&#39; r&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x1e</span><span> </span><span>x1b</span><span> </span><span>r</span><span> </span><span>&#119967;</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>H</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(xb, x&#39;a)
+    &#8712; bool_rel &#215;<span class="hidden">&#8681;</span><sub>f</sub>
+      twl_st_heur&#39;&#39;&#39;&#39; (length (get_clauses_wl_heur x1e) + 6 + uint_max div 2) &#10233;
+    x&#39;a = (x1f, x2f) &#10233;
+    xb = (x1g, x2g) &#10233;
+    (x1g, x1f) &#8712; bool_rel &#10233;
+    (x2e, x2b) &#8712; nat_rel &#10233;
+    (((x2g, x2e), x1g), (x2f, x2b), x1f)
+    &#8712; twl_st_heur&#39;&#39;&#39; (length (get_clauses_wl_heur x2g)) &#215;<span class="hidden">&#8681;</span><sub>f</sub>
+      nat_rel &#215;<span class="hidden">&#8681;</span><sub>f</sub>
+      bool_rel&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span> </span><span>ebrk</span><span> </span><span>ebrka</span><span> </span><span>xa</span><span> </span><span>x&#39;</span><span> </span><span>x1</span><span> </span><span>x2</span><span> </span><span>x1a</span><span> </span><span>x2a</span><span> </span><span>x1b</span><span> </span><span>x2b</span><span> </span><span>x1c</span><span> </span><span>x2c</span><span> </span><span>x1d</span><span> </span><span>x2d</span><span> </span><span>x1e</span><span> </span><span>x2e</span><span> </span><span>T</span><span> </span><span>Ta</span><span> </span><span>xb</span><span>
+</span><span>       </span><span>x&#39;a</span><span> </span><span>x1f</span><span> </span><span>x2f</span><span> </span><span>x1g</span><span> </span><span>x2g</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>abs_inv</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(x, y) &#8712; twl_st_heur&#39;&#39;&#39; r &#10233;
+    (ebrk, ebrka) &#8712; {(b, b&#39;). b = b&#39; &#8743; b = (&#172; isasat_fast x)} &#10233;
+    (xb, x&#39;a) &#8712; bool_rel &#215;<span class="hidden">&#8681;</span><sub>f</sub> (twl_st_heur &#215;<span class="hidden">&#8681;</span><sub>f</sub> nat_rel) &#10233;
+    case x&#39;a of
+    (brk, xa, xb) &#8658;
+      cdcl_twl_stgy_restart_abs_wl_D_inv y brk xa xb &#10233;
+    x2f = (x1g, x2g) &#10233;
+    xb = (x1f, x2f) &#10233;
+    cdcl_twl_stgy_restart_abs_wl_heur_inv x x1f x1g x2g&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span> </span><span>ebrk</span><span> </span><span>ebrka</span><span> </span><span>xa</span><span> </span><span>x&#39;</span><span> </span><span>x1</span><span> </span><span>x2</span><span> </span><span>x1a</span><span> </span><span>x2a</span><span> </span><span>x1b</span><span> </span><span>x2b</span><span> </span><span>x1c</span><span> </span><span>x2c</span><span> </span><span>x1d</span><span> </span><span>x2d</span><span>
+</span><span>       </span><span>x1e</span><span> </span><span>x2e</span><span> </span><span>T</span><span> </span><span>Ta</span><span> </span><span>xb</span><span> </span><span>x&#39;a</span><span> </span><span>x1f</span><span> </span><span>x2f</span><span> </span><span>x1g</span><span> </span><span>x2g</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_stgy_restart_abs_wl_heur_inv_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span class="keyword1"><span class="command">thm</span></span><span> </span><span>restart_prog_wl_D_heur_restart_prog_wl_D</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down_curry2</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>cdcl_twl_o_prog_wl_D_heur_cdcl_twl_o_prog_wl_D</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>unit_propagation_outer_loop_wl_D_heur_unit_propagation_outer_loop_wl_D&#39;</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>WHILEIT_refine</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>R</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bool_rel &#215;<span class="hidden">&#8681;</span><sub>r</sub> twl_st_heur &#215;<span class="hidden">&#8681;</span><sub>r</sub> nat_rel&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>        </span><span>WHILEIT_refine</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>R</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;{((ebrk, brk, T,n), (ebrk&#39;, brk&#39;, T&#39;, n&#39;)).
+	    (ebrk = ebrk&#39;) &#8743; (brk = brk&#39;) &#8743; (T, T&#39;)  &#8712; twl_st_heur &#8743; n = n&#39; &#8743;
+	      (&#172;ebrk &#10230; isasat_fast T) &#8743; length (get_clauses_wl_heur T) &#8804; uint64_max}&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>isasat_fast_length_leD</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span> </span><span>twl_st_heur&#39;_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_early_wl_heur_def</span><span>
+</span><span>      </span><span>cdcl_twl_stgy_restart_prog_early_wl_D_alt_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_rcg</span><span>
+</span><span>        </span><span>restart_prog_wl_D_heur_restart_prog_wl_D</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down_curry2</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>cdcl_twl_o_prog_wl_D_heur_cdcl_twl_o_prog_wl_D</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>unit_propagation_outer_loop_wl_D_heur_unit_propagation_outer_loop_wl_D&#39;</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>WHILEIT_refine</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>R</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bool_rel &#215;<span class="hidden">&#8681;</span><sub>r</sub> twl_st_heur &#215;<span class="hidden">&#8681;</span><sub>r</sub> nat_rel&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>        </span><span>WHILEIT_refine</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>R</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;{((ebrk, brk, T,n), (ebrk&#39;, brk&#39;, T&#39;, n&#39;)).
+	    (ebrk = ebrk&#39;) &#8743; (brk = brk&#39;) &#8743; (T, T&#39;)  &#8712; twl_st_heur &#8743; n = n&#39; &#8743;
+	      (&#172;ebrk &#10230; isasat_fast T) &#8743; length (get_clauses_wl_heur T) &#8804; uint64_max}&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>r</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_stgy_restart_abs_wl_heur_inv_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fast</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fast</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>twl_st_heur&#39;&#39;</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>twl_st_heur&#39;&#39;&#39;</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>isasat_fast_def</span><span> </span><span>uint64_max_def</span><span> </span><span>uint32_max_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>H</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">?</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span class="delimiter">(</span><span>asm</span><span class="delimiter">)</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>twl_st_heur_def</span><span class="delimiter">)</span><span> </span><span>force</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>abs_inv</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>twl_st_heur&#39;&#39;</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>twl_st_heur&#39;&#39;&#39;</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>H</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">?</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>isasat_fast_slow_alt_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>length_avdom</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;twl_st_wl_heur &#8658; nat&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length_avdom S = length (get_avdom S)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>length_avdom_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length_avdom = (&#955;(M&#39;, N&#39;, D&#39;, j, W&#39;, vm, &#966;, clvls, cach, lbd, outl, stats, fast_ema, slow_ema,
+     ccount, vdom, avdom, lcount). length avdom)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>ext</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>length_avdom_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>get_the_propagation_reason_heur</span><span>
+</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;twl_st_wl_heur &#8658; nat literal &#8658; nat option nres&#8250;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;get_the_propagation_reason_heur S = get_the_propagation_reason_pol (get_trail_wl_heur S)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>get_the_propagation_reason_heur_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;get_the_propagation_reason_heur = (&#955;(M&#39;, N&#39;, D&#39;, j, W&#39;, vm, &#966;, clvls, cach, lbd, outl, stats, fast_ema, slow_ema,
+     ccount, vdom, lcount) L . get_the_propagation_reason_pol M&#39; L)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>ext</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>get_the_propagation_reason_heur_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>clause_is_learned_heur</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;twl_st_wl_heur &#8658; nat &#8658; bool&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;clause_is_learned_heur S C &#10231; arena_status (get_clauses_wl_heur S) C = LEARNED&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>clause_is_learned_heur_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;clause_is_learned_heur = (&#955;(M&#39;, N&#39;, D&#39;, j, W&#39;, vm, &#966;, clvls, cach, lbd, outl, stats, fast_ema, slow_ema,
+     ccount, vdom, lcount) C . arena_status N&#39; C = LEARNED)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>ext</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>clause_is_learned_heur_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO deduplicate arena_lbd = get_clause_LBD *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>clause_lbd_heur</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;twl_st_wl_heur &#8658; nat &#8658; nat&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;clause_lbd_heur S C = arena_lbd (get_clauses_wl_heur S) C&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>clause_lbd_heur_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;clause_lbd_heur = (&#955;(M&#39;, N&#39;, D&#39;, j, W&#39;, vm, &#966;, clvls, cach, lbd, outl, stats, fast_ema, slow_ema,
+     ccount, vdom, lcount) C . get_clause_LBD N&#39; C)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>ext</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>clause_lbd_heur_def</span><span> </span><span>get_clause_LBD_def</span><span> </span><span>arena_lbd_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span> </span><span>access_length_heur</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;access_length_heur S i = arena_length (get_clauses_wl_heur S) i&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>access_length_heur_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;access_length_heur = (&#955;(M&#39;, N&#39;, D&#39;, j, W&#39;, vm, &#966;, clvls, cach, lbd, outl, stats, fast_ema, slow_ema,
+     ccount, vdom, lcount) C . arena_length N&#39; C)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>ext</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>access_length_heur_def</span><span> </span><span>arena_lbd_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>marked_as_used_st</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;marked_as_used_st T C =
+    marked_as_used (get_clauses_wl_heur T) C&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>marked_as_used_st_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;marked_as_used_st = (&#955;(M&#39;, N&#39;, D&#39;, j, W&#39;, vm, &#966;, clvls, cach, lbd, outl, stats, fast_ema, slow_ema,
+     ccount, vdom, lcount) C . marked_as_used N&#39; C)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>ext</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>marked_as_used_st_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mark_to_delete_clauses_wl_D_heur_is_Some_iff</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;D = Some C &#10231; D &#8800; None &#8743; (nat_of_uint64_conv (the D) = C)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span> </span><span>isasat_fast_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o isasat_fast = (&#955;(M, N, _). RETURN (length N &#8804; uint64_max - (uint32_max div 2 + 6)))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>isasat_fast_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_bounded_wl_heur</span><span>
+</span><span>   </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;twl_st_wl_heur &#8658; (bool &#215; twl_st_wl_heur) nres&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_stgy_restart_prog_bounded_wl_heur S<span class="hidden">&#8681;</span><sub>0</sub> = do {
+    ebrk &#8592; RETURN (&#172;isasat_fast S<span class="hidden">&#8681;</span><sub>0</sub>);
+    (ebrk, brk, T, n) &#8592;
+     WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup>&#955;(ebrk, brk, T, n). cdcl_twl_stgy_restart_abs_wl_heur_inv S<span class="hidden">&#8681;</span><sub>0</sub> brk T n &#8743;
+        (&#172;ebrk &#10230;isasat_fast T) &#8743; length (get_clauses_wl_heur T) &#8804; uint64_max<span class="hidden">&#8662;</span></sup>
+      (&#955;(ebrk, brk, _). &#172;brk &#8743; &#172;ebrk)
+      (&#955;(ebrk, brk, S, n).
+      do {
+        ASSERT(&#172;brk &#8743; &#172;ebrk);
+        ASSERT(length (get_clauses_wl_heur S) &#8804; uint64_max);
+        T &#8592; unit_propagation_outer_loop_wl_D_heur S;
+        ASSERT(length (get_clauses_wl_heur T) &#8804; uint64_max);
+        ASSERT(length (get_clauses_wl_heur T) = length (get_clauses_wl_heur S));
+        (brk, T) &#8592; cdcl_twl_o_prog_wl_D_heur T;
+        ASSERT(length (get_clauses_wl_heur T) &#8804; uint64_max);
+        (T, n) &#8592; restart_prog_wl_D_heur T n brk;
+	ebrk &#8592; RETURN (&#172;isasat_fast T);
+        RETURN (ebrk, brk, T, n)
+      })
+      (ebrk, False, S<span class="hidden">&#8681;</span><sub>0</sub>::twl_st_wl_heur, 0);
+    RETURN (brk, T)
+  }&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_bounded_wl_heur_cdcl_twl_stgy_restart_prog_bounded_wl_D</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>r</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;r &#8804; uint64_max&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(cdcl_twl_stgy_restart_prog_bounded_wl_heur, cdcl_twl_stgy_restart_prog_bounded_wl_D) &#8712;
+   twl_st_heur&#39;&#39;&#39; r &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;bool_rel &#215;<span class="hidden">&#8681;</span><sub>r</sub> twl_st_heur&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_bounded_wl_D_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_stgy_restart_prog_bounded_wl_D S<span class="hidden">&#8681;</span><sub>0</sub> = do {
+      ebrk &#8592; RES UNIV;
+      (ebrk, brk, T, n) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup>&#955;(_, brk, T, n). cdcl_twl_stgy_restart_abs_wl_D_inv S<span class="hidden">&#8681;</span><sub>0</sub> brk T n<span class="hidden">&#8662;</span></sup>
+	        (&#955;(ebrk, brk, _). &#172;brk &#8743; &#172;ebrk)
+	        (&#955;(_, brk, S, n).
+	        do {
+	          T &#8592; unit_propagation_outer_loop_wl_D S;
+	          (brk, T) &#8592; cdcl_twl_o_prog_wl_D T;
+	          (T, n) &#8592; restart_prog_wl_D T n brk;
+	          ebrk &#8592; RES UNIV;
+	          RETURN (ebrk, brk, T, n)
+	        })
+	        (ebrk, False, S<span class="hidden">&#8681;</span><sub>0</sub>::nat twl_st_wl, 0);
+      RETURN (brk, T)
+    }&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>S<span class="hidden">&#8681;</span><sub>0</sub></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_bounded_wl_D_def</span><span> </span><span>nres_monad1</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>refine0</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN (&#172;isasat_fast x) &#8804; &#8659;
+      {(b, b&#39;). b = b&#39; &#8743; (b = (&#172;isasat_fast x))} (RES UNIV)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>RETURN_RES_refine</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>refine0</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_fast_slow x1e
+      &#8804; &#8659; {(S, S&#39;). S = x1e &#8743; S&#39; = x1b}
+	   (RETURN x1b)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x1e</span><span> </span><span>x1b</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>isasat_fast_slow_alt_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>twl_st_heur&#39;&#39;</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(x1e, x1b) &#8712; twl_st_heur &#10233;
+    (x1e, x1b)
+    &#8712; twl_st_heur&#39;&#39;
+        (dom_m (get_clauses_wl x1b))
+        (length (get_clauses_wl_heur x1e))&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x1e</span><span> </span><span>x1b</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>twl_st_heur&#39;&#39;&#39;</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(x1e, x1b) &#8712; twl_st_heur&#39;&#39; &#119967; r &#10233;
+    (x1e, x1b)
+    &#8712; twl_st_heur&#39;&#39;&#39; r&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x1e</span><span> </span><span>x1b</span><span> </span><span>r</span><span> </span><span>&#119967;</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>H</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(xb, x&#39;a)
+    &#8712; bool_rel &#215;<span class="hidden">&#8681;</span><sub>f</sub>
+      twl_st_heur&#39;&#39;&#39;&#39; (length (get_clauses_wl_heur x1e) + 6 + uint_max div 2) &#10233;
+    x&#39;a = (x1f, x2f) &#10233;
+    xb = (x1g, x2g) &#10233;
+    (x1g, x1f) &#8712; bool_rel &#10233;
+    (x2e, x2b) &#8712; nat_rel &#10233;
+    (((x2g, x2e), x1g), (x2f, x2b), x1f)
+    &#8712; twl_st_heur&#39;&#39;&#39; (length (get_clauses_wl_heur x2g)) &#215;<span class="hidden">&#8681;</span><sub>f</sub>
+      nat_rel &#215;<span class="hidden">&#8681;</span><sub>f</sub>
+      bool_rel&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span> </span><span>ebrk</span><span> </span><span>ebrka</span><span> </span><span>xa</span><span> </span><span>x&#39;</span><span> </span><span>x1</span><span> </span><span>x2</span><span> </span><span>x1a</span><span> </span><span>x2a</span><span> </span><span>x1b</span><span> </span><span>x2b</span><span> </span><span>x1c</span><span> </span><span>x2c</span><span> </span><span>x1d</span><span> </span><span>x2d</span><span> </span><span>x1e</span><span> </span><span>x2e</span><span> </span><span>T</span><span> </span><span>Ta</span><span> </span><span>xb</span><span>
+</span><span>       </span><span>x&#39;a</span><span> </span><span>x1f</span><span> </span><span>x2f</span><span> </span><span>x1g</span><span> </span><span>x2g</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>abs_inv</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(x, y) &#8712; twl_st_heur&#39;&#39;&#39; r &#10233;
+    (ebrk, ebrka) &#8712; {(b, b&#39;). b = b&#39; &#8743; b = (&#172; isasat_fast x)} &#10233;
+    (xb, x&#39;a) &#8712; bool_rel &#215;<span class="hidden">&#8681;</span><sub>f</sub> (twl_st_heur &#215;<span class="hidden">&#8681;</span><sub>f</sub> nat_rel) &#10233;
+    case x&#39;a of
+    (brk, xa, xb) &#8658;
+      cdcl_twl_stgy_restart_abs_wl_D_inv y brk xa xb &#10233;
+    x2f = (x1g, x2g) &#10233;
+    xb = (x1f, x2f) &#10233;
+    cdcl_twl_stgy_restart_abs_wl_heur_inv x x1f x1g x2g&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span> </span><span>ebrk</span><span> </span><span>ebrka</span><span> </span><span>xa</span><span> </span><span>x&#39;</span><span> </span><span>x1</span><span> </span><span>x2</span><span> </span><span>x1a</span><span> </span><span>x2a</span><span> </span><span>x1b</span><span> </span><span>x2b</span><span> </span><span>x1c</span><span> </span><span>x2c</span><span> </span><span>x1d</span><span> </span><span>x2d</span><span>
+</span><span>       </span><span>x1e</span><span> </span><span>x2e</span><span> </span><span>T</span><span> </span><span>Ta</span><span> </span><span>xb</span><span> </span><span>x&#39;a</span><span> </span><span>x1f</span><span> </span><span>x2f</span><span> </span><span>x1g</span><span> </span><span>x2g</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_stgy_restart_abs_wl_heur_inv_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>isasat_fast_length_leD</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span> </span><span>twl_st_heur&#39;_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_bounded_wl_heur_def</span><span>
+</span><span>      </span><span>cdcl_twl_stgy_restart_prog_bounded_wl_D_alt_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_rcg</span><span>
+</span><span>        </span><span>restart_prog_wl_D_heur_restart_prog_wl_D</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down_curry2</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>cdcl_twl_o_prog_wl_D_heur_cdcl_twl_o_prog_wl_D</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>unit_propagation_outer_loop_wl_D_heur_unit_propagation_outer_loop_wl_D&#39;</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>WHILEIT_refine</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>R</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;{((ebrk, brk, T,n), (ebrk&#39;, brk&#39;, T&#39;, n&#39;)).
+	    (ebrk = ebrk&#39;) &#8743; (brk = brk&#39;) &#8743; (T, T&#39;)  &#8712; twl_st_heur &#8743; n = n&#39; &#8743;
+	      (&#172;ebrk &#10230; isasat_fast T) &#8743; length (get_clauses_wl_heur T) &#8804; uint64_max}&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>r</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_stgy_restart_abs_wl_heur_inv_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fast</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fast</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>twl_st_heur&#39;&#39;</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>twl_st_heur&#39;&#39;&#39;</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>isasat_fast_def</span><span> </span><span>uint64_max_def</span><span> </span><span>uint32_max_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>H</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">?</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Concl_Pres_Clarification (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Concl_Pres_Clarification</h1>
+
+<span class="command">theory</span> <span class="name">Concl_Pres_Clarification</span><br/>
+<span class="keyword">imports</span> <a href="../../HOL/HOL/Main.html"><span class="name">Main</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Concl_Pres_Clarification</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Clarification and clarsimp that preserve the structure of 
+    the subgoal&#39;s conclusion, i.e., neither solve it, nor swap it 
+    with premises, as, eg, @{thm [source] notE} does.
+    &#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+    local 
+      open Classical
+
+      fun is_cp_brl (is_elim,thm) = let
+        val prems = Thm.prems_of thm
+        val nprems = length prems
+        val concl = Thm.concl_of thm
+      in
+        (if is_elim then nprems=2 else nprems=1) andalso let
+          val lprem_concl = hd (rev prems)
+            |&gt; Logic.strip_assums_concl
+        in
+          concl aconv lprem_concl
+        end
+      end
+
+      val not_elim = @{thm notE}
+      val hyp_subst_tacs = [Hypsubst.hyp_subst_tac]
+
+      fun eq_contr_tac ctxt i = ematch_tac ctxt [not_elim] i THEN eq_assume_tac i;
+      fun eq_assume_contr_tac ctxt = eq_assume_tac ORELSE&#39; eq_contr_tac ctxt;
+
+      fun cp_bimatch_from_nets_tac ctxt =
+        biresolution_from_nets_tac ctxt (order_list o filter (is_cp_brl o snd)) true;
+
+
+    in
+      fun cp_clarify_step_tac ctxt =
+        let val {safep_netpair, ...} = (rep_cs o claset_of) ctxt in
+          appSWrappers ctxt
+           (FIRST&#39;
+             [eq_assume_contr_tac ctxt,
+              FIRST&#39; (map (fn tac =&gt; tac ctxt) hyp_subst_tacs),
+              cp_bimatch_from_nets_tac ctxt safep_netpair
+              ])
+        end;
+      
+        fun cp_clarify_tac ctxt = SELECT_GOAL (REPEAT_DETERM (cp_clarify_step_tac ctxt 1));
+
+        fun cp_clarsimp_tac ctxt =
+          Simplifier.safe_asm_full_simp_tac ctxt THEN_ALL_NEW
+          cp_clarify_tac (addSss ctxt);
+
+
+    end
+
+
+  &#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>cp_clarify</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+    (Classical.cla_method&#39; (CHANGED_PROP oo cp_clarify_tac))
+    &#8250;</span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>cp_clarsimp</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;let
+    fun clasimp_method&#39; tac =
+      Method.sections clasimp_modifiers &gt;&gt; K (SIMPLE_METHOD&#39; o tac);
+  in
+    clasimp_method&#39; (CHANGED_PROP oo cp_clarsimp_tac)
+  end&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

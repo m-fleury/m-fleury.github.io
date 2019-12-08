@@ -1,0 +1,557 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Word_Bitwise (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Word_Bitwise</h1>
+
+<span class="command">theory</span> <span class="name">Word_Bitwise</span><br/>
+<span class="keyword">imports</span> <a href="../../AFP/Refine_Monadic/Word.html"><span class="name">Word</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*  Title:      HOL/Word/Word_Bitwise.thy
+    Authors:    Thomas Sewell, NICTA and Sascha Boehme, TU Muenchen
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Word_Bitwise</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Word</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Helper constants used in defining addition&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>xor3</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bool &#8658; bool &#8658; bool &#8658; bool&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;xor3 a b c = (a = (b = c))&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>carry</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bool &#8658; bool &#8658; bool &#8658; bool&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;carry a b c = ((a &#8743; (b &#8744; c)) &#8744; (b &#8743; c))&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>carry_simps</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;carry True a b = (a &#8744; b)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;carry a True b = (a &#8744; b)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;carry a b True = (a &#8744; b)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;carry False a b = (a &#8743; b)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;carry a False b = (a &#8743; b)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;carry a b False = (a &#8743; b)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>carry_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>xor3_simps</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;xor3 True a b = (a = b)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;xor3 a True b = (a = b)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;xor3 a b True = (a = b)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;xor3 False a b = (a &#8800; b)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;xor3 a False b = (a &#8800; b)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;xor3 a b False = (a &#8800; b)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>xor3_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Breaking up word equalities into equalities on their
+  bit lists. Equalities are generated and manipulated in the
+  reverse order to \&lt;^const&gt;&#8249;to_bl&#8250;.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bl_word_sub</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_bl (x - y) = to_bl (x + (- y))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_word_1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl (1 :: &#39;a::len0 word)) = takefill False (LENGTH(&#39;a)) [True]&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule_tac</span><span> </span><span>s</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl (word_succ (0 :: &#39;a word)))&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>trans</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>rtb_rbl_ariths</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">[</span><span>OF</span><span> </span><span>refl</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;LENGTH(&#39;a)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>takefill_alt</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_word_if</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl (if P then x else y)) = map2 (If P) (rev (to_bl x)) (rev (to_bl y))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>split_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_add_carry_Cons</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(if car then rbl_succ else id) (rbl_add (x # xs) (y # ys)) =
+    xor3 x y car # (if carry x y car then rbl_succ else id) (rbl_add xs ys)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>carry_def</span><span> </span><span>xor3_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_add_suc_carry_fold</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;length xs = length ys &#10233;
+    &#8704;car. (if car then rbl_succ else id) (rbl_add xs ys) =
+      (foldr (&#955;(x, y) res car. xor3 x y car # res (carry x y car)) (zip xs ys) (&#955;_. [])) car&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>erule</span><span> </span><span>list_induct2</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>rbl_add_carry_Cons</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>to_bl_plus_carry</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;to_bl (x + y) =
+    rev (foldr (&#955;(x, y) res car. xor3 x y car # res (carry x y car))
+      (rev (zip (to_bl x) (to_bl y))) (&#955;_. []) False)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>rbl_add_suc_carry_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>xs</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl x)&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>ys</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl y)&quot;</span></span></span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_add_rbl</span><span class="delimiter">[</span><span>OF</span><span> </span><span>refl</span><span> </span><span>refl</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>drule_tac</span><span> </span><span>x</span><span class="delimiter">=</span><span>False</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>spec</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>zip_rev</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rbl_plus cin xs ys =
+  foldr (&#955;(x, y) res car. xor3 x y car # res (carry x y car)) (zip xs ys) (&#955;_. []) cin&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_plus_simps</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rbl_plus cin (x # xs) (y # ys) = xor3 x y cin # rbl_plus (carry x y cin) xs ys&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rbl_plus cin [] ys = []&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rbl_plus cin xs [] = []&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>rbl_plus_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_word_plus</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl (x + y)) = rbl_plus False (rev (to_bl x)) (rev (to_bl y))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>rbl_plus_def</span><span> </span><span>to_bl_plus_carry</span><span> </span><span>zip_rev</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rbl_succ2 b xs = (if b then rbl_succ xs else xs)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_succ2_simps</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rbl_succ2 b [] = []&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rbl_succ2 b (x # xs) = (b &#8800; x) # rbl_succ2 (x &#8743; b) xs&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>rbl_succ2_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>twos_complement</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;- x = word_succ (NOT x)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arg_cong</span><span class="delimiter">[</span><span>OF</span><span> </span><span>word_add_not</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>x</span><span class="delimiter">=</span><span>x</span><span class="delimiter">]</span><span class="delimiter">,</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>f</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;&#955;a. a - x + 1&quot;</span></span></span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_succ_p1</span><span> </span><span>word_sp_01</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>word_succ_p1</span><span class="delimiter">]</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>word_add_not</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_word_neg</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl (- x)) = rbl_succ2 True (map Not (rev (to_bl x)))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>twos_complement</span><span> </span><span>word_succ_rbl</span><span class="delimiter">[</span><span>OF</span><span> </span><span>refl</span><span class="delimiter">]</span><span> </span><span>bl_word_not</span><span> </span><span>rev_map</span><span> </span><span>rbl_succ2_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_word_cat</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl (word_cat x y :: &#39;a::len0 word)) =
+    takefill False (LENGTH(&#39;a)) (rev (to_bl y) @ rev (to_bl x))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_cat_bl</span><span> </span><span>word_rev_tf</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_word_slice</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl (slice n w :: &#39;a::len0 word)) =
+    takefill False (LENGTH(&#39;a)) (drop n (rev (to_bl w)))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>slice_take</span><span> </span><span>word_rev_tf</span><span> </span><span>rev_take</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;n &lt; LENGTH(&#39;b)&quot;</span></span></span><span class="delimiter">,</span><span> </span><span>simp_all</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_word_ucast</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl (ucast x :: &#39;a::len0 word)) = takefill False (LENGTH(&#39;a)) (rev (to_bl x))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>to_bl_ucast</span><span> </span><span>takefill_alt</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>rev_drop</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;LENGTH(&#39;a) &lt; LENGTH(&#39;b)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp_all</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_shiftl</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl (w &lt;&lt; n)) = takefill False (size w) (replicate n False @ rev (to_bl w))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>bl_shiftl</span><span> </span><span>takefill_alt</span><span> </span><span>word_size</span><span> </span><span>rev_drop</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_shiftr</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl (w &gt;&gt; n)) = takefill False (size w) (drop n (rev (to_bl w)))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>shiftr_slice</span><span> </span><span>rbl_word_slice</span><span> </span><span>word_size</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;drop_nonempty v n xs = (if n &lt; length xs then drop n xs else [last (v # xs)])&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>drop_nonempty_simps</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;drop_nonempty v (Suc n) (x # xs) = drop_nonempty x n xs&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;drop_nonempty v 0 (x # xs) = (x # xs)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;drop_nonempty v n [] = [v]&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>drop_nonempty_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;takefill_last x n xs = takefill (last (x # xs)) n xs&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>takefill_last_simps</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;takefill_last z (Suc n) (x # xs) = x # takefill_last x n xs&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;takefill_last z 0 xs = []&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;takefill_last z n [] = replicate n z&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>takefill_last_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>takefill_alt</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_sshiftr</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl (w &gt;&gt;&gt; n)) = takefill_last False (size w) (drop_nonempty False n (rev (to_bl w)))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;n &lt; size w&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>bl_sshiftr</span><span> </span><span>takefill_last_def</span><span> </span><span>word_size</span><span>
+</span><span>      </span><span>takefill_alt</span><span> </span><span>rev_take</span><span> </span><span>last_rev</span><span>
+</span><span>      </span><span>drop_nonempty_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subgoal_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(w &gt;&gt;&gt; n) = of_bl (replicate (size w) (msb w))&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_size</span><span> </span><span>takefill_last_def</span><span> </span><span>takefill_alt</span><span>
+</span><span>      </span><span>last_rev</span><span> </span><span>word_msb_alt</span><span> </span><span>word_rev_tf</span><span>
+</span><span>      </span><span>drop_nonempty_def</span><span> </span><span>take_Cons&#39;</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;LENGTH(&#39;a)&quot;</span></span></span><span class="delimiter">,</span><span> </span><span>simp_all</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>word_eqI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>nth_sshiftr</span><span> </span><span>word_size</span><span> </span><span>test_bit_of_bl</span><span>
+</span><span>      </span><span>msb_nth</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nth_word_of_int</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(word_of_int x :: &#39;a::len0 word) !! n = (n &lt; LENGTH(&#39;a) &#8743; bin_nth x n)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>test_bit_bl</span><span> </span><span>word_size</span><span> </span><span>to_bl_of_bin</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>conj_cong</span><span class="delimiter">[</span><span>OF</span><span> </span><span>refl</span><span class="delimiter">]</span><span class="delimiter">,</span><span> </span><span>erule</span><span> </span><span>bin_nth_bl</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nth_scast</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(scast (x :: &#39;a::len word) :: &#39;b::len word) !! n =
+    (n &lt; LENGTH(&#39;b) &#8743;
+    (if n &lt; LENGTH(&#39;a) - 1 then x !! n
+     else x !! (LENGTH(&#39;a) - 1)))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>scast_def</span><span> </span><span>nth_sint</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_word_scast</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl (scast x :: &#39;a::len word)) = takefill_last False (LENGTH(&#39;a)) (rev (to_bl x))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>nth_equalityI</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_size</span><span> </span><span>takefill_last_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>nth_scast</span><span> </span><span>takefill_last_def</span><span>
+</span><span>      </span><span>nth_takefill</span><span> </span><span>word_size</span><span> </span><span>nth_rev</span><span> </span><span>to_bl_nth</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;LENGTH(&#39;b)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>less_Suc_eq_le</span><span> </span><span>linorder_not_less</span><span>
+</span><span>      </span><span>last_rev</span><span> </span><span>word_msb_alt</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>      </span><span>msb_nth</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>rbl_mul</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bool list &#8658; bool list &#8658; bool list&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rbl_mul xs ys = foldr (&#955;x sm. rbl_plus False (map ((&#8743;) x) ys) (False # sm)) xs []&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_mul_simps</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rbl_mul (x # xs) ys = rbl_plus False (map ((&#8743;) x) ys) (False # rbl_mul xs ys)&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rbl_mul [] ys = []&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>rbl_mul_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>takefill_le2</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;length xs &#8804; n &#10233; takefill x m (takefill x n xs) = takefill x m xs&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>takefill_alt</span><span> </span><span>replicate_add</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>take_rbl_plus</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;n b. take n (rbl_plus b xs ys) = rbl_plus b (take n xs) (take n ys)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>rbl_plus_def</span><span> </span><span>take_zip</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule_tac</span><span> </span><span>list</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;zip xs ys&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>list.induct</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>split_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span>n</span><span class="delimiter">,</span><span> </span><span>simp_all</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_rbl_mul_induct</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;length xs &#8804; size y &#10233;
+    rbl_mul xs (rev (to_bl y)) = take (length xs) (rev (to_bl (of_bl (rev xs) * y)))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>y</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::len word&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>xs</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>Nil</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>rbl_mul_simps</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Cons</span><span> </span><span>z</span><span> </span><span>zs</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>rbl_word_plus&#39;</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_bl (x + y) = rev (rbl_plus False (rev (to_bl x)) (rev (to_bl y)))&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a word&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>rbl_word_plus</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>mult_bit</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_bl (of_bl [z] * y) = map ((&#8743;) z) (to_bl y)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>z</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>cong</span><span class="delimiter">:</span><span> </span><span>map_cong</span><span class="delimiter">,</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>map_replicate_const</span><span> </span><span>cong</span><span class="delimiter">:</span><span> </span><span>map_cong</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>shiftl</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;of_bl xs * 2 * y = (of_bl xs * y) &lt;&lt; 1&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>xs</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>shiftl_t2n</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>zip_take_triv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;xs ys n. n = length ys &#10233; zip (take n xs) ys = zip xs ys&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>nth_equalityI</span><span class="delimiter">)</span><span> </span><span>simp_all</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>Cons</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>trans</span><span> </span><span class="delimiter">[</span><span>OF</span><span> </span><span>of_bl_append</span><span> </span><span>add.commute</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>rbl_mul_simps</span><span> </span><span>rbl_word_plus&#39;</span><span> </span><span>distrib_right</span><span> </span><span>mult_bit</span><span> </span><span>shiftl</span><span> </span><span>rbl_shiftl</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>takefill_alt</span><span> </span><span>word_size</span><span> </span><span>rev_map</span><span> </span><span>take_rbl_plus</span><span> </span><span>min_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>rbl_plus_def</span><span> </span><span>zip_take_triv</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rbl_word_mul</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl (x * y)) = rbl_mul (rev (to_bl x)) (rev (to_bl y))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::len word&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>word_rbl_mul_induct</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>xs</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl x)&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>y</span><span class="delimiter">=</span><span>y</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_size</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Breaking up inequalities into bitlist properties.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev_bl_order F xs ys =
+     (length xs = length ys &#8743;
+       ((xs = ys &#8743; F)
+          &#8744; (&#8707;n &lt; length xs. drop (Suc n) xs = drop (Suc n) ys
+                   &#8743; &#172; xs ! n &#8743; ys ! n)))&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rev_bl_order_simps</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev_bl_order F [] [] = F&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev_bl_order F (x # xs) (y # ys) = rev_bl_order ((y &#8743; &#172; x) &#8744; ((y &#8744; &#172; x) &#8743; F)) xs ys&quot;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>rev_bl_order_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>conj_cong</span><span class="delimiter">[</span><span>OF</span><span> </span><span>refl</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;xs = ys&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>nth_Cons&#39;</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>blast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>nth_Cons&#39;</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>safe</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule_tac</span><span> </span><span>x</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;n - 1&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>exI</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule_tac</span><span> </span><span>x</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;Suc n&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>exI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rev_bl_order_rev_simp</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;length xs = length ys &#10233;
+   rev_bl_order F (xs @ [x]) (ys @ [y]) = ((y &#8743; &#172; x) &#8744; ((y &#8744; &#172; x) &#8743; rev_bl_order F xs ys))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>F</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>list_induct2</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>rev_bl_order_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rev_bl_order_bl_to_bin</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;length xs = length ys &#10233;
+    rev_bl_order True xs ys = (bl_to_bin (rev xs) &#8804; bl_to_bin (rev ys)) &#8743;
+    rev_bl_order False xs ys = (bl_to_bin (rev xs) &lt; bl_to_bin (rev ys))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>xs</span><span> </span><span>ys</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>list_induct2</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>rev_bl_order_simps</span><span> </span><span>bl_to_bin_app_cat</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>bl_to_bin_def</span><span> </span><span>Bit_B0</span><span> </span><span>Bit_B1</span><span> </span><span>add1_zle_eq</span><span> </span><span>Bit_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_le_rbl</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8804; y &#10231; rev_bl_order True (rev (to_bl x)) (rev (to_bl y))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::len0 word&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>rev_bl_order_bl_to_bin</span><span> </span><span>word_le_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_less_rbl</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &lt; y &#10231; rev_bl_order False (rev (to_bl x)) (rev (to_bl y))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::len0 word&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_less_alt</span><span> </span><span>rev_bl_order_bl_to_bin</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_sint_msb_eq</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;sint x = uint x - (if msb x then 2 ^ size x else 0)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;msb x&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>word_sint.Abs_eqD</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">=</span><span class="tfree">&#39;a</span><span class="delimiter">]</span><span class="delimiter">,</span><span> </span><span>simp_all</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_size</span><span> </span><span>wi_hom_syms</span><span> </span><span>word_of_int_2p_len</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>sints_num</span><span> </span><span>word_size</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>conjI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>le_diff_eq&#39;</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>order_trans</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>y</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;2 ^ (LENGTH(&#39;a) - 1)&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>     </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>power_Suc</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>linorder_not_less</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>mask_eq_iff</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>notI</span><span class="delimiter">,</span><span> </span><span>drule</span><span> </span><span>word_eqD</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>x</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;size x - 1&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>msb_nth</span><span> </span><span>word_ops_nth_size</span><span> </span><span>word_size</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>order_less_le_trans</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>y</span><span class="delimiter">=</span><span>0</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>word_uint.Abs_eqD</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">=</span><span class="tfree">&#39;a</span><span class="delimiter">]</span><span class="delimiter">,</span><span> </span><span>simp_all</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>linorder_not_less</span><span> </span><span>uints_num</span><span> </span><span>word_msb_sint</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>order_less_le_trans</span><span class="delimiter">[</span><span>OF</span><span> </span><span>sint_lt</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_sle_msb_le</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &lt;=s y &#10231; (msb y &#10230; msb x) &#8743; ((msb x &#8743; &#172; msb y) &#8744; x &#8804; y)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_sle_def</span><span> </span><span>word_sint_msb_eq</span><span> </span><span>word_size</span><span> </span><span>word_le_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>safe</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>order_trans</span><span class="delimiter">[</span><span>OF</span><span> </span><span>_</span><span> </span><span>uint_ge_0</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>order_less_imp_le</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>erule</span><span> </span><span>notE</span><span class="delimiter">[</span><span>OF</span><span> </span><span>leD</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>order_less_le_trans</span><span class="delimiter">[</span><span>OF</span><span> </span><span>_</span><span> </span><span>uint_ge_0</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_sless_msb_less</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &lt;s y &#10231; (msb y &#10230; msb x) &#8743; ((msb x &#8743; &#172; msb y) &#8744; x &lt; y)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_sless_def</span><span> </span><span>word_sle_msb_le</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;map_last f xs = (if xs = [] then [] else butlast xs @ [f (last xs)])&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>map_last_simps</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;map_last f [] = []&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;map_last f [x] = [f x]&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;map_last f (x # y # zs) = x # map_last f (y # zs)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>map_last_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_sle_rbl</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;x &lt;=s y &#10231; rev_bl_order True (map_last Not (rev (to_bl x))) (map_last Not (rev (to_bl y)))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>word_msb_alt</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>w</span><span class="delimiter">=</span><span>x</span><span class="delimiter">]</span><span> </span><span>word_msb_alt</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>w</span><span class="delimiter">=</span><span>y</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_sle_msb_le</span><span> </span><span>word_le_rbl</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subgoal_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;length (to_bl x) = length (to_bl y)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_bl x&quot;</span></span></span><span class="delimiter">,</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_bl y&quot;</span></span></span><span class="delimiter">,</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>map_last_def</span><span> </span><span>rev_bl_order_rev_simp</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_sless_rbl</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;x &lt;s y &#10231; rev_bl_order False (map_last Not (rev (to_bl x))) (map_last Not (rev (to_bl y)))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>word_msb_alt</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>w</span><span class="delimiter">=</span><span>x</span><span class="delimiter">]</span><span> </span><span>word_msb_alt</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>w</span><span class="delimiter">=</span><span>y</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_sless_msb_less</span><span> </span><span>word_less_rbl</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subgoal_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;length (to_bl x) = length (to_bl y)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_bl x&quot;</span></span></span><span class="delimiter">,</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_bl y&quot;</span></span></span><span class="delimiter">,</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>map_last_def</span><span> </span><span>rev_bl_order_rev_simp</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Lemmas for unpacking \&lt;^term&gt;&#8249;rev (to_bl n)&#8250; for numerals n and also
+  for irreducible values and expressions.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rev_bin_to_bl_simps</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (bin_to_bl 0 x) = []&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (bin_to_bl (Suc n) (numeral (num.Bit0 nm))) = False # rev (bin_to_bl n (numeral nm))&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (bin_to_bl (Suc n) (numeral (num.Bit1 nm))) = True # rev (bin_to_bl n (numeral nm))&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (bin_to_bl (Suc n) (numeral (num.One))) = True # replicate n False&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (bin_to_bl (Suc n) (- numeral (num.Bit0 nm))) = False # rev (bin_to_bl n (- numeral nm))&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (bin_to_bl (Suc n) (- numeral (num.Bit1 nm))) =
+    True # rev (bin_to_bl n (- numeral (nm + num.One)))&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (bin_to_bl (Suc n) (- numeral (num.One))) = True # replicate n True&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (bin_to_bl (Suc n) (- numeral (num.Bit0 nm + num.One))) =
+    True # rev (bin_to_bl n (- numeral (nm + num.One)))&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (bin_to_bl (Suc n) (- numeral (num.Bit1 nm + num.One))) =
+    False # rev (bin_to_bl n (- numeral (nm + num.One)))&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rev (bin_to_bl (Suc n) (- numeral (num.One + num.One))) =
+    False # rev (bin_to_bl n (- numeral num.One))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp_all</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>bin_to_bl_aux_alt</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>bin_to_bl_zero_aux</span><span> </span><span>bin_to_bl_minus1_aux</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>to_bl_upt</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_bl x = rev (map ((!!) x) [0 ..&lt; size x])&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>nth_equalityI</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>word_size</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>to_bl_nth</span><span> </span><span>word_size</span><span> </span><span>nth_rev</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rev_to_bl_upt</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rev (to_bl x) = map ((!!) x) [0 ..&lt; size x]&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>to_bl_upt</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>upt_eq_list_intros</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;j &#8804; i &#10233; [i ..&lt; j] = []&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;i = x &#10233; x &lt; j &#10233; [x + 1 ..&lt; j] = xs &#10233; [i ..&lt; j] = (x # xs)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>upt_eq_Cons_conv</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Tactic definition&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+structure Word_Bitwise_Tac =
+struct
+
+val word_ss = simpset_of \&lt;^theory_context&gt;&#8249;Word&#8250;;
+
+fun mk_nat_clist ns =
+  fold_rev (Thm.mk_binop \&lt;^cterm&gt;&#8249;Cons :: nat &#8658; _&#8250;)
+    ns \&lt;^cterm&gt;&#8249;[] :: nat list&#8250;;
+
+fun upt_conv ctxt ct =
+  case Thm.term_of ct of
+    (\&lt;^const&gt;&#8249;upt&#8250; $ n $ m) =&gt;
+      let
+        val (i, j) = apply2 (snd o HOLogic.dest_number) (n, m);
+        val ns = map (Numeral.mk_cnumber \&lt;^ctyp&gt;&#8249;nat&#8250;) (i upto (j - 1))
+          |&gt; mk_nat_clist;
+        val prop =
+          Thm.mk_binop \&lt;^cterm&gt;&#8249;(=) :: nat list &#8658; _&#8250; ct ns
+          |&gt; Thm.apply \&lt;^cterm&gt;&#8249;Trueprop&#8250;;
+      in
+        try (fn () =&gt;
+          Goal.prove_internal ctxt [] prop
+            (K (REPEAT_DETERM (resolve_tac ctxt @{thms upt_eq_list_intros} 1
+                ORELSE simp_tac (put_simpset word_ss ctxt) 1))) |&gt; mk_meta_eq) ()
+      end
+  | _ =&gt; NONE;
+
+val expand_upt_simproc =
+  Simplifier.make_simproc \&lt;^context&gt; &quot;expand_upt&quot;
+   {lhss = [\&lt;^term&gt;&#8249;upt x y&#8250;], proc = K upt_conv};
+
+fun word_len_simproc_fn ctxt ct =
+  (case Thm.term_of ct of
+    Const (\&lt;^const_name&gt;&#8249;len_of&#8250;, _) $ t =&gt;
+     (let
+        val T = fastype_of t |&gt; dest_Type |&gt; snd |&gt; the_single
+        val n = Numeral.mk_cnumber \&lt;^ctyp&gt;&#8249;nat&#8250; (Word_Lib.dest_binT T);
+        val prop =
+          Thm.mk_binop \&lt;^cterm&gt;&#8249;(=) :: nat &#8658; _&#8250; ct n
+          |&gt; Thm.apply \&lt;^cterm&gt;&#8249;Trueprop&#8250;;
+      in
+        Goal.prove_internal ctxt [] prop (K (simp_tac (put_simpset word_ss ctxt) 1))
+        |&gt; mk_meta_eq |&gt; SOME
+      end handle TERM _ =&gt; NONE | TYPE _ =&gt; NONE)
+  | _ =&gt; NONE);
+
+val word_len_simproc =
+  Simplifier.make_simproc \&lt;^context&gt; &quot;word_len&quot;
+   {lhss = [\&lt;^term&gt;&#8249;len_of x&#8250;], proc = K word_len_simproc_fn};
+
+(* convert 5 or nat 5 to Suc 4 when n_sucs = 1, Suc (Suc 4) when n_sucs = 2,
+   or just 5 (discarding nat) when n_sucs = 0 *)
+
+fun nat_get_Suc_simproc_fn n_sucs ctxt ct =
+  let
+    val (f $ arg) = Thm.term_of ct;
+    val n =
+      (case arg of \&lt;^term&gt;&#8249;nat&#8250; $ n =&gt; n | n =&gt; n)
+      |&gt; HOLogic.dest_number |&gt; snd;
+    val (i, j) = if n &gt; n_sucs then (n_sucs, n - n_sucs) else (n, 0);
+    val arg&#39; = funpow i HOLogic.mk_Suc (HOLogic.mk_number \&lt;^typ&gt;&#8249;nat&#8250; j);
+    val _ = if arg = arg&#39; then raise TERM (&quot;&quot;, []) else ();
+    fun propfn g =
+      HOLogic.mk_eq (g arg, g arg&#39;)
+      |&gt; HOLogic.mk_Trueprop |&gt; Thm.cterm_of ctxt;
+    val eq1 =
+      Goal.prove_internal ctxt [] (propfn I)
+        (K (simp_tac (put_simpset word_ss ctxt) 1));
+  in
+    Goal.prove_internal ctxt [] (propfn (curry (op $) f))
+      (K (simp_tac (put_simpset HOL_ss ctxt addsimps [eq1]) 1))
+    |&gt; mk_meta_eq |&gt; SOME
+  end handle TERM _ =&gt; NONE;
+
+fun nat_get_Suc_simproc n_sucs ts =
+  Simplifier.make_simproc \&lt;^context&gt; &quot;nat_get_Suc&quot;
+   {lhss = map (fn t =&gt; t $ \&lt;^term&gt;&#8249;n :: nat&#8250;) ts,
+    proc = K (nat_get_Suc_simproc_fn n_sucs)};
+
+val no_split_ss =
+  simpset_of (put_simpset HOL_ss \&lt;^context&gt;
+    |&gt; Splitter.del_split @{thm if_split});
+
+val expand_word_eq_sss =
+  (simpset_of (put_simpset HOL_basic_ss \&lt;^context&gt; addsimps
+       @{thms word_eq_rbl_eq word_le_rbl word_less_rbl word_sle_rbl word_sless_rbl}),
+  map simpset_of [
+   put_simpset no_split_ss \&lt;^context&gt; addsimps
+    @{thms rbl_word_plus rbl_word_and rbl_word_or rbl_word_not
+                                rbl_word_neg bl_word_sub rbl_word_xor
+                                rbl_word_cat rbl_word_slice rbl_word_scast
+                                rbl_word_ucast rbl_shiftl rbl_shiftr rbl_sshiftr
+                                rbl_word_if},
+   put_simpset no_split_ss \&lt;^context&gt; addsimps
+    @{thms to_bl_numeral to_bl_neg_numeral to_bl_0 rbl_word_1},
+   put_simpset no_split_ss \&lt;^context&gt; addsimps
+    @{thms rev_rev_ident rev_replicate rev_map to_bl_upt word_size}
+          addsimprocs [word_len_simproc],
+   put_simpset no_split_ss \&lt;^context&gt; addsimps
+    @{thms list.simps split_conv replicate.simps list.map
+                                zip_Cons_Cons zip_Nil drop_Suc_Cons drop_0 drop_Nil
+                                foldr.simps list.map zip.simps(1) zip_Nil zip_Cons_Cons takefill_Suc_Cons
+                                takefill_Suc_Nil takefill.Z rbl_succ2_simps
+                                rbl_plus_simps rev_bin_to_bl_simps append.simps
+                                takefill_last_simps drop_nonempty_simps
+                                rev_bl_order_simps}
+          addsimprocs [expand_upt_simproc,
+                       nat_get_Suc_simproc 4
+                         [\&lt;^term&gt;&#8249;replicate&#8250;, \&lt;^term&gt;&#8249;takefill x&#8250;,
+                          \&lt;^term&gt;&#8249;drop&#8250;, \&lt;^term&gt;&#8249;bin_to_bl&#8250;,
+                          \&lt;^term&gt;&#8249;takefill_last x&#8250;,
+                          \&lt;^term&gt;&#8249;drop_nonempty x&#8250;]],
+    put_simpset no_split_ss \&lt;^context&gt; addsimps @{thms xor3_simps carry_simps if_bool_simps}
+  ])
+
+fun tac ctxt =
+  let
+    val (ss, sss) = expand_word_eq_sss;
+  in
+    foldr1 (op THEN_ALL_NEW)
+      ((CHANGED o safe_full_simp_tac (put_simpset ss ctxt)) ::
+        map (fn ss =&gt; safe_full_simp_tac (put_simpset ss ctxt)) sss)
+  end;
+
+end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>word_bitwise</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (fn ctxt =&gt; Method.SIMPLE_METHOD (Word_Bitwise_Tac.tac ctxt 1))&#8250;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;decomposer for word equalities and inequalities into bit propositions&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+
