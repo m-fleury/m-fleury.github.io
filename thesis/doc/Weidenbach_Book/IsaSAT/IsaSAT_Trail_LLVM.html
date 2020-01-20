@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IsaSAT_Trail_LLVM (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IsaSAT_Trail_LLVM</h1>
+
+<span class="command">theory</span> <span class="name">IsaSAT_Trail_LLVM</span><br/>
+<span class="keyword">imports</span> <a href="IsaSAT_Literals_LLVM.html"><span class="name">IsaSAT_Literals_LLVM</span></a> <a href="IsaSAT_Trail.html"><span class="name">IsaSAT_Trail</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IsaSAT_Trail_LLVM</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>IsaSAT_Literals_LLVM</span><span> </span><span>IsaSAT_Trail</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>tri_bool_assn</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;8 word&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;tri_bool_rel_aux &#8801; { (0::nat,None), (2,Some True), (3,Some False) }&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;tri_bool_rel &#8801; unat_rel&#39; TYPE(8) O tri_bool_rel_aux&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;tri_bool_assn &#8801; pure tri_bool_rel&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>fcomp_norm_unfold</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>tri_bool_rel_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>tri_bool_UNSET_refine_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(0,UNSET)&#8712;tri_bool_rel_aux&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>tri_bool_SET_TRUE_refine_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(2,SET_TRUE)&#8712;tri_bool_rel_aux&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>tri_bool_SET_FALSE_refine_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(3,SET_FALSE)&#8712;tri_bool_rel_aux&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>tri_bool_eq_refine_aux</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;((=),tri_bool_eq) &#8712; tri_bool_rel_aux&#8594;tri_bool_rel_aux&#8594;bool_rel&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>tri_bool_rel_aux_def</span><span> </span><span>tri_bool_eq_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>tri_bool_UNSET_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry0 (RETURN 0)&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> unat_assn&#39; TYPE(8)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(8)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>tri_bool_SET_TRUE_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry0 (RETURN 2)&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> unat_assn&#39; TYPE(8)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(8)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>tri_bool_SET_FALSE_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry0 (RETURN 3)&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> unat_assn&#39; TYPE(8)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(8)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>tri_bool_eq_impl</span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry (RETURN oo (=))&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(unat_assn&#39; TYPE(8))<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (unat_assn&#39; TYPE(8))<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span>tri_bool_UNSET_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>tri_bool_UNSET_refine_aux</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>tri_bool_SET_TRUE_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>tri_bool_SET_TRUE_refine_aux</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>tri_bool_SET_FALSE_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>tri_bool_SET_FALSE_refine_aux</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>tri_bool_eq_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>tri_bool_eq_refine_aux</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>trail_pol_fast_assn</span><span> </span><span class="delimiter">=</span><span>
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;32 word array_list64 &#215; tri_bool_assn larray64 &#215; 32 word larray64 &#215;
+     64 word larray64 &#215; 32 word &#215;
+     32 word array_list64&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>DECISION_REASON_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;uncurry0 (RETURN DECISION_REASON)&quot;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> sint64_nat_assn&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>DECISION_REASON_def</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(64)&quot;</span></span></span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>trail_pol_fast_assn</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;trail_pol &#8658; trail_pol_fast_assn &#8658; assn&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;trail_pol_fast_assn &#8801;
+    arl64_assn unat_lit_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> larray64_assn (tri_bool_assn) &#215;<span class="hidden">&#8681;</span><sub>a</sub>
+    larray64_assn uint32_nat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub>
+    larray64_assn sint64_nat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub>
+    arl64_assn uint32_nat_assn&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Code generation&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subparagraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Conversion between incomplete and complete mode&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>count_decided_pol_impl</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;RETURN o count_decided_pol&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>trail_pol_fast_assn_def</span><span> </span><span>count_decided_pol_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>get_level_atm_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo get_level_atm_pol)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[get_level_atm_pol_pre]<span class="hidden">&#8681;</span><sub>a</sub>
+  trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> atom_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; uint32_nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>get_level_atm_pol_def</span><span> </span><span>nat_shiftr_div2</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>     </span><span>get_level_atm_pol_pre_def</span><span> </span><span>trail_pol_fast_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>eta_contract</span><span> </span><span class="delimiter">=</span><span> </span><span>false</span><span class="delimiter">,</span><span> </span><span>show_abbrevs</span><span class="delimiter">=</span><span>false</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nth _&quot;</span></span></span><span> </span><span>eta_expand</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nth _ _&quot;</span></span></span><span> </span><span>annot_index_of_atm</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>get_level_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo get_level_pol)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[get_level_pol_pre]<span class="hidden">&#8681;</span><sub>a</sub>
+      trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; uint32_nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>get_level_get_level_atm</span><span> </span><span>nat_shiftr_div2</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>get_level_pol_pre_def</span><span> </span><span>get_level_pol_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>image_image</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span>in_&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_atm_of_in_atms_of_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>get_level_atm_pol_pre_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>polarity_pol_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo polarity_pol)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[uncurry polarity_pol_pre]<span class="hidden">&#8681;</span><sub>a</sub> trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; tri_bool_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>polarity_pol_def</span><span> </span><span>option.case_eq_if</span><span> </span><span>polarity_pol_pre_def</span><span>
+</span><span>    </span><span>trail_pol_fast_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>isa_length_trail_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o isa_length_trail&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;_. True]<span class="hidden">&#8681;</span><sub>a</sub> trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; snat_assn&#39; TYPE(64)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>isa_length_trail_def</span><span> </span><span>isa_length_trail_pre_def</span><span> </span><span>length_uint32_nat_def</span><span>
+</span><span>    </span><span>trail_pol_fast_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>cons_trail_Propagated_tr_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry2 (cons_trail_Propagated_tr)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> sint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> trail_pol_fast_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cons_trail_Propagated_tr_def</span><span> </span><span>cons_trail_Propagated_tr_def</span><span>
+</span><span>    </span><span>SET_TRUE_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>SET_FALSE_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>cons_trail_Propagated_tr_pre_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>trail_pol_fast_assn_def</span><span> </span><span>prod.case</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span>annot_index_of_atm</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span class="delimiter">(</span><span>4</span><span class="delimiter">)</span><span>annot_index_of_atm</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*unfolding ins_idx_upcast64  *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fold_tuple_optimizations</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+sepref_def (in -)last_trail_fast_code
+  is &#8249;RETURN o last_trail_pol&#8250;
+  :: &#8249;[last_trail_pol_pre]<span class="hidden">&#8681;</span><sub>a</sub>
+       trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; unat_lit_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> option_assn uint64_nat_assn&#8250;
+  unfolding last_trail_pol_def nth_u_def[symmetric] zero_uint64_nat_def[symmetric]
+    last_trail_pol_pre_def
+  supply [[goals_limit = 1]]
+  by sepref
+
+declare last_trail_fast_code.refine[sepref_fr_rules]
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>tl_trail_tr_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o tl_trailt_tr&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[tl_trailt_tr_pre]<span class="hidden">&#8681;</span><sub>a</sub>
+        trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; trail_pol_fast_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>if_splits</span><span class="delimiter">[</span><span>split</span><span class="delimiter">]</span><span> </span><span>option.splits</span><span class="delimiter">[</span><span>split</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>tl_trailt_tr_def</span><span> </span><span>UNSET_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>tl_trailt_tr_pre_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>trail_pol_fast_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(32)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fold_tuple_optimizations</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>tl_trail_proped_tr_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o tl_trail_propedt_tr&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[tl_trail_propedt_tr_pre]<span class="hidden">&#8681;</span><sub>a</sub>
+        trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; trail_pol_fast_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>if_splits</span><span class="delimiter">[</span><span>split</span><span class="delimiter">]</span><span> </span><span>option.splits</span><span class="delimiter">[</span><span>split</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>tl_trail_propedt_tr_def</span><span> </span><span>UNSET_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>tl_trail_propedt_tr_pre_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*ins_idx_upcast64[where i=&quot;atm_of _&quot;]*)</span></span></span></span></span><span> </span><span>trail_pol_fast_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(32)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>lit_of_last_trail_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o lit_of_last_trail_pol&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;(M, _). M &#8800; []]<span class="hidden">&#8681;</span><sub>a</sub> trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; unat_lit_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lit_of_last_trail_pol_def</span><span> </span><span>trail_pol_fast_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>cons_trail_Decided_tr_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo cons_trail_Decided_tr)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[cons_trail_Decided_tr_pre]<span class="hidden">&#8681;</span><sub>a</sub>
+       unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; trail_pol_fast_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cons_trail_Decided_tr_def</span><span> </span><span>cons_trail_Decided_tr_def</span><span> </span><span>trail_pol_fast_assn_def</span><span>
+</span><span>    </span><span>SET_TRUE_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>SET_FALSE_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>cons_trail_Decided_tr_pre_def</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*unfolding annot_index_atm_of*)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(32)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;_@[&#8977;]&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(_,&#8977;)&quot;</span></span></span><span> </span><span>annot_snat_unat_downcast</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;l</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;32&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fold_tuple_optimizations</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>defined_atm_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo defined_atm_pol)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[uncurry defined_atm_pol_pre]<span class="hidden">&#8681;</span><sub>a</sub> trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> atom_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; bool1_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>defined_atm_pol_def</span><span> </span><span>UNSET_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>tri_bool_eq_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>defined_atm_pol_pre_def</span><span> </span><span>trail_pol_fast_assn_def</span><span> </span><span>Pos_rel_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ins_idx_upcast64</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>Pos_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>UNSET_def</span><span class="delimiter">[</span><span>simp</span><span> </span><span>del</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>get_propagation_reason_raw_pol</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>get_propagation_reason_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry get_propagation_reason_raw_pol&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> sint64_nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>get_propagation_reason_raw_pol_def</span><span> </span><span>trail_pol_fast_assn_def</span><span>
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*annot_index_atm_of*)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+sepref_definition get_propagation_reason_fast_code
+  is &#8249;uncurry get_propagation_reason_pol&#8250;
+  :: &#8249;trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> option_assn uint64_nat_assn&#8250;
+  unfolding get_propagation_reason_pol_def
+   zero_uint64_nat_def[symmetric]
+  by sepref
+
+declare get_propagation_reason_fast_code.refine[sepref_fr_rules]
+  get_propagation_reason_code.refine[sepref_fr_rules]
+
+
+sepref_definition get_the_propagation_reason_code
+  is &#8249;uncurry get_the_propagation_reason_pol&#8250;
+  :: &#8249;trail_pol_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> option_assn nat_assn&#8250;
+  unfolding get_the_propagation_reason_pol_def
+    tri_bool_eq_def[symmetric]
+  by sepref
+
+sepref_definition (in -) get_the_propagation_reason_fast_code
+  is &#8249;uncurry get_the_propagation_reason_pol&#8250;
+  :: &#8249;trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> option_assn uint64_nat_assn&#8250;
+  unfolding get_the_propagation_reason_pol_def
+    tri_bool_eq_def[symmetric]
+  by sepref
+
+declare get_the_propagation_reason_fast_code.refine[sepref_fr_rules]
+  get_the_propagation_reason_code.refine[sepref_fr_rules]
+*)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>isa_trail_nth</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>isa_trail_nth_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry isa_trail_nth&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> sint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>isa_trail_nth_def</span><span> </span><span>trail_pol_fast_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>tl_trail_tr_no_CS_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o tl_trailt_tr_no_CS&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[tl_trailt_tr_no_CS_pre]<span class="hidden">&#8681;</span><sub>a</sub>
+        trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; trail_pol_fast_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>if_splits</span><span class="delimiter">[</span><span>split</span><span class="delimiter">]</span><span> </span><span>option.splits</span><span class="delimiter">[</span><span>split</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>tl_trailt_tr_no_CS_def</span><span> </span><span>UNSET_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>tl_trailt_tr_no_CS_pre_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*annot_index_atm_of*)</span></span></span></span></span><span> </span><span>trail_pol_fast_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(32)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>trail_conv_back_imp_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry trail_conv_back_imp&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> trail_pol_fast_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>trail_conv_back_imp_def</span><span> </span><span>trail_pol_fast_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;take &#8977;&quot;</span></span></span><span> </span><span>annot_unat_snat_upcast</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;l</span><span class="delimiter">=</span><span>64</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>get_pos_of_level_in_trail_imp_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry get_pos_of_level_in_trail_imp&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>get_pos_of_level_in_trail_imp_def</span><span> </span><span>trail_pol_fast_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ ! &#8977;&#8250;</span></span></span><span> </span><span>annot_unat_snat_upcast</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;l</span><span class="delimiter">=</span><span>64</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>get_the_propagation_reason_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry get_the_propagation_reason_pol&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> snat_option_assn&#39; TYPE(64)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>get_the_propagation_reason_pol_def</span><span> </span><span>trail_pol_fast_assn_def</span><span>
+</span><span>    </span><span>tri_bool_eq_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">experiment</span></span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">export_llvm</span></span><span>
+</span><span>  </span><span>tri_bool_UNSET_impl</span><span>
+</span><span>  </span><span>tri_bool_SET_TRUE_impl</span><span>
+</span><span>  </span><span>tri_bool_SET_FALSE_impl</span><span>
+</span><span>  </span><span>DECISION_REASON_impl</span><span>
+</span><span>  </span><span>count_decided_pol_impl</span><span>
+</span><span>  </span><span>get_level_atm_fast_code</span><span>
+</span><span>  </span><span>get_level_fast_code</span><span>
+</span><span>  </span><span>polarity_pol_fast_code</span><span>
+</span><span>  </span><span>isa_length_trail_fast_code</span><span>
+</span><span>  </span><span>cons_trail_Propagated_tr_fast_code</span><span>
+</span><span>  </span><span>tl_trail_tr_fast_code</span><span>
+</span><span>  </span><span>tl_trail_proped_tr_fast_code</span><span>
+</span><span>  </span><span>lit_of_last_trail_fast_code</span><span>
+</span><span>  </span><span>cons_trail_Decided_tr_fast_code</span><span>
+</span><span>  </span><span>defined_atm_fast_code</span><span>
+</span><span>  </span><span>get_propagation_reason_fast_code</span><span>
+</span><span>  </span><span>isa_trail_nth_fast_code</span><span>
+</span><span>  </span><span>tl_trail_tr_no_CS_fast_code</span><span>
+</span><span>  </span><span>trail_conv_back_imp_fast_code</span><span>
+</span><span>  </span><span>get_pos_of_level_in_trail_imp_fast_code</span><span>
+</span><span>  </span><span>get_the_propagation_reason_fast_code</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">1775f91f0787 </td><td align="center">271ed48b </td><td align="center">Mo 20 Jän 2020 16:45:39 CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

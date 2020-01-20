@@ -20,12 +20,12 @@
 </span><span class="keyword2"><span class="keyword">begin</span></span><span>
 </span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Refining Propagate And Conflict&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">chapter</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Propagation Loop And Conflict&#8250;</span></span></span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Unit Propagation, Inner Loop&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Unit Propagation, Inner Loop&#8250;</span></span></span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span> </span><span>length_ll_fs</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat twl_st_wl &#8658; nat literal &#8658; nat&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length_ll_fs = (&#955;(_, _, _, _, _, _, W) L. length (W L))&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length_ll_fs = (&#955;(_, _, _, _, _, _, _, _, W) L. length (W L))&#8250;</span></span></span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span> </span><span>length_ll_fs_heur</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;twl_st_wl_heur &#8658; nat literal &#8658; nat&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
 </span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length_ll_fs_heur S L = length (watched_by_int S L)&#8250;</span></span></span><span>
@@ -50,10 +50,9 @@
 </span><span>
 </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>unit_propagation_inner_loop_wl_loop_D_heur_alt_def</span><span class="delimiter">:</span><span>
 </span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unit_propagation_inner_loop_wl_loop_D_heur L S<span class="hidden">&#8681;</span><sub>0</sub> = do {
-    ASSERT (nat_of_lit L &lt; length (get_watched_wl_heur S<span class="hidden">&#8681;</span><sub>0</sub>));
-     ASSERT (length (watched_by_int S<span class="hidden">&#8681;</span><sub>0</sub> L) &#8804; length (get_clauses_wl_heur S<span class="hidden">&#8681;</span><sub>0</sub>));
-    let n = length (watched_by_int S<span class="hidden">&#8681;</span><sub>0</sub> L);
-    let b = (zero_uint64_nat, zero_uint64_nat, S<span class="hidden">&#8681;</span><sub>0</sub>);
+    ASSERT (length (watched_by_int S<span class="hidden">&#8681;</span><sub>0</sub> L) &#8804; length (get_clauses_wl_heur S<span class="hidden">&#8681;</span><sub>0</sub>));
+    n &#8592; mop_length_watched_by_int S<span class="hidden">&#8681;</span><sub>0</sub> L;
+    let b = (0, 0, S<span class="hidden">&#8681;</span><sub>0</sub>);
     WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup>unit_propagation_inner_loop_wl_loop_D_heur_inv S<span class="hidden">&#8681;</span><sub>0</sub> L<span class="hidden">&#8662;</span></sup>
       (&#955;(j, w, S). w &lt; n &#8743; get_conflict_wl_is_None_heur S)
       (&#955;(j, w, S). do {
@@ -61,11 +60,10 @@
       })
       b
   }&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>unit_propagation_inner_loop_wl_loop_D_heur_def</span><span> </span><span>Let_def</span><span> </span><span>zero_uint64_nat_def</span><span> </span><span class="keyword1"><span class="command">..</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>unit_propagation_inner_loop_wl_loop_D_heur_def</span><span> </span><span>Let_def</span><span> </span><span class="keyword1"><span class="command">..</span></span><span>
 </span><span>
 </span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Unit propagation, Outer Loop&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Unit propagation, Outer Loop&#8250;</span></span></span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>select_and_remove_from_literals_to_update_wl_heur_alt_def</span><span class="delimiter">:</span><span>
 </span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;select_and_remove_from_literals_to_update_wl_heur =
@@ -115,7 +113,7 @@
 </body>
 <div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
 
-<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+<tr><td align="center">Isabelle2019 </td><td align="center">1775f91f0787 </td><td align="center">271ed48b </td><td align="center">Mo 20 Jän 2020 16:45:39 CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
 
 </html>
 

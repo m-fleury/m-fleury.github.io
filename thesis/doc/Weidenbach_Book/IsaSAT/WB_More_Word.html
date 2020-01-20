@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory WB_More_Word (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory WB_More_Word</h1>
+
+<span class="command">theory</span> <span class="name">WB_More_Word</span><br/>
+<span class="keyword">imports</span> <a href="../../Unsorted/Isabelle_LLVM/More_Word.html"><span class="name">More_Word</span></a> <a href="../../Unsorted/Isabelle_LLVM/Bits_Natural.html"><span class="name">Bits_Natural</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>WB_More_Word</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;HOL-Word.More_Word&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Isabelle_LLVM.Bits_Natural&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nat_uint_XOR</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat (uint (a XOR b)) = nat (uint a) XOR nat (uint b)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">if</span></span><span> </span><span>len</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;LENGTH(&#39;a) &gt; 0&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>a</span><span> </span><span>b</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#39;a ::len0 Word.word&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>1</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uint ((word_of_int:: int &#8658; &#39;a Word.word)(uint a)) = uint a&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>word_of_int_uint</span><span class="delimiter">[</span><span>of</span><span> </span><span>a</span><span class="delimiter">,</span><span> </span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>refl</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>H</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat (bintrunc n (a XOR b)) = nat (bintrunc n a XOR bintrunc n b)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">if</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;n&gt; 0&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>n</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>a</span><span> </span><span class="delimiter">::</span><span> </span><span>int</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>b</span><span> </span><span class="delimiter">::</span><span> </span><span>int</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>that</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>n</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>a</span><span> </span><span>b</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>0</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Suc</span><span> </span><span>n</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>IH</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>Suc</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>n</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Suc</span><span> </span><span>m</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span>
+</span><span>        </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat (bintrunc m (bin_rest (bin_rest a) XOR bin_rest (bin_rest b)) BIT
+            ((bin_last (bin_rest a) &#8744; bin_last (bin_rest b)) &#8743;
+             (bin_last (bin_rest a) &#10230; &#172; bin_last (bin_rest b))) BIT
+            ((bin_last a &#8744; bin_last b) &#8743; (bin_last a &#10230; &#172; bin_last b))) =
+         nat ((bintrunc m (bin_rest (bin_rest a)) XOR bintrunc m (bin_rest (bin_rest b))) BIT
+              ((bin_last (bin_rest a) &#8744; bin_last (bin_rest b)) &#8743;
+               (bin_last (bin_rest a) &#10230; &#172; bin_last (bin_rest b))) BIT
+              ((bin_last a &#8744; bin_last b) &#8743; (bin_last a &#10230; &#172; bin_last b)))&#8250;</span></span></span><span>
+</span><span>        </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat (?n1 BIT ?b) = nat (?n2 BIT ?b)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Sledgehammer proof changed to use the more readable ?n1 and ?n2 *)</span></span></span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>a1</span><span class="delimiter">:</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;nat ?n1 = nat ?n2&quot;</span></span></span><span>
+</span><span>          </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>IH</span><span> </span><span>Suc</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>f2</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;0 &#8804; ?n2&quot;</span></span></span><span>
+</span><span>          </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>bintr_ge0</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;0 &#8804; ?n1&quot;</span></span></span><span>
+</span><span>          </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>bintr_ge0</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;?n2 = ?n1&quot;</span></span></span><span>
+</span><span>          </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>f2</span><span> </span><span>a1</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>presburger</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">qed</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat (bintrunc LENGTH(&#39;a) (a XOR b)) = nat (bintrunc LENGTH(&#39;a) a XOR bintrunc LENGTH(&#39;a) b)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>a</span><span> </span><span>b</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>len</span><span> </span><span>H</span><span class="delimiter">[</span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;LENGTH(&#39;a)&#8250;</span></span></span><span> </span><span>a</span><span> </span><span>b</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat (uint (a XOR b)) = nat (uint a XOR uint b)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>transfer</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>bitXOR_nat_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bitXOR_1_if_mod_2_int</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bitOR L 1 = (if L mod 2 = 0 then L + 1 else L)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>L</span><span> </span><span class="delimiter">::</span><span> </span><span>int</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>bin_rl_eqI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>bin_rest_OR</span><span> </span><span>bin_last_OR</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>bin_rest_def</span><span> </span><span>bin_last_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bitOR_1_if_mod_2_nat</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bitOR L 1 = (if L mod 2 = 0 then L + 1 else L)&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bitOR L (Suc 0) = (if L mod 2 = 0 then L + 1 else L)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>L</span><span> </span><span class="delimiter">::</span><span> </span><span>nat</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>H</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bitOR L 1 =  L + (if bin_last (int L) then 0 else 1)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>bitOR_nat_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>bitOR_nat_def</span><span> </span><span>bin_last_def</span><span>
+</span><span>        </span><span>bitXOR_1_if_mod_2_int</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bitOR L 1 = (if L mod 2 = 0 then L + 1 else L)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>H</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>bitOR_nat_def</span><span> </span><span>bin_last_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>presburger</span><span class="delimiter">+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bitOR L (Suc 0) = (if L mod 2 = 0 then L + 1 else L)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bin_pos_same_XOR3</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;a XOR a XOR c = c&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;a XOR c XOR a = c&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>a</span><span> </span><span>c</span><span> </span><span class="delimiter">::</span><span> </span><span>int</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>bin_ops_same</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>int_xor_assoc</span><span> </span><span>int_xor_zero</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bin_pos_same_XOR3_nat</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;a XOR a XOR c = c&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;a XOR c XOR a = c&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>a</span><span> </span><span>c</span><span> </span><span class="delimiter">::</span><span> </span><span>nat</span><span>
+</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>bitXOR_nat_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>bin_pos_same_XOR3</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">1775f91f0787 </td><td align="center">271ed48b </td><td align="center">Mo 20 Jän 2020 16:45:39 CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

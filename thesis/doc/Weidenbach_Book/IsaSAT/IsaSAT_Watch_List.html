@@ -17,196 +17,102 @@
 <div class="source">
 <pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IsaSAT_Watch_List</span><span>
 </span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>IsaSAT_Literals</span><span>
-</span><span>    </span><span>Watched_Literals.WB_Word</span><span>
 </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">chapter</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Refinement of the Watched Function&#8250;</span></span></span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;There is not much to say about watch lists since they are arrays of resizeable arrays,
   which are defined in a separate theory.
 
-  However, when replacing the elements in our watch lists from \&lt;^typ&gt;&#8249;(nat &#215; uint32)&#8250;
-  to \&lt;^typ&gt;&#8249;(nat &#215; uint32 &#215; bool)&#8250;, we got a huge and unexpected slowdown, due to a much higher
+  However, when replacing the elements in our watch lists from &#8249;(nat &#215; uint32)&#8250;
+  to &#8249;(nat &#215; uint32 &#215; bool)&#8250; to enable special handling of binary clauses, we got a huge and
+  unexpected slowdown, due to a much higher
   number of cache misses (roughly 3.5 times as many on a eq.atree.braun.8.unsat.cnf which also took
   66s instead of 50s). While toying with the generated ML code, we found out that our version of
   the tuples with booleans were using 40 bytes instead of 24 previously. Just merging the
-  \&lt;^typ&gt;&#8249;uint32&#8250; and the \&lt;^typ&gt;&#8249;bool&#8250; to a single \&lt;^typ&gt;&#8249;uint64&#8250; was sufficient to get the
+  &#8249;uint32&#8250; and the \&lt;^typ&gt;&#8249;bool&#8250; to a single &#8249;uint64&#8250; was sufficient to get the
   performance back.
 
-  Remark that however, the evaluation of terms like \&lt;^term&gt;&#8249;(2::uint64) ^ 32&#8250; was not done automatically
+  Remark that however, the evaluation of terms like &#8249;(2::uint64) ^ 32&#8250; was not done automatically
   and even worse, was redone each time, leading to a complete performance blow-up (75s on my macbook
   for eq.atree.braun.7.unsat.cnf instead of 7s).
+
+  None of the problems appears in the LLVM code.
 &#8250;</span></span></span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>watcher_enc</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;watcher_enc = {(n, (L, b)). &#8707;L&#39;. (L&#39;, L) &#8712; unat_lit_rel &#8743;
-      n = uint64_of_uint32 L&#39; + (if b then 1 &lt;&lt; 32 else 0)}&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Definition&#8250;</span></span></span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>take_only_lower32</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uint64 &#8658; uint64&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>  </span><span class="delimiter">[</span><span>code</span><span> </span><span>del</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;take_only_lower32 n = n AND ((1 &lt;&lt; 32) - 1)&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>map_fun_rel</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(nat &#215; &#39;key) set &#8658; (&#39;b &#215; &#39;a) set &#8658; (&#39;b list &#215; (&#39;key &#8658; &#39;a)) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span>map_fun_rel_def_internal</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;map_fun_rel D R = {(m, f). &#8704;(i, j)&#8712;D. i &lt; length m &#8743; (m ! i, f j) &#8712; R}&#8250;</span></span></span><span>
 </span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>map_fun_rel_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#10216;R&#10217;map_fun_rel D = {(m, f). &#8704;(i, j)&#8712;D. i &lt; length m &#8743; (m ! i, f j) &#8712; R}&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>relAPP_def</span><span> </span><span>map_fun_rel_def_internal</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nat_less_numeral_unfold</span><span class="delimiter">:</span><span> </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>n</span><span> </span><span class="delimiter">::</span><span> </span><span>nat</span><span> </span><span class="keyword2"><span class="keyword">shows</span></span><span>
-</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;n &lt; numeral w &#10231; n = pred_numeral w &#8744; n &lt; pred_numeral w&quot;</span></span></span><span>
-</span><span class="keyword1"><span class="command">by</span></span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>numeral_eq_Suc</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>mop_append_ll</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a list list &#8658; nat literal &#8658; &#39;a &#8658; &#39;a list list nres&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;mop_append_ll xs i x = do {
+     ASSERT(nat_of_lit i &lt; length xs);
+     RETURN (append_ll xs (nat_of_lit i) x)
+  }&#8250;</span></span></span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bin_nth2_32_iff</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bin_nth 4294967295 na &#10231; na &lt; 32&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>bin_nth_Bit1</span><span> </span><span>bin_nth_Bit0</span><span> </span><span>nat_less_numeral_unfold</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Operations&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>length_ll_length_ll_f</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry (RETURN oo length_ll), uncurry (RETURN oo length_ll_f)) &#8712;
+     [&#955;(W, L). L &#8712;# &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> &#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>]<span class="hidden">&#8681;</span><sub>f</sub> ((&#10216;Id&#10217;map_fun_rel (D<span class="hidden">&#8681;</span><sub>0</sub> &#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>)) &#215;<span class="hidden">&#8681;</span><sub>r</sub> nat_lit_rel) &#8594;
+       &#10216;nat_rel&#10217; nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>length_ll_def</span><span> </span><span>length_ll_f_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fref_def</span><span> </span><span>map_fun_rel_def</span><span> </span><span>prod_rel_def</span><span> </span><span>nres_rel_def</span><span> </span><span>p2rel_def</span><span> </span><span>br_def</span><span>
+</span><span>      </span><span>nat_lit_rel_def</span><span class="delimiter">)</span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>take_only_lower32_le_uint32_max</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat_of_uint64 n &#8804; uint32_max &#10233; take_only_lower32 n = n&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>take_only_lower32_def</span><span>
-</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>transfer</span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>and_eq_bits_eqI</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>unat_le_uint32_max_no_bit_set</span><span>
-</span><span>    </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>bin_nth2_32_iff</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>iffD2</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
-</span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>uint32_of_uint64_uint64_of_uint32</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uint32_of_uint64 (uint64_of_uint32 n) = n&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>uint64_of_uint32_def</span><span> </span><span>uint32_of_uint64_def</span><span>
-</span><span>    </span><span>nat_of_uint64_uint64_of_nat_id</span><span> </span><span>nat_of_uint32_le_uint32_max</span><span> </span><span>nat_of_uint32_le_uint64_max</span><span class="delimiter">)</span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>take_only_lower32_le_uint32_max_ge_uint32_max</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat_of_uint64 n &#8804; uint32_max &#10233; nat_of_uint64 m &#8805; uint32_max &#10233; take_only_lower32 m = 0 &#10233;
-    take_only_lower32 (n + m) = n&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>take_only_lower32_def</span><span>
-</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>transfer</span><span>
-</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>m</span><span> </span><span>n</span><span>
-</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>ex_rbl_word64_le_uint32_max</span><span class="delimiter">[</span><span>of</span><span> </span><span>m</span><span class="delimiter">]</span><span> </span><span>ex_rbl_word64_ge_uint32_max</span><span class="delimiter">[</span><span>of</span><span> </span><span>n</span><span class="delimiter">]</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>and_eq_bits_eqI</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>bin_nth2_32_iff</span><span> </span><span>word_add_rbl</span><span>
-</span><span>      </span><span>dest</span><span class="delimiter">:</span><span> </span><span>unat_le_uint32_max_no_bit_set</span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>word_bl.Rep_inject</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>iffD1</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>word_bl.Rep_inject</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>bl_word_and</span><span> </span><span>word_add_rbl</span><span>
-</span><span>      </span><span>split</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>take_only_lower32_1_32</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;take_only_lower32 (1 &lt;&lt; 32) = 0&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>take_only_lower32_def</span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>transfer</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span class="delimiter">)</span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nat_of_uint64_1_32</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat_of_uint64 (1 &lt;&lt; 32) = uint32_max + 1&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>uint32_max_def</span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>transfer</span><span> </span><span>auto</span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>watcher_enc_extract_blit</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(n, (L, b)) &#8712; watcher_enc&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uint32_of_uint64 (take_only_lower32 n), L) &#8712; unat_lit_rel&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>watcher_enc_def</span><span> </span><span>take_only_lower32_le_uint32_max</span><span> </span><span>nat_of_uint64_uint64_of_uint32</span><span>
-</span><span>    </span><span>nat_of_uint32_le_uint32_max</span><span> </span><span>nat_of_uint64_1_32</span><span> </span><span>take_only_lower32_1_32</span><span>
-</span><span>      </span><span>take_only_lower32_le_uint32_max_ge_uint32_max</span><span class="delimiter">)</span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>blit_of</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;blit_of (_, (L, _)) = L&#8250;</span></span></span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>blit_of_code</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;blit_of_code (n, bL) = uint32_of_uint64 (take_only_lower32 bL)&#8250;</span></span></span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>is_marked_binary</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;is_marked_binary (_, (_, b)) = b&#8250;</span></span></span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>is_marked_binary_code</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#215; uint64 &#8658; bool&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>  </span><span class="delimiter">[</span><span>code</span><span> </span><span>del</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;is_marked_binary_code (_, bL) = (bL AND ((2 :: uint64)^32) &#8800; 0)&#8250;</span></span></span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>code</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;is_marked_binary_code (n, bL) = (bL AND 4294967296 &#8800; 0)&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>AND_2_32_bool</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat_of_uint64 n &#8804; uint32_max &#10233; n + (1 &lt;&lt; 32) AND 4294967296 = 4294967296&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>transfer</span><span>
-</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>n</span><span>
-</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>ex_rbl_word64_ge_uint32_max</span><span class="delimiter">[</span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;1 &lt;&lt; 32&#8250;</span></span></span><span class="delimiter">]</span><span> </span><span>ex_rbl_word64_le_uint32_max</span><span class="delimiter">[</span><span>of</span><span> </span><span>n</span><span class="delimiter">]</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>and_eq_bits_eqI</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>bin_nth2_32_iff</span><span> </span><span>word_add_rbl</span><span>
-</span><span>      </span><span>dest</span><span class="delimiter">:</span><span> </span><span>unat_le_uint32_max_no_bit_set</span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>word_bl.Rep_inject</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>iffD1</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>word_bl.Rep_inject</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>bl_word_and</span><span> </span><span>word_add_rbl</span><span>
-</span><span>      </span><span>split</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>watcher_enc_extract_bool_True</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(n, (L, True)) &#8712; watcher_enc&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;n AND 4294967296 = 4294967296&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>watcher_enc_def</span><span> </span><span>take_only_lower32_le_uint32_max</span><span> </span><span>nat_of_uint64_uint64_of_uint32</span><span>
-</span><span>    </span><span>nat_of_uint32_le_uint32_max</span><span> </span><span>nat_of_uint64_1_32</span><span> </span><span>take_only_lower32_1_32</span><span> </span><span>AND_2_32_bool</span><span>
-</span><span>      </span><span>take_only_lower32_le_uint32_max_ge_uint32_max</span><span class="delimiter">)</span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>le_uint32_max_AND2_32_eq0</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat_of_uint64 n &#8804; uint32_max &#10233; n AND 4294967296 = 0&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>transfer</span><span>
-</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>n</span><span>
-</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>ex_rbl_word64_le_uint32_max</span><span class="delimiter">[</span><span>of</span><span> </span><span>n</span><span class="delimiter">]</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>word_bl.Rep_inject</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>iffD1</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>word_bl.Rep_inject</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>bl_word_and</span><span> </span><span>word_add_rbl</span><span>
-</span><span>      </span><span>split</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>watcher_enc_extract_bool_False</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(n, (L, False)) &#8712; watcher_enc&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(n AND 4294967296 = 0)&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>watcher_enc_def</span><span> </span><span>take_only_lower32_le_uint32_max</span><span> </span><span>nat_of_uint64_uint64_of_uint32</span><span>
-</span><span>    </span><span>nat_of_uint32_le_uint32_max</span><span> </span><span>nat_of_uint64_1_32</span><span> </span><span>take_only_lower32_1_32</span><span> </span><span>AND_2_32_bool</span><span>
-</span><span>      </span><span>take_only_lower32_le_uint32_max_ge_uint32_max</span><span> </span><span>le_uint32_max_AND2_32_eq0</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mop_append_ll</span><span class="delimiter">:</span><span>
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry2 mop_append_ll, uncurry2 (RETURN ooo (&#955;W i x. W(i := W i @ [x])))) &#8712;
+    [&#955;((W, i), x). i &#8712;# &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> &#119964;]<span class="hidden">&#8681;</span><sub>f</sub> &#10216;Id&#10217;map_fun_rel (D<span class="hidden">&#8681;</span><sub>0</sub> &#119964;) &#215;<span class="hidden">&#8681;</span><sub>f</sub> Id &#215;<span class="hidden">&#8681;</span><sub>f</sub> Id &#8594; &#10216;&#10216;Id&#10217;map_fun_rel (D<span class="hidden">&#8681;</span><sub>0</sub> &#119964;)&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>uncurry_def</span><span> </span><span>mop_append_ll_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>ASSERT_leI</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>map_fun_rel_def</span><span> </span><span>append_ll_def</span><span class="delimiter">)</span><span>
 </span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>watcher_enc_extract_bool</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(n, (L, b)) &#8712; watcher_enc &#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;b &#10231; (n AND 4294967296 &#8800; 0)&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
-</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>show_sorts</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>b</span><span class="delimiter">)</span><span>
-</span><span>   </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>watcher_enc_extract_bool_False</span><span> </span><span>watcher_enc_extract_bool_True</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>delete_index_and_swap_update</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#39;a &#8658; &#39;b list) &#8658; &#39;a &#8658; nat &#8658; &#39;a &#8658; &#39;b list&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;delete_index_and_swap_update W K w = W(K := delete_index_and_swap (W K) w)&#8250;</span></span></span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>watcher_of</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat &#215; (nat literal &#215; bool) &#8658; _&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;watcher_of = id&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The precondition is not necessary.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>delete_index_and_swap_ll_delete_index_and_swap_update</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry2 (RETURN ooo delete_index_and_swap_ll), uncurry2 (RETURN ooo delete_index_and_swap_update))
+  &#8712;[&#955;((W, L), i). L &#8712;# &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> &#119964;]<span class="hidden">&#8681;</span><sub>f</sub> (&#10216;Id&#10217;map_fun_rel (D<span class="hidden">&#8681;</span><sub>0</sub> &#119964;) &#215;<span class="hidden">&#8681;</span><sub>r</sub> nat_lit_rel) &#215;<span class="hidden">&#8681;</span><sub>r</sub> nat_rel &#8594;
+      &#10216;&#10216;Id&#10217;map_fun_rel (D<span class="hidden">&#8681;</span><sub>0</sub> &#119964;)&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>delete_index_and_swap_ll_def</span><span> </span><span>uncurry_def</span><span> </span><span>fref_def</span><span> </span><span>nres_rel_def</span><span>
+</span><span>      </span><span>delete_index_and_swap_update_def</span><span> </span><span>map_fun_rel_def</span><span> </span><span>p2rel_def</span><span> </span><span>nat_lit_rel_def</span><span> </span><span>br_def</span><span>
+</span><span>      </span><span>nth_list_update&#39;</span><span> </span><span>nat_lit_rel_def</span><span>
+</span><span>      </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>literal_of_nat.simps</span><span class="delimiter">)</span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>watcher_of_code</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat &#215; uint64 &#8658; nat &#215; (uint32 &#215; bool)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;watcher_of_code = (&#955;(a, b). (a, (blit_of_code (a, b), is_marked_binary_code (a, b))))&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>append_update</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#39;a &#8658; &#39;b list) &#8658; &#39;a &#8658; &#39;b &#8658; &#39;a &#8658; &#39;b list&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;append_update W L a = W(L:= W (L) @ [a])&#8250;</span></span></span><span>
 </span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>nat_clauses_l</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat list list&#8250;</span></span></span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>watcher_of_fast_code</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uint64 &#215; uint64 &#8658; uint64 &#215; (uint32 &#215; bool)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;watcher_of_fast_code = (&#955;(a, b). (a, (blit_of_code (a, b), is_marked_binary_code (a, b))))&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Refinement of the Watched Function&#8250;</span></span></span><span>
 </span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>watched_by_nth</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat twl_st_wl &#8658; nat literal &#8658; nat &#8658; nat watcher&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;watched_by_nth = (&#955;(M, N, D, NE, UE, NS, US, Q, W) L i. W L ! i)&#8250;</span></span></span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>to_watcher</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat &#8658; nat literal &#8658; bool &#8658; _&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;to_watcher n L b = (n, (L, b))&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>watched_app</span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(nat literal &#8658; (nat watcher) list) &#8658; nat literal &#8658; nat &#8658; nat watcher&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;watched_app M L i &#8801; M L ! i&#8250;</span></span></span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>to_watcher_code</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat &#8658; uint32 &#8658; bool &#8658; nat &#215; uint64&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>  </span><span class="delimiter">[</span><span>code</span><span> </span><span>del</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
-</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;to_watcher_code = (&#955;a L b. (a, uint64_of_uint32 L OR (if b then 1 &lt;&lt; 32 else (0 :: uint64))))&#8250;</span></span></span><span>
-</span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>to_watcher_code</span><span class="delimiter">[</span><span>code</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;to_watcher_code a L b = (a, uint64_of_uint32 L OR (if b then 4294967296 else (0 :: uint64)))&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>shiftl_integer_conv_mult_pow2</span><span> </span><span>to_watcher_code_def</span><span> </span><span>shiftl_t2n_uint64</span><span class="delimiter">)</span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>OR_int64_0</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;A OR (0 :: uint64) = A&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>transfer</span><span> </span><span>auto</span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>OR_132_is_sum</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat_of_uint64 n &#8804; uint32_max &#10233; n OR (1 &lt;&lt; 32) = n + (1 &lt;&lt; 32)&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>transfer</span><span>
-</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>n</span><span>
-</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>ex_rbl_word64_le_uint32_max</span><span class="delimiter">[</span><span>of</span><span> </span><span>n</span><span class="delimiter">]</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>and_eq_bits_eqI</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>bin_nth2_32_iff</span><span> </span><span>word_add_rbl</span><span>
-</span><span>      </span><span>dest</span><span class="delimiter">:</span><span> </span><span>unat_le_uint32_max_no_bit_set</span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>word_bl.Rep_inject</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>iffD1</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>word_bl.Rep_inject</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>bl_word_or</span><span> </span><span>word_add_rbl</span><span>
-</span><span>      </span><span>split</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
-</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>to_watcher_fast</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;to_watcher_fast = to_watcher&#8250;</span></span></span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>to_watcher_fast_code</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uint64 &#8658; uint32 &#8658; bool &#8658; uint64 &#215; uint64&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;to_watcher_fast_code = (&#955;a L b. (a, uint64_of_uint32 L OR (if b then 1 &lt;&lt; 32 else (0 :: uint64))))&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>watched_by_nth_watched_app</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;watched_by S K ! w = watched_app ((snd o snd o snd o snd o snd o snd o snd o snd) S) K w&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>S</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>watched_app_def</span><span class="delimiter">)</span><span>
 </span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>take_only_lower_code</span><span class="delimiter">[</span><span>code</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;take_only_lower32 n = n AND 4294967295&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>take_only_lower32_def</span><span> </span><span>shiftl_t2n_uint64</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nth_ll_watched_app</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry2 (RETURN ooo nth_rll), uncurry2 (RETURN ooo watched_app)) &#8712;
+     [&#955;((W, L), i). L &#8712;# (&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> &#119964;)]<span class="hidden">&#8681;</span><sub>f</sub> ((&#10216;Id&#10217;map_fun_rel (D<span class="hidden">&#8681;</span><sub>0</sub> &#119964;)) &#215;<span class="hidden">&#8681;</span><sub>r</sub> nat_lit_rel) &#215;<span class="hidden">&#8681;</span><sub>r</sub> nat_rel &#8594;
+       &#10216;nat_rel &#215;<span class="hidden">&#8681;</span><sub>r</sub> Id&#10217; nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>watched_app_def</span><span> </span><span>nth_rll_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fref_def</span><span> </span><span>map_fun_rel_def</span><span> </span><span>prod_rel_def</span><span> </span><span>nres_rel_def</span><span> </span><span>p2rel_def</span><span> </span><span>br_def</span><span>
+</span><span>      </span><span>nat_lit_rel_def</span><span class="delimiter">)</span><span>
+</span><span>
 </span><span>
 </span><span class="keyword2"><span class="keyword">end</span></span></pre>
 
@@ -214,7 +120,7 @@
 </body>
 <div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
 
-<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+<tr><td align="center">Isabelle2019 </td><td align="center">1775f91f0787 </td><td align="center">271ed48b </td><td align="center">Mo 20 Jän 2020 16:45:39 CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
 
 </html>
 

@@ -21,6 +21,7 @@
 </span><span>
 </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO This file should probably be merged with IsaSAT_Arena*)</span></span></span></span></span><span>
 </span><span>
+</span><span class="keyword1"><span class="command">chapter</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The memory representation: Manipulation of all clauses&#8250;</span></span></span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Representation of Clauses&#8250;</span></span></span><span>
 </span><span>
@@ -84,15 +85,15 @@ is so large that there should not be any difference&#8250;</span></span></span><
     let l = length N0;
     let s = length C - 2;
     let N = (if is_short_clause C then
-          (((N0 @ [st]) @ [AActivity zero_uint32_nat]) @ [ALBD s]) @ [ASize s]
-          else ((((N0 @ [APos zero_uint32_nat]) @ [st]) @ [AActivity zero_uint32_nat]) @ [ALBD s]) @ [ASize (s)]);
+          (((N0 @ [st]) @ [AActivity 0]) @ [ALBD s]) @ [ASize s]
+          else ((((N0 @ [APos 0]) @ [st]) @ [AActivity 0]) @ [ALBD s]) @ [ASize (s)]);
     (i, N) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup> &#955;(i, N). i &lt; length C &#10230; length N &lt; header_size C + length N0 + length C<span class="hidden">&#8662;</span></sup>
       (&#955;(i, N). i &lt; length C)
       (&#955;(i, N). do {
         ASSERT(i &lt; length C);
-        RETURN (i+one_uint64_nat, N @ [ALit (C ! i)])
+        RETURN (i+1, N @ [ALit (C ! i)])
       })
-      (zero_uint64_nat, N);
+      (0, N);
     RETURN (N, l + header_size C)
   }&#8250;</span></span></span><span>
 </span><span>
@@ -151,9 +152,9 @@ is so large that there should not be any difference&#8250;</span></span></span><
 </span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fm_add_new_fast = fm_add_new&#8250;</span></span></span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span>append_and_length_code_fast</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length ba &#8804; Suc (Suc uint_max) &#10233;
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length ba &#8804; Suc (Suc uint32_max) &#10233;
        2 &#8804; length ba &#10233;
-       length b &#8804; uint64_max - (uint_max + 5) &#10233;
+       length b &#8804; uint64_max - (uint32_max + 5) &#10233;
        (aa, header_size ba) &#8712; uint64_nat_rel &#10233;
        (ab, length b) &#8712; uint64_nat_rel &#10233;
        length b + header_size ba &#8804; uint64_max&#8250;</span></span></span><span>
@@ -168,30 +169,30 @@ is so large that there should not be any difference&#8250;</span></span></span><
 </span><span>
 </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>append_and_length_fast_code_pre</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
 </span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;append_and_length_fast_code_pre &#8801; &#955;((b, C), N). length C &#8804; uint32_max+2 &#8743; length C &#8805; 2 &#8743;
-          length N + length C + 5 &#8804; uint64_max&#8250;</span></span></span><span>
+          length N + length C + 5 &#8804; sint64_max&#8250;</span></span></span><span>
 </span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fm_add_new_alt_def</span><span class="delimiter">:</span><span>
 </span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fm_add_new b C N0 = do {
       let st = (if b then AStatus_IRRED else AStatus_LEARNED2);
-      let l = length_uint64_nat N0;
-      let s = uint32_of_uint64_conv (length_uint64_nat C - two_uint64_nat);
+      let l = length N0;
+      let s = length C - 2;
       let N =
         (if is_short_clause C
-          then (((N0 @ [st]) @ [AActivity zero_uint32_nat]) @ [ALBD s]) @
+          then (((N0 @ [st]) @ [AActivity 0]) @ [ALBD s]) @
               [ASize s]
-          else ((((N0 @ [APos zero_uint32_nat]) @ [st]) @
-                [AActivity zero_uint32_nat]) @
+          else ((((N0 @ [APos 0]) @ [st]) @
+                [AActivity 0]) @
                 [ALBD s]) @
               [ASize s]);
       (i, N) &#8592;
         WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup> &#955;(i, N). i &lt; length C &#10230; length N &lt; header_size C + length N0 + length C<span class="hidden">&#8662;</span></sup>
-          (&#955;(i, N). i &lt; length_uint64_nat C)
+          (&#955;(i, N). i &lt; length C)
           (&#955;(i, N). do {
                 _ &#8592; ASSERT (i &lt; length C);
-                RETURN (i + one_uint64_nat, N @ [ALit (C ! i)])
+                RETURN (i + 1, N @ [ALit (C ! i)])
               })
-          (zero_uint64_nat, N);
+          (0, N);
       RETURN (N, l + header_size C)
     }&#8250;</span></span></span><span>
 </span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fm_add_new_def</span><span> </span><span>Let_def</span><span> </span><span>AStatus_LEARNED2_def</span><span> </span><span>AStatus_IRRED2_def</span><span>
@@ -201,20 +202,15 @@ is so large that there should not be any difference&#8250;</span></span></span><
 </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fmap_swap_ll_u64</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
 </span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fmap_swap_ll_u64 = fmap_swap_ll&#8250;</span></span></span><span>
 </span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>slice_Suc_nth</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;a &lt; b &#10233; a &lt; length xs &#10233; Suc a &lt; b &#10233; Misc.slice a b xs = xs ! a # Misc.slice (Suc a) b xs&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>Cons_nth_drop_Suc</span><span> </span><span>Misc.slice_def</span><span> </span><span>Suc_diff_Suc</span><span> </span><span>take_Suc_Cons</span><span class="delimiter">)</span><span>
-</span><span>
 </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fm_mv_clause_to_new_arena</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
 </span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fm_mv_clause_to_new_arena C old_arena new_arena0 = do {
     ASSERT(arena_is_valid_clause_idx old_arena C);
-    ASSERT(C &#8805; (if nat_of_uint64_conv (arena_length old_arena C) &#8804; 4 then 4 else 5));
-    let st = C - (if nat_of_uint64_conv (arena_length old_arena C) &#8804; 4 then 4 else 5);
-    ASSERT(C + nat_of_uint64_conv (arena_length old_arena C) &#8804; length old_arena);
-    let en = C + nat_of_uint64_conv (arena_length old_arena C);
+    ASSERT(C &#8805; (if  (arena_length old_arena C) &#8804; 4 then 4 else 5));
+    let st = C - (if  (arena_length old_arena C) &#8804; 4 then 4 else 5);
+    ASSERT(C +  (arena_length old_arena C) &#8804; length old_arena);
+    let en = C +  (arena_length old_arena C);
     (i, new_arena) &#8592;
-        WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup> &#955;(i, new_arena). i &lt; en &#10230; length new_arena &lt; length new_arena0 + (arena_length old_arena C) + (if nat_of_uint64_conv (arena_length old_arena C) &#8804; 4 then 4 else 5) <span class="hidden">&#8662;</span></sup>
+        WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup> &#955;(i, new_arena). i &lt; en &#10230; length new_arena &lt; length new_arena0 + (arena_length old_arena C) + (if  (arena_length old_arena C) &#8804; 4 then 4 else 5) <span class="hidden">&#8662;</span></sup>
           (&#955;(i, new_arena). i &lt; en)
           (&#955;(i, new_arena). do {
               ASSERT (i &lt; length old_arena &#8743; i &lt; en);
@@ -333,7 +329,7 @@ is so large that there should not be any difference&#8250;</span></span></span><
 </span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
 </span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
 </span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fm_mv_clause_to_new_arena_def</span><span> </span><span>st_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
-</span><span>      </span><span>en_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>Let_def</span><span> </span><span>nat_of_uint64_conv_def</span><span>
+</span><span>      </span><span>en_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>Let_def</span><span>
 </span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span>
 </span><span>     </span><span>WHILEIT_rule_stronger_inv</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>R</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;measure (&#955;(i, N). en - i)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
 </span><span>       </span><span>I&#39;</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#955;(i, new_arena&#39;). i &#8804; C + length (N&#8733;C) &#8743; i &#8805; st &#8743;
@@ -384,25 +380,6 @@ is so large that there should not be any difference&#8250;</span></span></span><
 </span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>order_trans</span><span class="delimiter">[</span><span>OF</span><span> </span><span>size_filter_mset_lesseq</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
 </span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ran_m_def</span><span class="delimiter">)</span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>distinct_sum_mset_sum</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;distinct_mset As &#10233; (&#8721;A &#8712;# As. (f :: &#39;a &#8658; nat) A) = (&#8721;A &#8712; set_mset As. f A)&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>sum_mset_sum_count</span><span class="delimiter">)</span><span>  </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>sum.cong</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>distinct_mset_def</span><span class="delimiter">)</span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>distinct_sorted_append</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;distinct (xs @ [x]) &#10233; sorted (xs @ [x]) &#10231; sorted xs &#8743; (&#8704;y &#8712; set xs. y &lt; x)&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>not_distinct_conv_prefix</span><span> </span><span>sorted_append</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
-</span><span>
-</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>linordered_ab_semigroup_add</span><span class="delimiter">)</span><span> </span><span>Max_add_commute2</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>k</span><span>
-</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;finite S&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;S &#8800; {}&quot;</span></span></span><span>
-</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Max ((&#955;x. x + k) ` S) = Max S + k&quot;</span></span></span><span>
-</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
-</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>m</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x y. max x y + k = max (x+k) (y+k)&quot;</span></span></span><span>
-</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>max_def</span><span> </span><span>antisym</span><span> </span><span>add_right_mono</span><span class="delimiter">)</span><span>
-</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#955;x. x + k) ` S = (&#955;y. y + k) ` (S)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
-</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Max &#8230; = Max ( S) + k&quot;</span></span></span><span>
-</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span>hom_Max_commute</span><span> </span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#955;y. y+k&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;S&quot;</span></span></span><span class="delimiter">,</span><span> </span><span>OF</span><span> </span><span>m</span><span class="delimiter">,</span><span> </span><span>symmetric</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
-</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
-</span><span class="keyword1"><span class="command">qed</span></span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>valid_arena_ge_length_clauses</span><span class="delimiter">:</span><span>
 </span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;valid_arena arena N vdom&#8250;</span></span></span><span>
@@ -475,7 +452,7 @@ is so large that there should not be any difference&#8250;</span></span></span><
 </body>
 <div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
 
-<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+<tr><td align="center">Isabelle2019 </td><td align="center">1775f91f0787 </td><td align="center">271ed48b </td><td align="center">Mo 20 Jän 2020 16:45:39 CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
 
 </html>
 

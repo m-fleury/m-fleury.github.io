@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IsaSAT_Arena_Sorting_LLVM (Isabelle2019: June 2019)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IsaSAT_Arena_Sorting_LLVM</h1>
+
+<span class="command">theory</span> <span class="name">IsaSAT_Arena_Sorting_LLVM</span><br/>
+<span class="keyword">imports</span> <a href="IsaSAT_Sorting_LLVM.html"><span class="name">IsaSAT_Sorting_LLVM</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IsaSAT_Arena_Sorting_LLVM</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>IsaSAT_Sorting_LLVM</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>idx_cdom</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;arena &#8658; nat set&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;idx_cdom arena &#8801; {i. valid_sort_clause_score_pre_at arena i}&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>mop_clause_score_less</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;mop_clause_score_less arena i j = do {
+    ASSERT(valid_sort_clause_score_pre_at arena i);
+    ASSERT(valid_sort_clause_score_pre_at arena j);
+    RETURN (clause_score_ordering (clause_score_extract arena i) (clause_score_extract arena j))
+  }&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>clause_score_extract</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span> </span><span>clause_score_extract_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo clause_score_extract)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[uncurry valid_sort_clause_score_pre_at]<span class="hidden">&#8681;</span><sub>a</sub>
+      arena_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> sint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; uint32_nat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>clause_score_extract_def</span><span> </span><span>valid_sort_clause_score_pre_at_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;TYPE(32)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span> </span><span>clause_score_ordering_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo clause_score_ordering)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uint32_nat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn)<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (uint32_nat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn)<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>clause_score_ordering_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>mop_clause_score_less</span><span> </span><span>clause_score_less</span><span> </span><span>clause_score_ordering</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>mop_clause_score_less_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry2 mop_clause_score_less&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;arena_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> sint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> sint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mop_clause_score_less_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>LBD</span><span class="delimiter">:</span><span> </span><span>weak_ordering_on_lt</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span>C</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;idx_cdom vs&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>less</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;clause_score_less vs&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>unfold_locales</span><span>
+</span><span>   </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>clause_score_less_def</span><span> </span><span>clause_score_extract_def</span><span>
+</span><span>      </span><span>clause_score_ordering_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>LBD</span><span class="delimiter">:</span><span> </span><span>parameterized_weak_ordering</span><span> </span><span>idx_cdom</span><span> </span><span>clause_score_less</span><span>
+</span><span>    </span><span>mop_clause_score_less</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>unfold_locales</span><span>
+</span><span>   </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>mop_clause_score_less_def</span><span>
+</span><span>     </span><span>idx_cdom_def</span><span> </span><span>clause_score_less_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">global_interpretation</span></span><span> </span><span>LBD</span><span class="delimiter">:</span><span> </span><span>parameterized_sort_impl_context</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;woarray_assn snat_assn&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;eoarray_assn snat_assn&quot;</span></span></span><span> </span><span>snat_assn</span><span>
+</span><span>  </span><span>return</span><span> </span><span>return</span><span>
+</span><span>  </span><span>eo_extract_impl</span><span>
+</span><span>  </span><span>array_upd</span><span>
+</span><span>  </span><span>idx_cdom</span><span> </span><span>clause_score_less</span><span> </span><span>mop_clause_score_less</span><span> </span><span>mop_clause_score_less_impl</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;arena_fast_assn&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">defines</span></span><span>
+</span><span>          </span><span>LBD_is_guarded_insert_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD.is_guarded_param_insert_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_is_unguarded_insert_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD.is_unguarded_param_insert_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_unguarded_insertion_sort_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD.unguarded_insertion_sort_param_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_guarded_insertion_sort_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD.guarded_insertion_sort_param_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_final_insertion_sort_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD.final_insertion_sort_param_impl</span><span>
+</span><span>      </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*and LBD_mop_lchild_impl  = LBD.mop_lchild_impl
+      and LBD_mop_rchild_impl  = LBD.mop_rchild_impl
+      and LBD_has_rchild_impl  = LBD.has_rchild_impl
+      and LBD_has_lchild_impl  = LBD.has_lchild_impl *)</span></span></span></span></span><span>
+</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_pcmpo_idxs_impl</span><span>  </span><span class="delimiter">=</span><span> </span><span>LBD.pcmpo_idxs_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_pcmpo_v_idx_impl</span><span>  </span><span class="delimiter">=</span><span> </span><span>LBD.pcmpo_v_idx_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_pcmpo_idx_v_impl</span><span>  </span><span class="delimiter">=</span><span> </span><span>LBD.pcmpo_idx_v_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_pcmp_idxs_impl</span><span>  </span><span class="delimiter">=</span><span> </span><span>LBD.pcmp_idxs_impl</span><span>
+</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_mop_geth_impl</span><span>    </span><span class="delimiter">=</span><span> </span><span>LBD.mop_geth_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_mop_seth_impl</span><span>    </span><span class="delimiter">=</span><span> </span><span>LBD.mop_seth_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_sift_down_impl</span><span>   </span><span class="delimiter">=</span><span> </span><span>LBD.sift_down_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_heapify_btu_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD.heapify_btu_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_heapsort_impl</span><span>    </span><span class="delimiter">=</span><span> </span><span>LBD.heapsort_param_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_qsp_next_l_impl</span><span>       </span><span class="delimiter">=</span><span> </span><span>LBD.qsp_next_l_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_qsp_next_h_impl</span><span>       </span><span class="delimiter">=</span><span> </span><span>LBD.qsp_next_h_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_qs_partition_impl</span><span>     </span><span class="delimiter">=</span><span> </span><span>LBD.qs_partition_impl</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*      and LBD_qs_partitionXXX_impl     = LBD.qs_partitionXXX_impl *)</span></span></span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_partition_pivot_impl</span><span>  </span><span class="delimiter">=</span><span> </span><span>LBD.partition_pivot_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_introsort_aux_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD.introsort_aux_param_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_introsort_impl</span><span>        </span><span class="delimiter">=</span><span> </span><span>LBD.introsort_param_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_move_median_to_first_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD.move_median_to_first_param_impl</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>unfold_locales</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>eo_hnr_dep</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>GEN_ALGO_def</span><span> </span><span>refines_param_relp_def</span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: thm gen_refines_param_relpI *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>mop_clause_score_less_impl.refine</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">global_interpretation</span></span><span>
+</span><span>  </span><span>LBD_it</span><span class="delimiter">:</span><span> </span><span>pure_eo_adapter</span><span> </span><span>sint64_nat_assn</span><span> </span><span>vdom_fast_assn</span><span> </span><span>arl_nth</span><span> </span><span>arl_upd</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">defines</span></span><span> </span><span>LBD_it_eo_extract_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD_it.eo_extract_impl</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>al_pure_eo</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">global_interpretation</span></span><span> </span><span>LBD_it</span><span class="delimiter">:</span><span> </span><span>parameterized_sort_impl_context</span><span>
+</span><span>  </span><span>vdom_fast_assn</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;LBD_it.eo_assn&quot;</span></span></span><span> </span><span>sint64_nat_assn</span><span>
+</span><span>  </span><span>return</span><span> </span><span>return</span><span>
+</span><span>  </span><span>LBD_it_eo_extract_impl</span><span>
+</span><span>  </span><span>arl_upd</span><span>
+</span><span>  </span><span>idx_cdom</span><span> </span><span>clause_score_less</span><span> </span><span>mop_clause_score_less</span><span> </span><span>mop_clause_score_less_impl</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;arena_fast_assn&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">defines</span></span><span>
+</span><span>          </span><span>LBD_it_is_guarded_insert_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD_it.is_guarded_param_insert_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_is_unguarded_insert_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD_it.is_unguarded_param_insert_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_unguarded_insertion_sort_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD_it.unguarded_insertion_sort_param_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_guarded_insertion_sort_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD_it.guarded_insertion_sort_param_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_final_insertion_sort_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD_it.final_insertion_sort_param_impl</span><span>
+</span><span>      </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*and LBD_it_mop_lchild_impl  = LBD_it.mop_lchild_impl
+      and LBD_it_mop_rchild_impl  = LBD_it.mop_rchild_impl
+      and LBD_it_has_rchild_impl  = LBD_it.has_rchild_impl
+      and LBD_it_has_lchild_impl  = LBD_it.has_lchild_impl *)</span></span></span></span></span><span>
+</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_pcmpo_idxs_impl</span><span>  </span><span class="delimiter">=</span><span> </span><span>LBD_it.pcmpo_idxs_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_pcmpo_v_idx_impl</span><span>  </span><span class="delimiter">=</span><span> </span><span>LBD_it.pcmpo_v_idx_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_pcmpo_idx_v_impl</span><span>  </span><span class="delimiter">=</span><span> </span><span>LBD_it.pcmpo_idx_v_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_pcmp_idxs_impl</span><span>  </span><span class="delimiter">=</span><span> </span><span>LBD_it.pcmp_idxs_impl</span><span>
+</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_mop_geth_impl</span><span>    </span><span class="delimiter">=</span><span> </span><span>LBD_it.mop_geth_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_mop_seth_impl</span><span>    </span><span class="delimiter">=</span><span> </span><span>LBD_it.mop_seth_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_sift_down_impl</span><span>   </span><span class="delimiter">=</span><span> </span><span>LBD_it.sift_down_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_heapify_btu_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD_it.heapify_btu_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_heapsort_impl</span><span>    </span><span class="delimiter">=</span><span> </span><span>LBD_it.heapsort_param_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_qsp_next_l_impl</span><span>       </span><span class="delimiter">=</span><span> </span><span>LBD_it.qsp_next_l_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_qsp_next_h_impl</span><span>       </span><span class="delimiter">=</span><span> </span><span>LBD_it.qsp_next_h_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_qs_partition_impl</span><span>     </span><span class="delimiter">=</span><span> </span><span>LBD_it.qs_partition_impl</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*      and LBD_it_qs_partitionXXX_impl     = LBD_it.qs_partitionXXX_impl *)</span></span></span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_partition_pivot_impl</span><span>  </span><span class="delimiter">=</span><span> </span><span>LBD_it.partition_pivot_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_introsort_aux_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD_it.introsort_aux_param_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_introsort_impl</span><span>        </span><span class="delimiter">=</span><span> </span><span>LBD_it.introsort_param_impl</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LBD_it_move_median_to_first_impl</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD_it.move_median_to_first_param_impl</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>unfold_locales</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>GEN_ALGO_def</span><span> </span><span>refines_param_relp_def</span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: thm gen_refines_param_relpI *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>mop_clause_score_less_impl.refine</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>llvm_inline</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>LBD_it.eo_extract_impl_def</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>meta_fun_cong</span><span class="delimiter">,</span><span> </span><span>THEN</span><span> </span><span>meta_fun_cong</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">print_named_simpset</span></span><span> </span><span>llvm_inline</span><span>
+</span><span class="keyword1"><span class="command">export_llvm</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;LBD_heapsort_impl :: _ &#8658; _ &#8658; _&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;LBD_introsort_impl :: _ &#8658; _ &#8658; _&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">1775f91f0787 </td><td align="center">271ed48b </td><td align="center">Mo 20 Jän 2020 16:45:39 CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

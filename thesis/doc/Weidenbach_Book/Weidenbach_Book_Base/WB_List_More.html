@@ -1775,6 +1775,10 @@ could probably be moved to the Isabelle distribution or
 </span><span>      </span><span>member_add_mset</span><span> </span><span>mset_add</span><span> </span><span>not_in_iff</span><span class="delimiter">)</span><span>
 </span><span>
 </span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>diff_add_mset_remove1</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;NO_MATCH {#} N &#10233; M - add_mset a N = remove1_mset a (M - N)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>
 </span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Finite maps and multisets&#8250;</span></span></span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Finite sets and multisets&#8250;</span></span></span><span>
@@ -1937,6 +1941,52 @@ could probably be moved to the Isabelle distribution or
 </span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>fmlookup_restrict_set_id</span><span class="delimiter">)</span><span>
 </span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>dom_m_def</span><span class="delimiter">)</span><span>
 </span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ran_m_mapsto_upd</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span>
+</span><span>    </span><span>NC</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;C &#8712;# dom_m N&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;ran_m (fmupd C C&#39; N) =
+         add_mset C&#39; (remove1_mset (the (fmlookup N C)) (ran_m N))&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">define</span></span><span> </span><span>N&#39;</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;N&#39; = fmdrop C N&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>N_N&#39;</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;dom_m N = add_mset C (dom_m N&#39;)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>NC</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>N&#39;_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;C &#8713;# dom_m N&#39;&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>NC</span><span> </span><span>distinct_mset_dom</span><span class="delimiter">[</span><span>of</span><span> </span><span>N</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>N_N&#39;</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>N_N&#39;</span><span> </span><span>ran_m_def</span><span> </span><span>mset_set.insert_remove</span><span> </span><span>image_mset_remove1_mset_if</span><span>
+</span><span>      </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>image_mset_cong</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ran_m_mapsto_upd_notin</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span>
+</span><span>    </span><span>NC</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;C &#8713;# dom_m N&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;ran_m (fmupd C C&#39; N) = add_mset C&#39; (ran_m N)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>NC</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ran_m_def</span><span> </span><span>mset_set.insert_remove</span><span> </span><span>image_mset_remove1_mset_if</span><span>
+</span><span>      </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>image_mset_cong</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ran_m_fmdrop</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;C &#8712;# dom_m N &#10233;  ran_m (fmdrop C N) = remove1_mset (the (fmlookup N C)) (ran_m N)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>distinct_mset_dom</span><span class="delimiter">[</span><span>of</span><span> </span><span>N</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fmlookup N C&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ran_m_def</span><span> </span><span>image_mset_If_eq_notin</span><span class="delimiter">[</span><span>of</span><span> </span><span>C</span><span> </span><span>_</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#955;x. fst (the x)&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>     </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>multi_member_split</span><span>
+</span><span>    </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>filter_mset_cong2</span><span> </span><span>image_mset_cong2</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ran_m_fmdrop_notin</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;C &#8713;# dom_m N &#10233; ran_m (fmdrop C N) = ran_m N&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>distinct_mset_dom</span><span class="delimiter">[</span><span>of</span><span> </span><span>N</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ran_m_def</span><span> </span><span>image_mset_If_eq_notin</span><span class="delimiter">[</span><span>of</span><span> </span><span>C</span><span> </span><span>_</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#955;x. fst (the x)&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>    </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>multi_member_split</span><span>
+</span><span>    </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>filter_mset_cong2</span><span> </span><span>image_mset_cong2</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ran_m_fmdrop_If</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;ran_m (fmdrop C N) = (if C &#8712;# dom_m N then remove1_mset (the (fmlookup N C)) (ran_m N) else ran_m N)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>distinct_mset_dom</span><span class="delimiter">[</span><span>of</span><span> </span><span>N</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ran_m_def</span><span> </span><span>image_mset_If_eq_notin</span><span class="delimiter">[</span><span>of</span><span> </span><span>C</span><span> </span><span>_</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#955;x. fst (the x)&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>    </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>multi_member_split</span><span>
+</span><span>    </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>filter_mset_cong2</span><span> </span><span>image_mset_cong2</span><span class="delimiter">)</span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Compact domain for finite maps&#8250;</span></span></span><span>
 </span><span>
@@ -2069,7 +2119,7 @@ marked as:&#8250;</span></span></span><span>
 </body>
 <div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
 
-<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+<tr><td align="center">Isabelle2019 </td><td align="center">1775f91f0787 </td><td align="center">271ed48b </td><td align="center">Mo 20 Jän 2020 16:45:39 CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
 
 </html>
 

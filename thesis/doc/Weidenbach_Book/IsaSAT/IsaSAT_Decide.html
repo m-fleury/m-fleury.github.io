@@ -20,7 +20,7 @@
 </span><span class="keyword2"><span class="keyword">begin</span></span><span>
 </span><span>
 </span><span>
-</span><span class="keyword1"><span class="command">paragraph</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Decide&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">chapter</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Decide&#8250;</span></span></span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span>not_is_None_not_None</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#172;is_None s &#10233; s &#8800; None&#8250;</span></span></span><span>
 </span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span class="delimiter">)</span><span>
@@ -68,21 +68,25 @@
      (L = None &#10230; (&#8704;K&#8712;# &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> &#119964;. defined_lit M K)) &#8743; M = M&#39; &#8743; vm &#8712; vmtf &#119964; M)&#8250;</span></span></span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>lit_of_found_atm_D_pre</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lit_of_found_atm_D_pre = (&#955;(&#966;, L). L &#8800; None &#10230; (the L &lt; length &#966; &#8743; the L &#8804; uint_max div 2))&#8250;</span></span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lit_of_found_atm_D_pre = (&#955;(&#966;, L). L &#8800; None &#10230; (the L &lt; length &#966; &#8743; the L &#8804; uint32_max div 2))&#8250;</span></span></span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>find_unassigned_lit_wl_D_heur</span><span>
 </span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;twl_st_wl_heur &#8658; (twl_st_wl_heur &#215; nat literal option) nres&#8250;</span></span></span><span>
 </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;find_unassigned_lit_wl_D_heur = (&#955;(M, N, D, WS, Q, vm, &#966;, clvls). do {
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;find_unassigned_lit_wl_D_heur = (&#955;(M, N&#39;, D&#39;, j, W&#39;, vm, clvls, cach, lbd, outl, stats, heur,
+       vdom, avdom, lcount, opts, old_arena). do {
       ((M, vm), L) &#8592; isa_vmtf_find_next_undef_upd M vm;
-      ASSERT(lit_of_found_atm_D_pre (&#966;, L));
-      L &#8592; lit_of_found_atm &#966; L;
-      RETURN ((M, N, D, WS, Q, vm, &#966;, clvls), L)
+      ASSERT(L &#8800; None &#10230; get_saved_phase_heur_pre (the L) heur);
+      L &#8592; lit_of_found_atm heur L;
+      RETURN ((M, N&#39;, D&#39;, j, W&#39;, vm, clvls, cach, lbd, outl, stats, heur,
+       vdom, avdom, lcount, opts, old_arena), L)
     })&#8250;</span></span></span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lit_of_found_atm_D_pre</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;phase_saving &#119964; &#966; &#10233; isasat_input_bounded &#119964; &#10233; (L &#8800; None &#10233; the L &#8712;# &#119964;) &#10233; lit_of_found_atm_D_pre (&#966;, L)&#8250;</span></span></span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lit_of_found_atm_D_pre_def</span><span> </span><span>phase_saving_def</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;heuristic_rel &#119964; heur &#10233; isasat_input_bounded &#119964; &#10233; (L &#8800; None &#10233; the L &#8712;# &#119964;) &#10233;
+    L &#8800; None &#10233; get_saved_phase_heur_pre (the L) heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lit_of_found_atm_D_pre_def</span><span> </span><span>phase_saving_def</span><span> </span><span>heuristic_rel_def</span><span> </span><span>phase_save_heur_rel_def</span><span>
+</span><span>    </span><span>get_saved_phase_heur_pre_def</span><span>
 </span><span>    </span><span>atms_of_&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_&#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub></span><span> </span><span>in_&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_atm_of_in_atms_of_iff</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>bspec</span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span>_</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Pos (the L)&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>find_unassigned_lit_wl_D_heur_pre</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
@@ -109,7 +113,7 @@
 </span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>RETURN_SPEC_refine</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>image_image</span><span> </span><span>defined_atm_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>find_unassigned_lit_wl_D&#39;_find_unassigned_lit_wl_D</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(find_unassigned_lit_wl_D_heur, find_unassigned_lit_wl_D) &#8712;
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(find_unassigned_lit_wl_D_heur, find_unassigned_lit_wl) &#8712;
      [find_unassigned_lit_wl_D_heur_pre]<span class="hidden">&#8681;</span><sub>f</sub>
     twl_st_heur&#39;&#39;&#39; r &#8594; &#10216;{((T, L), (T&#39;, L&#39;)). (T, T&#39;) &#8712; twl_st_heur&#39;&#39;&#39; r  &#8743; L = L&#39; &#8743;
          (L &#8800; None &#10230; undefined_lit (get_trail_wl T&#39;) (the L) &#8743; the L &#8712;# &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> (all_atms_st T&#39;)) &#8743;
@@ -122,22 +126,22 @@
 </span><span>
 </span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>ID_R</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Id &#215;<span class="hidden">&#8681;</span><sub>r</sub> &#10216;Id&#10217;option_rel = Id&#8250;</span></span></span><span>
 </span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
-</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>atms</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;atms_of (&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> (all_atms_st (M, N, D, NE, UE, WS, Q))) =
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>atms</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;atms_of (&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> (all_atms_st (M, N, D, NE, UE, NS, US, WS, Q))) =
          atms_of_mm (mset `# init_clss_lf N) &#8746;
-         atms_of_mm NE &#8743; D = None&#8250;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="var">?A</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
-</span><span>    </span><span>atms_2</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;set_mset (&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> (all_atms N (NE + UE))) = set_mset (&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> (all_atms N NE))&#8250;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="var">?B</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+         atms_of_mm NE &#8746; atms_of_mm NS &#8743; D = None&#8250;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="var">?A</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>atms_2</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;set_mset (&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> (all_atms N (NE + UE + NS + US))) = set_mset (&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> (all_atms N (NE+NS)))&#8250;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="var">?B</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
 </span><span>    </span><span>atms_3</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;y &#8712; atms_of_ms ((&#955;x. mset (fst x)) ` set_mset (ran_m N)) &#10233;
-       y &#8713; atms_of_mm NE &#10233;
-       y &#8712; atms_of_ms ((&#955;x. mset (fst x)) ` {a. a &#8712;# ran_m N &#8743; snd a})&#8250;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;?C1 &#10233; ?C2 &#10233;	?C&#8250;</span></span></span><span class="delimiter">)</span><span>
-</span><span>      </span><span class="keyword2"><span class="keyword">if</span></span><span> </span><span>inv</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;find_unassigned_lit_wl_D_heur_pre (M, N, D, NE, UE, WS, Q)&#8250;</span></span></span><span>
-</span><span>      </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>M</span><span> </span><span>N</span><span> </span><span>D</span><span> </span><span>NE</span><span> </span><span>UE</span><span> </span><span>WS</span><span> </span><span>Q</span><span> </span><span>y</span><span>
+       y &#8713; atms_of_mm NE &#10233; y &#8713; atms_of_mm NS &#10233;
+       y &#8712; atms_of_ms ((&#955;x. mset (fst x)) ` {a. a &#8712;# ran_m N &#8743; snd a})&#8250;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;?C1 &#10233; ?C2 &#10233;?C3 &#10233; ?C&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">if</span></span><span> </span><span>inv</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;find_unassigned_lit_wl_D_heur_pre (M, N, D, NE, UE, NS, US, WS, Q)&#8250;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>M</span><span> </span><span>N</span><span> </span><span>D</span><span> </span><span>NE</span><span> </span><span>UE</span><span> </span><span>WS</span><span> </span><span>Q</span><span> </span><span>y</span><span> </span><span>NS</span><span> </span><span>US</span><span>
 </span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
 </span><span>    </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>T</span><span> </span><span>U</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>      </span><span>S_T</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((M, N, D, NE, UE, WS, Q), T) &#8712; state_wl_l None&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>S_T</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((M, N, D, NE, UE, NS, US, WS, Q), T) &#8712; state_wl_l None&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
 </span><span>      </span><span>T_U</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(T, U) &#8712; twl_st_l None&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
 </span><span>      </span><span>inv</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;twl_struct_invs U&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
-</span><span>      </span><span>&#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub></span><span> </span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;literals_are_&#8466;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub> (all_atms_st (M, N, D, NE, UE, WS, Q)) (M, N, D, NE, UE, WS, Q)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
-</span><span>      </span><span>confl</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;get_conflict_wl (M, N, D, NE, UE, WS, Q) = None&#8250;</span></span></span><span>
+</span><span>      </span><span>&#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub></span><span> </span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;literals_are_&#8466;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub> (all_atms_st (M, N, D, NE, UE, NS, US, WS, Q)) (M, N, D, NE, UE, NS, US, WS, Q)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>confl</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;get_conflict_wl (M, N, D, NE, UE, NS, US, WS, Q) = None&#8250;</span></span></span><span>
 </span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>inv</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>find_unassigned_lit_wl_D_heur_pre_def</span><span>
 </span><span>       </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>-</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>normalize_goal</span><span class="delimiter">+</span><span>
 </span><span>       </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
@@ -153,9 +157,11 @@
 </span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span class="delimiter">(</span><span>asm</span><span class="delimiter">)</span><span> </span><span>all_clss_l_ran_m</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">,</span><span> </span><span>subst</span><span> </span><span class="delimiter">(</span><span>asm</span><span class="delimiter">)</span><span> </span><span>image_mset_union</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
 </span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>all_clss_l_ran_m</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">,</span><span> </span><span>subst</span><span> </span><span>image_mset_union</span><span class="delimiter">)</span><span>
 </span><span>      </span><span class="keyword1"><span class="command">by</span></span><span>  </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.no_strange_atm_def</span><span> </span><span>entailed_clss_inv.simps</span><span>
-</span><span>          </span><span>mset_take_mset_drop_mset</span><span> </span><span>mset_take_mset_drop_mset&#39;</span><span> </span><span>atms_of_&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_&#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub></span><span>
-</span><span>          </span><span>clauses_def</span><span> </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>entailed_clss_inv.simps</span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?B</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;?C1 &#10233; ?C2 &#10233; ?C&#8250;</span></span></span><span>
+</span><span>            </span><span>mset_take_mset_drop_mset</span><span> </span><span>mset_take_mset_drop_mset&#39;</span><span> </span><span>atms_of_&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_&#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub></span><span> </span><span>all_lits_def</span><span>
+</span><span>            </span><span>clauses_def</span><span> </span><span>all_lits_of_mm_union</span><span> </span><span>atm_of_all_lits_of_mm</span><span>
+</span><span>          </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>entailed_clss_inv.simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?B</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;?C1 &#10233; ?C2 &#10233; ?C3 &#10233; ?C&#8250;</span></span></span><span>
 </span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>-</span><span>
 </span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atms_of_&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_&#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub></span><span> </span><span>all_atms_def</span><span> </span><span>all_lits_def</span><span>
 </span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span class="delimiter">(</span><span>asm</span><span class="delimiter">)</span><span> </span><span>all_clss_l_ran_m</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">,</span><span> </span><span>subst</span><span> </span><span class="delimiter">(</span><span>asm</span><span class="delimiter">)</span><span> </span><span>image_mset_union</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
@@ -165,81 +171,124 @@
 </span><span>	</span><span>atm_of_all_lits_of_mm</span><span> </span><span>atms_of_&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_&#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub></span><span class="delimiter">)</span><span>
 </span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
 </span><span>
-</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(S, T) &#8712; twl_st_heur &#10233; &#966; = get_phase_saver_heur S &#10233; phase_saving (all_atms_st T) &#966;&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>S</span><span> </span><span>T</span><span> </span><span>&#966;</span><span>
-</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_def</span><span> </span><span>all_atms_def</span><span class="delimiter">)</span><span>
+</span><span>
 </span><span>  </span><span class="keyword3"><span class="command">define</span></span><span> </span><span>unassigned_atm</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unassigned_atm S L &#8801; &#8707; M N D NE UE WS Q.
-         S = (M, N, D, NE, UE, WS, Q) &#8743;
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unassigned_atm S L &#8801; &#8707; M N D NE UE NS US WS Q.
+         S = (M, N, D, NE, UE, NS, US, WS, Q) &#8743;
          (L &#8800; None &#10230;
-            undefined_lit M (the L) &#8743; the L &#8712;# &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> (all_atms N NE) &#8743;
-            atm_of (the L) &#8712; atms_of_mm (clause `# twl_clause_of `# init_clss_lf N + NE)) &#8743;
+            undefined_lit M (the L) &#8743; the L &#8712;# &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> (all_atms_st S) &#8743;
+            atm_of (the L) &#8712; atms_of_mm (mset `# ran_mf N + (NE+UE) + (NS+US))) &#8743;
          (L = None &#10230; (&#8708;L&#39;. undefined_lit M L&#39; &#8743;
-            atm_of L&#39; &#8712; atms_of_mm (clause `# twl_clause_of `# init_clss_lf N + NE)))&#8250;</span></span></span><span>
+            atm_of L&#39; &#8712; atms_of_mm (mset `# ran_mf N + (NE+UE) + (NS+US))))&#8250;</span></span></span><span>
 </span><span>    </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>L</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat literal option&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>S</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat twl_st_wl&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>unassigned_atm_alt_def</span><span class="delimiter">:</span><span>
+</span><span>     </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unassigned_atm S L &#10231; (&#8707; M N D NE UE NS US WS Q.
+         S = (M, N, D, NE, UE, NS, US, WS, Q) &#8743;
+         (L &#8800; None &#10230;
+            undefined_lit M (the L) &#8743; the L &#8712;# &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> (all_atms_st S) &#8743;
+            atm_of (the L) &#8712;# all_atms_st S) &#8743;
+         (L = None &#10230; (&#8708;L&#39;. undefined_lit M L&#39; &#8743;
+             atm_of L&#39; &#8712;# all_atms_st S)))&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>L</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat literal option&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>S</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat twl_st_wl&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>find_unassigned_lit_wl_def</span><span> </span><span>RES_RES_RETURN_RES</span><span> </span><span>unassigned_atm_def</span><span>
+</span><span>    </span><span>RES_RES_RETURN_RES</span><span> </span><span>all_lits_def</span><span> </span><span>in_all_lits_of_mm_ain_atms_of_iff</span><span>
+</span><span>    </span><span>in_&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_atm_of_&#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub></span><span> </span><span>in_set_all_atms_iff</span><span>
+</span><span>   </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>S</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*
+  have eq: &#8249;(&#8896;x. P x = Q x) &#10233; (&#8707; x. P x) = (&#8707; x. Q x)&#8250; for P Q
+   by auto
+  have unassigned_atm_alt_def:  &#8249;unassigned_atm S L &#10231; (&#8707; M N D NE UE NS US WS Q.
+         S = (M, N, D, NE, UE, NS, US, WS, Q) &#8743;
+         (L &#8800; None &#10230;
+            undefined_lit M (the L) &#8743;
+            atm_of (the L) &#8712; atms_of_mm (clause `# twl_clause_of `# init_clss_lf N + NE + NS)) &#8743;
+         (L = None &#10230; (&#8708;L&#39;. undefined_lit M L&#39; &#8743;
+            atm_of L&#39; &#8712; atms_of_mm (clause `# twl_clause_of `# init_clss_lf N + NE + NS))))&#8250; for S L
+    unfolding unassigned_atm_def apply (intro eq ext)
+    apply (auto simp: &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_all_atms_all_lits mset_take_mset_drop_mset&#39;)
+    apply (auto simp: unassigned_atm_def atm_of_eq_atm_of simp: in_all_lits_of_mm_ain_atms_of_iff
+        mset_take_mset_drop_mset&#39; atms_of_ms_def &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_all_atms_all_lits all_lits_def
+      dest: multi_member_split)
+    done
+  have 1: &#8249;clause `# twl_clause_of `# S = mset `# S&#8250; for S
+    by (auto simp: mset_take_mset_drop_mset&#39;)
+  have unassigned_atm_alt_def2:
+    &#8249;find_unassigned_lit_wl_D_heur_pre S &#10233; unassigned_atm S L &#10231; (&#8707; M N D NE UE NS US WS Q.
+         S = (M, N, D, NE, UE, NS, US, WS, Q) &#8743;
+         (L &#8800; None &#10230;
+            undefined_lit M (the L) &#8743; the L &#8712;# &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> (all_atms N (NE+NS)) &#8743;
+             atm_of (the L) &#8712;# all_atms_st S) &#8743;
+         (L = None &#10230; (&#8708;L&#39;. undefined_lit M L&#39; &#8743;
+             atm_of L&#39; &#8712;# all_atms_st S)))&#8250;
+    for L :: &#8249;nat literal option&#8250; and S :: &#8249;nat twl_st_wl&#8250;
+    unfolding unassigned_atm_def &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_all_atms_all_lits 1
+      in_all_lits_of_mm_ain_atms_of_iff[symmetric] all_lits_alt_def2[symmetric]
+      all_lits_def[symmetric] all_lits_alt_def[symmetric]
+    apply (intro eq ext)
+    apply (auto simp: &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_all_atms_all_lits mset_take_mset_drop_mset&#39;
+      in_all_lits_of_mm_ain_atms_of_iff in_set_all_atms_iff
+      simp del: all_atms_def[symmetric] dest!: atms)
+    apply simp
+    find_theorems &quot;atms_of  (&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> _)&quot;
+    supply[[goals_limit=1]]
+    apply (simp add: unassigned_atm_def  &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_all_atms_all_lits atms_of_&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_&#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>
+         in_all_lits_of_mm_ain_atms_of_iff del: all_atms_def[symmetric])*)</span></span></span></span></span><span>
+</span><span>
 </span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>find_unassigned_lit_wl_D_alt_def</span><span class="delimiter">:</span><span>
-</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;find_unassigned_lit_wl_D S = do {
-     L &#8592;  SPEC(unassigned_atm S);
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;find_unassigned_lit_wl S = do {
+     L &#8592; SPEC(unassigned_atm S);
      L &#8592; RES {L, map_option uminus L};
      SPEC(&#955;((M, N, D, NE, UE, WS, Q), L&#39;).
          S = (M, N, D, NE, UE, WS, Q) &#8743; L = L&#39;)
    }&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>S</span><span>
-</span><span>   </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>find_unassigned_lit_wl_D_def</span><span> </span><span>RES_RES_RETURN_RES</span><span> </span><span>unassigned_atm_def</span><span>
-</span><span>    </span><span>RES_RES_RETURN_RES</span><span>
-</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>S</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>mset_take_mset_drop_mset&#39;</span><span> </span><span>uminus_&#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>_iff</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>find_unassigned_lit_wl_def</span><span> </span><span>RES_RES_RETURN_RES</span><span> </span><span>unassigned_atm_def</span><span>
+</span><span>    </span><span>RES_RES_RETURN_RES</span><span> </span><span>all_lits_def</span><span> </span><span>in_all_lits_of_mm_ain_atms_of_iff</span><span>
+</span><span>    </span><span>in_&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_atm_of_&#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub></span><span> </span><span>in_set_all_atms_iff</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>S</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
 </span><span>
 </span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>isa_vmtf_find_next_undef_upd</span><span class="delimiter">:</span><span>
 </span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isa_vmtf_find_next_undef_upd (a, aa, ab, ac, ad, b)
        ((aj, ak, al, am, bb), an, bc)
       &#8804; &#8659; {(((M, vm), A), L). A = map_option atm_of L &#8743;
-              unassigned_atm (bt, bu, bv, bw, bx, by, bz) L &#8743;
-             vm &#8712; isa_vmtf (all_atms_st (bt, bu, bv, bw, bx, by, bz)) bt &#8743;
-             (L &#8800; None &#10230; the A &#8712;# all_atms_st (bt, bu, bv, bw, bx, by, bz)) &#8743;
-             (M, bt) &#8712; trail_pol (all_atms_st (bt, bu, bv, bw, bx, by, bz))}
-         (SPEC (unassigned_atm (bt, bu, bv, bw, bx, by, bz)))&#8250;</span></span></span><span>
+              unassigned_atm (bt, bu, bv, bw, bx, by, bz, baa, bab) L &#8743;
+             vm &#8712; isa_vmtf (all_atms_st (bt, bu, bv, bw, bx, by, bz, baa, bab)) bt &#8743;
+             (L &#8800; None &#10230; the A &#8712;# all_atms_st (bt, bu, bv, bw, bx, by, bz, baa, bab)) &#8743;
+             (M, bt) &#8712; trail_pol (all_atms_st (bt, bu, bv, bw, bx, by, bz, baa, bab))}
+         (SPEC (unassigned_atm (bt, bu, bv, bw, bx, by, bz, baa, bab)))&#8250;</span></span></span><span>
 </span><span>	  </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8804; &#8659; ?find _&#8250;</span></span></span><span class="delimiter">)</span><span>
 </span><span>    </span><span class="keyword2"><span class="keyword">if</span></span><span>
-</span><span>      </span><span>pre</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;find_unassigned_lit_wl_D_heur_pre (bt, bu, bv, bw, bx, by, bz)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>pre</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;find_unassigned_lit_wl_D_heur_pre (bt, bu, bv, bw, bx, by, bz, baa, bab)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
 </span><span>      </span><span>T</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(((a, aa, ab, ac, ad, b), ae, (af, ag, ba), ah, ai,
-	 ((aj, ak, al, am, bb), an, bc), ao, ap, (aq, bd), ar, as,
-	 (at, au, av, aw, be), (ax, ay, az, bf, bg), (bh, bi, bj, bk, bl),
-	 (bm, bn), bo, bp, bq, br, bs),
-	bt, bu, bv, bw, bx, by, bz)
+	 ((aj, ak, al, am, bb), an, bc), ao, (aq, bd), ar, as,
+	 (at, au, av, aw, be), heur, bo, bp, bq, br, bs),
+	bt, bu, bv, bw, bx, by, bz, baa, bab)
        &#8712; twl_st_heur&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
 </span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;r =
        length
 	(get_clauses_wl_heur
 	  ((a, aa, ab, ac, ad, b), ae, (af, ag, ba), ah, ai,
-	   ((aj, ak, al, am, bb), an, bc), ao, ap, (aq, bd), ar, as,
-	   (at, au, av, aw, be), (ax, ay, az, bf, bg), (bh, bi, bj, bk, bl),
-	   (bm, bn), bo, bp, bq, br, bs))&#8250;</span></span></span><span>
+	   ((aj, ak, al, am, bb), an, bc), ao, (aq, bd), ar, as,
+	   (at, au, av, aw, be), heur, bo, bp, bq, br, bs))&#8250;</span></span></span><span>
 </span><span>     </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>a</span><span> </span><span>aa</span><span> </span><span>ab</span><span> </span><span>ac</span><span> </span><span>ad</span><span> </span><span>b</span><span> </span><span>ae</span><span> </span><span>af</span><span> </span><span>ag</span><span> </span><span>ba</span><span> </span><span>ah</span><span> </span><span>ai</span><span> </span><span>aj</span><span> </span><span>ak</span><span> </span><span>al</span><span> </span><span>am</span><span> </span><span>bb</span><span> </span><span>an</span><span> </span><span>bc</span><span> </span><span>ao</span><span> </span><span>ap</span><span> </span><span>aq</span><span> </span><span>bd</span><span> </span><span>ar</span><span> </span><span>as</span><span> </span><span>at</span><span>
 </span><span>	 </span><span>au</span><span> </span><span>av</span><span> </span><span>aw</span><span> </span><span>be</span><span> </span><span>ax</span><span> </span><span>ay</span><span> </span><span>az</span><span> </span><span>bf</span><span> </span><span>bg</span><span> </span><span>bh</span><span> </span><span>bi</span><span> </span><span>bj</span><span> </span><span>bk</span><span> </span><span>bl</span><span> </span><span>bm</span><span> </span><span>bn</span><span> </span><span>bo</span><span> </span><span>bp</span><span> </span><span>bq</span><span> </span><span>br</span><span> </span><span>bs</span><span> </span><span>bt</span><span> </span><span>bu</span><span> </span><span>bv</span><span>
-</span><span>	 </span><span>bw</span><span> </span><span>bx</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;by&quot;</span></span></span><span> </span><span>bz</span><span>
+</span><span>	 </span><span>bw</span><span> </span><span>bx</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;by&quot;</span></span></span><span> </span><span>bz</span><span> </span><span>heur</span><span> </span><span>baa</span><span> </span><span>bab</span><span>
 </span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
-</span><span>    </span><span class="keyword1"><span class="command">let</span></span><span> </span><span class="var">?&#119964;</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;all_atms_st (bt, bu, bv, bw, bx, by, bz)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">let</span></span><span> </span><span class="var">?&#119964;</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;all_atms_st (bt, bu, bv, bw, bx, by, bz, baa, bab)&#8250;</span></span></span><span>
 </span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>pol</span><span class="delimiter">:</span><span>
-</span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((a, aa, ab, ac, ad, b), bt) &#8712; trail_pol (all_atms bu (bw + bx))&#8250;</span></span></span><span>
-</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>that</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_def</span><span> </span><span>all_atms_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((a, aa, ab, ac, ad, b), bt) &#8712; trail_pol (all_atms bu (bw + bx + by + bz))&#8250;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>that</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>bz</span><span class="delimiter">;</span><span> </span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_def</span><span> </span><span>all_atms_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
 </span><span>    </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>vm0</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>      </span><span>vm0</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((an, bc), vm0) &#8712; distinct_atoms_rel (all_atms bu (bw + bx))&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
-</span><span>      </span><span>vm</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((aj, ak, al, am, bb), vm0) &#8712; vmtf (all_atms bu (bw + bx)) bt&#8250;</span></span></span><span>
-</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>T</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_def</span><span> </span><span>all_atms_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>isa_vmtf_def</span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Multiset.Ball (&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> (all_atms bu (bw + bx))) (defined_lit bt) &#10233;
-	 atm_of L&#39;
-	 &#8712; atms_of_ms ((&#955;x. mset (fst x)) ` {a. a &#8712;# ran_m bu &#8743; snd a}) &#10233;
-		undefined_lit bt L&#39; &#10233; False&#8250;</span></span></span><span>
-</span><span>       </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Multiset.Ball (&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> (all_atms bu (bw + bx))) (defined_lit bt) &#10233;
-	 atm_of L&#39;
-	 &#8712; atms_of_mm bw &#10233;
-		undefined_lit bt L&#39; &#10233; False&#8250;</span></span></span><span>
-</span><span>       </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Multiset.Ball (&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> (all_atms bu (bw + bx))) (defined_lit bt) &#10233;
-	 atm_of L&#39;
-	 &#8712; atms_of_mm bx &#10233;
+</span><span>      </span><span>vm0</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((an, bc), vm0) &#8712; distinct_atoms_rel (all_atms bu (bw + bx + by + bz))&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>vm</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((aj, ak, al, am, bb), vm0) &#8712; vmtf (all_atms bu (bw + bx + by + bz)) bt&#8250;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>T</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>bz</span><span class="delimiter">;</span><span> </span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_def</span><span> </span><span>all_atms_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>isa_vmtf_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>       </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Multiset.Ball (&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> (all_atms bu (bw + bx + by + bz))) (defined_lit bt) &#10233;
+	 atm_of L&#39; &#8712;# all_atms bu (bw + bx + by + bz) &#10233;
 		undefined_lit bt L&#39;&#10233; False&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>L&#39;</span><span>
-</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>all_atms_def</span><span> </span><span>atms_of_ms_def</span><span> </span><span>atm_of_eq_atm_of</span><span> </span><span>all_lits_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>atms_of_ms_def</span><span>
 </span><span>	   </span><span>all_lits_of_mm_union</span><span> </span><span>ran_m_def</span><span> </span><span>all_lits_of_mm_add_mset</span><span> </span><span>&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_union</span><span>
 </span><span>	   </span><span>eq_commute</span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;the (fmlookup _ _)&#8250;</span></span></span><span class="delimiter">]</span><span> </span><span>&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_atm_of_all_lits_of_m</span><span>
-</span><span>	  </span><span>atms_of_def</span><span>
+</span><span>	  </span><span>atms_of_def</span><span> </span><span>&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_add_mset</span><span>
 </span><span>	 </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>multi_member_split</span><span>
 </span><span>	  </span><span class="delimiter">)</span><span>
 </span><span>
@@ -256,7 +305,7 @@
 </span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>vm</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>all_atms_def</span><span class="delimiter">)</span><span>
 </span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
 </span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>vm</span><span> </span><span>vm0</span><span> </span><span>pre</span><span>
-</span><span>	</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>5</span><span> </span><span>0</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>find_undefined_atm_def</span><span> </span><span>unassigned_atm_def</span><span> </span><span>conc_fun_RES</span><span> </span><span>all_atms_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>	</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>5</span><span> </span><span>0</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>find_undefined_atm_def</span><span> </span><span>unassigned_atm_alt_def</span><span> </span><span>conc_fun_RES</span><span> </span><span>all_atms_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
 </span><span>	   </span><span>mset_take_mset_drop_mset&#39;</span><span> </span><span>atms_2</span><span> </span><span>defined_atm_def</span><span>
 </span><span>	   </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>RES_refine</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>isa_vmtfI</span><span class="delimiter">)</span><span>
 </span><span>	</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>isa_vmtfI</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>defined_atm_def</span><span> </span><span>atms_2</span><span class="delimiter">)</span><span>
@@ -267,30 +316,28 @@
 </span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
 </span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
 </span><span>
-</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>lit_of_found_atm</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lit_of_found_atm ao x2a
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>lit_of_found_atm</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lit_of_found_atm ao&#39; x2a
 	&#8804; &#8659; {(L, L&#39;). L = L&#39; &#8743; map_option atm_of  L = x2a}
 	   (RES {L, map_option uminus L})&#8250;</span></span></span><span>
 </span><span>    </span><span class="keyword2"><span class="keyword">if</span></span><span>
-</span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;find_unassigned_lit_wl_D_heur_pre (bt, bu, bv, bw, bx, by, bz)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;find_unassigned_lit_wl_D_heur_pre (bt, bu, bv, bw, bx, by, bz, baa, bab)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
 </span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(((a, aa, ab, ac, ad, b), ae, (af, ag, ba), ah, ai,
-	 ((aj, ak, al, am, bb), an, bc), ao, ap, (aq, bd), ar, as,
-	 (at, au, av, aw, be), (ax, ay, az, bf, bg), (bh, bi, bj, bk, bl),
-	 (bm, bn), bo, bp, bq, br, bs),
-	bt, bu, bv, bw, bx, by, bz)
+	 ((aj, ak, al, am, bb), an, bc), ao, (aq, bd), ar, as,
+	 (at, au, av, aw, be), heur, bo, bp, bq, br, bs),
+	bt, bu, bv, bw, bx, by, bz, baa, bab)
        &#8712; twl_st_heur&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
 </span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;r =
        length
 	(get_clauses_wl_heur
 	  ((a, aa, ab, ac, ad, b), ae, (af, ag, ba), ah, ai,
-	   ((aj, ak, al, am, bb), an, bc), ao, ap, (aq, bd), ar, as,
-	   (at, au, av, aw, be), (ax, ay, az, bf, bg), (bh, bi, bj, bk, bl),
-	   (bm, bn), bo, bp, bq, br, bs))&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
-</span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(x, L) &#8712; ?find bt bu bv bw bx by bz&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+	   ((aj, ak, al, am, bb), an, bc), ao, (aq, bd), ar, as,
+	   (at, au, av, aw, be), heur, bo, bp, bq, br, bs))&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(x, L) &#8712; ?find bt bu bv bw bx by bz baa bab&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
 </span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;x1 = (x1a, x2)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
 </span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;x = (x1, x2a)&#8250;</span></span></span><span>
 </span><span>     </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>a</span><span> </span><span>aa</span><span> </span><span>ab</span><span> </span><span>ac</span><span> </span><span>ad</span><span> </span><span>b</span><span> </span><span>ae</span><span> </span><span>af</span><span> </span><span>ag</span><span> </span><span>ba</span><span> </span><span>ah</span><span> </span><span>ai</span><span> </span><span>aj</span><span> </span><span>ak</span><span> </span><span>al</span><span> </span><span>am</span><span> </span><span>bb</span><span> </span><span>an</span><span> </span><span>bc</span><span> </span><span>ao</span><span> </span><span>ap</span><span> </span><span>aq</span><span> </span><span>bd</span><span> </span><span>ar</span><span> </span><span>as</span><span> </span><span>at</span><span>
 </span><span>       </span><span>au</span><span> </span><span>av</span><span> </span><span>aw</span><span> </span><span>be</span><span> </span><span>ax</span><span> </span><span>ay</span><span> </span><span>az</span><span> </span><span>bf</span><span> </span><span>bg</span><span> </span><span>bh</span><span> </span><span>bi</span><span> </span><span>bj</span><span> </span><span>bk</span><span> </span><span>bl</span><span> </span><span>bm</span><span> </span><span>bn</span><span> </span><span>bo</span><span> </span><span>bp</span><span> </span><span>bq</span><span> </span><span>br</span><span> </span><span>bs</span><span> </span><span>bt</span><span> </span><span>bu</span><span> </span><span>bv</span><span>
-</span><span>       </span><span>bw</span><span> </span><span>bx</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;by&quot;</span></span></span><span> </span><span>bz</span><span> </span><span>x</span><span> </span><span>L</span><span> </span><span>x1</span><span> </span><span>x1a</span><span> </span><span>x2</span><span> </span><span>x2a</span><span>
+</span><span>       </span><span>bw</span><span> </span><span>bx</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;by&quot;</span></span></span><span> </span><span>bz</span><span> </span><span>x</span><span> </span><span>L</span><span> </span><span>x1</span><span> </span><span>x1a</span><span> </span><span>x2</span><span> </span><span>x2a</span><span> </span><span>heur</span><span> </span><span>baa</span><span> </span><span>bab</span><span> </span><span>ao&#39;</span><span>
 </span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
 </span><span>    </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
 </span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>that</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lit_of_found_atm_def</span><span>
@@ -309,11 +356,13 @@
 </span><span>        </span><span>mset_take_mset_drop_mset&#39;</span><span> </span><span>atms</span><span> </span><span>all_atms_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>unassigned_atm_def</span><span>
 </span><span>          </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>twl_st_of_wl.simps</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>atms</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>RETURN_RES_refine</span><span class="delimiter">)</span><span>
 </span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>lit_of_found_atm</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
-</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_def</span><span> </span><span>in_&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_atm_of_in_atms_of_iff</span><span> </span><span>Ball_def</span><span> </span><span>image_image</span><span>
-</span><span>        </span><span>mset_take_mset_drop_mset&#39;</span><span> </span><span>atms</span><span> </span><span>all_atms_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>unassigned_atm_def</span><span>
-</span><span>        </span><span>atm_of_eq_atm_of</span><span>
-</span><span>          </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>twl_st_of_wl.simps</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>atms</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>RETURN_RES_refine</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>a</span><span> </span><span>aa</span><span> </span><span>ab</span><span> </span><span>ac</span><span> </span><span>ad</span><span> </span><span>b</span><span> </span><span>ae</span><span> </span><span>af</span><span> </span><span>ag</span><span> </span><span>ba</span><span> </span><span>ah</span><span> </span><span>ai</span><span> </span><span>aj</span><span> </span><span>ak</span><span> </span><span>al</span><span> </span><span>am</span><span> </span><span>bb</span><span> </span><span>an</span><span> </span><span>bc</span><span> </span><span>ao</span><span> </span><span>ap</span><span> </span><span>aq</span><span> </span><span>bd</span><span> </span><span>ar</span><span>
+</span><span>       </span><span>as</span><span> </span><span>at</span><span> </span><span>au</span><span> </span><span>av</span><span> </span><span>aw</span><span> </span><span>ax</span><span> </span><span>ay</span><span> </span><span>az</span><span> </span><span>be</span><span> </span><span>bf</span><span> </span><span>bg</span><span> </span><span>bh</span><span> </span><span>bi</span><span> </span><span>bj</span><span> </span><span>bk</span><span> </span><span>bl</span><span> </span><span>bm</span><span> </span><span>bn</span><span> </span><span>bo</span><span> </span><span>bp</span><span> </span><span>bq</span><span> </span><span>br</span><span> </span><span>bs</span><span>
+</span><span>       </span><span>bt</span><span> </span><span>bu</span><span> </span><span>bv</span><span> </span><span>bw</span><span> </span><span>bx</span><span> </span><span>_</span><span> </span><span>_</span><span> </span><span>_</span><span> </span><span>_</span><span> </span><span>_</span><span> </span><span>_</span><span> </span><span>_</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;by&quot;</span></span></span><span> </span><span>bz</span><span> </span><span>ca</span><span> </span><span>cb</span><span> </span><span>cc</span><span> </span><span>cd</span><span> </span><span>ce</span><span> </span><span>cf</span><span> </span><span>cg</span><span> </span><span>ch</span><span> </span><span>ci</span><span> </span><span>_</span><span> </span><span>_</span><span> </span><span>x</span><span> </span><span>L</span><span> </span><span>x1</span><span> </span><span>x1a</span><span> </span><span>x2</span><span> </span><span>x2a</span><span> </span><span>La</span><span> </span><span>Lb</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>L</span><span class="delimiter">)</span><span>
+</span><span>       </span><span class="delimiter">(</span><span>clarsimp_all</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_def</span><span> </span><span>unassigned_atm_def</span><span> </span><span>atm_of_eq_atm_of</span><span> </span><span>uminus_&#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>_iff</span><span>
+</span><span>          </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>twl_st_of_wl.simps</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>atms</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>RETURN_RES_refine</span><span class="delimiter">;</span><span>
+</span><span>          </span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>atm_of_eq_atm_of</span><span> </span><span>uminus_&#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>_iff</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
 </span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
 </span><span class="keyword1"><span class="command">qed</span></span><span>
 </span><span>
@@ -325,6 +374,7 @@
       case L of
         None &#8658; RETURN None
       | Some L &#8658; do {
+          ASSERT (L&lt;length &#966;);
           if &#966;!L then RETURN (Some (Pos L)) else RETURN (Some (Neg L))
         }
   })&#8250;</span></span></span><span>
@@ -335,18 +385,21 @@
    [lit_of_found_atm_D_pre]<span class="hidden">&#8681;</span><sub>f</sub> Id &#215;<span class="hidden">&#8681;</span><sub>f</sub> Id &#8594; &#10216;Id&#10217;nres_rel&#8250;</span></span></span><span>
 </span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
 </span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lit_of_found_atm_D_def</span><span> </span><span>lit_of_found_atm_def</span><span>
-</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span class="delimiter">)</span><span>
-</span><span>
-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span> </span><span>if_splits</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>pw_le_iff</span><span> </span><span>refine_pw_simps</span><span> </span><span>lit_of_found_atm_D_pre_def</span><span class="delimiter">)</span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>decide_lit_wl_heur</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat literal &#8658; twl_st_wl_heur &#8658; twl_st_wl_heur nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;decide_lit_wl_heur = (&#955;L&#39; (M, N, D, Q, W, vmtf, &#966;, clvls, cach, lbd, outl, stats, fema, sema). do {
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;decide_lit_wl_heur = (&#955;L&#39; (M, N, D, Q, W, vmtf, clvls, cach, lbd, outl, stats, fema, sema). do {
       ASSERT(isa_length_trail_pre M);
       let j = isa_length_trail M;
       ASSERT(cons_trail_Decided_tr_pre (L&#39;, M));
-      RETURN (cons_trail_Decided_tr L&#39; M, N, D, j, W, vmtf, &#966;, clvls, cach, lbd, outl, incr_decision stats,
+      RETURN (cons_trail_Decided_tr L&#39; M, N, D, j, W, vmtf, clvls, cach, lbd, outl, incr_decision stats,
          fema, sema)})&#8250;</span></span></span><span>
 </span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>mop_get_saved_phase_heur_st</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat &#8658; twl_st_wl_heur &#8658; bool nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;mop_get_saved_phase_heur_st =
+     (&#955;L (M&#39;, N&#39;, D&#39;, Q&#39;, W&#39;, vm, clvls, cach, lbd, outl, stats, heur, vdom, avdom, lcount, opts,
+       old_arena).
+      mop_get_saved_phase_heur L heur)&#8250;</span></span></span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>decide_wl_or_skip_D_heur</span><span>
 </span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;twl_st_wl_heur &#8658; (bool &#215; twl_st_wl_heur) nres&#8250;</span></span></span><span>
@@ -355,12 +408,14 @@
     (S, L) &#8592; find_unassigned_lit_wl_D_heur S;
     case L of
       None &#8658; RETURN (True, S)
-    | Some L &#8658; do {T &#8592; decide_lit_wl_heur L S; RETURN (False, T)}
+    | Some L &#8658; do {
+        T &#8592; decide_lit_wl_heur L S;
+        RETURN (False, T)}
   })
 &#8250;</span></span></span><span>
 </span><span>
 </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>decide_wl_or_skip_D_heur_decide_wl_or_skip_D</span><span class="delimiter">:</span><span>
-</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(decide_wl_or_skip_D_heur, decide_wl_or_skip_D) &#8712; twl_st_heur&#39;&#39;&#39; r &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;bool_rel &#215;<span class="hidden">&#8681;</span><sub>f</sub> twl_st_heur&#39;&#39;&#39; r&#10217; nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(decide_wl_or_skip_D_heur, decide_wl_or_skip) &#8712; twl_st_heur&#39;&#39;&#39; r &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;bool_rel &#215;<span class="hidden">&#8681;</span><sub>f</sub> twl_st_heur&#39;&#39;&#39; r&#10217; nres_rel&#8250;</span></span></span><span>
 </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
 </span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
 </span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;rev (cons_trail_Decided L M) = rev M @ [Decided L]&#8250;</span></span></span><span>
@@ -371,13 +426,13 @@
 </span><span>
 </span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>final</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;decide_lit_wl_heur xb x1a
 	&#8804; SPEC
-	   (&#955;T. RETURN (False, T)
+	   (&#955;T.  do {
+                  RETURN (False, T)}
 		&#8804; SPEC
 		   (&#955;c. (c, False, decide_lit_wl x&#39;a x1)
 			&#8712; bool_rel &#215;<span class="hidden">&#8681;</span><sub>f</sub> twl_st_heur&#39;&#39;&#39; r))&#8250;</span></span></span><span>
 </span><span>    </span><span class="keyword2"><span class="keyword">if</span></span><span>
 </span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(x, y) &#8712; twl_st_heur&#39;&#39;&#39; r&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
-</span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;decide_wl_or_skip_pre y &#8743; literals_are_&#8466;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub> (all_atms_st y) y&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
 </span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(xa, x&#39;)
        &#8712; {((T, L), T&#39;, L&#39;).
 	  (T, T&#39;) &#8712; twl_st_heur&#39;&#39;&#39; r &#8743;
@@ -401,12 +456,17 @@
 </span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>refine_vcg</span><span>
 </span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
 </span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>isa_length_trail_pre</span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;get_trail_wl x1&#8250;</span></span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;all_atms_st x1&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
-</span><span>	  </span><span class="delimiter">(</span><span>use</span><span> </span><span>that</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;auto simp: twl_st_heur_def st all_atms_def[symmetric]&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>	  </span><span class="delimiter">(</span><span>use</span><span> </span><span>that</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;auto simp: twl_st_heur_def st all_atms_def[symmetric]&#8250;</span></span></span><span class="delimiter">)</span><span>
 </span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
 </span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>cons_trail_Decided_tr_pre</span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;get_trail_wl x1&#8250;</span></span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;all_atms_st x1&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
-</span><span>	  </span><span class="delimiter">(</span><span>use</span><span> </span><span>that</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;auto simp: twl_st_heur_def st all_atms_def[symmetric]&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>	  </span><span class="delimiter">(</span><span>use</span><span> </span><span>that</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;auto simp: twl_st_heur_def st all_atms_def[symmetric]&#8250;</span></span></span><span class="delimiter">)</span><span>
 </span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
-</span><span>        </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>that</span><span class="delimiter">(</span><span>2</span><span class="delimiter">,</span><span>3</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cons_trail_Decided_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>st</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>that</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cons_trail_Decided_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>st</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_def</span><span class="delimiter">)</span><span class="delimiter">[</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>clarsimp</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_def</span><span> </span><span>all_atms_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>	   </span><span>isa_length_trail_length_u</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down_unRET_Id</span><span class="delimiter">]</span><span> </span><span>out_learned_def</span><span>
+</span><span>	  </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>cons_trail_Decided_tr</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down_unRET_uncurry</span><span class="delimiter">]</span><span>
+</span><span>	    </span><span>isa_vmtf_consD2</span><span class="delimiter">)</span><span>
 </span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_def</span><span> </span><span>all_atms_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
 </span><span>	   </span><span>isa_length_trail_length_u</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down_unRET_Id</span><span class="delimiter">]</span><span> </span><span>out_learned_def</span><span>
 </span><span>	  </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>cons_trail_Decided_tr</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>fref_to_Down_unRET_uncurry</span><span class="delimiter">]</span><span>
@@ -414,15 +474,23 @@
 </span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
 </span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
 </span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>decide_wl_or_skip_alt_def</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;decide_wl_or_skip S = (do {
+    ASSERT(decide_wl_or_skip_pre S);
+    (S, L) &#8592; find_unassigned_lit_wl S;
+    case L of
+      None &#8658; RETURN (True, S)
+    | Some L &#8658; RETURN (False, decide_lit_wl L S)
+  })&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>S</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>decide_wl_or_skip_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
 </span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
 </span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
-</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>decide_wl_or_skip_D_heur_def</span><span> </span><span>decide_wl_or_skip_D_def</span><span> </span><span>decide_wl_or_skip_D_pre_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>decide_wl_or_skip_D_heur_def</span><span> </span><span>decide_wl_or_skip_alt_def</span><span> </span><span>decide_wl_or_skip_pre_def</span><span>
 </span><span>     </span><span>decide_l_or_skip_pre_def</span><span> </span><span>twl_st_of_wl.simps</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
 </span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>nres_relI</span><span> </span><span>frefI</span><span> </span><span>same_in_Id_option_rel</span><span class="delimiter">)</span><span>
 </span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>find_unassigned_lit_wl_D&#39;_find_unassigned_lit_wl_D</span><span class="delimiter">[</span><span>of</span><span> </span><span>r</span><span class="delimiter">,</span><span> </span><span>THEN</span><span> </span><span>fref_to_Down</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span>
 </span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>decide_wl_or_skip_pre_def</span><span> </span><span>find_unassigned_lit_wl_D_heur_pre_def</span><span>
-</span><span>	</span><span>decide_wl_or_skip_pre_def</span><span> </span><span>decide_l_or_skip_pre_def</span><span>
+</span><span>	</span><span>decide_wl_or_skip_pre_def</span><span> </span><span>decide_l_or_skip_pre_def</span><span> </span><span>decide_or_skip_pre_def</span><span>
 </span><span>       </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>normalize_goal</span><span class="delimiter">+</span><span>
 </span><span>       </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule_tac</span><span> </span><span>x</span><span> </span><span class="delimiter">=</span><span> </span><span>xa</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>exI</span><span class="delimiter">)</span><span>
 </span><span>       </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule_tac</span><span> </span><span>x</span><span> </span><span class="delimiter">=</span><span> </span><span>xb</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>exI</span><span class="delimiter">)</span><span>
@@ -431,9 +499,66 @@
 </span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>same_in_Id_option_rel</span><span class="delimiter">)</span><span>
 </span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_def</span><span class="delimiter">)</span><span>
 </span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_def</span><span class="delimiter">)</span><span>
-</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>final</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>final</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">?</span><span class="delimiter">)</span><span>
 </span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
 </span><span> </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bind_triple_unfold</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;do {
+    ((M, vm), L) &#8592; (P :: _ nres);
+    f ((M, vm), L)
+} =
+do {
+    x &#8592; P;
+    f x
+}&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>bind_cong</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>decide_wl_or_skip_D_heur&#39;</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;decide_wl_or_skip_D_heur&#39; = (&#955;(M, N&#39;, D&#39;, j, W&#39;, vm, clvls, cach, lbd, outl, stats, heur,
+       vdom, avdom, lcount, opts, old_arena). do {
+      ((M, vm), L) &#8592; isa_vmtf_find_next_undef_upd M vm;
+      ASSERT(L &#8800; None &#10230; get_saved_phase_heur_pre (the L) heur);
+      case L of
+       None &#8658; RETURN (True, (M, N&#39;, D&#39;, j, W&#39;, vm, clvls, cach, lbd, outl, stats, heur,
+         vdom, avdom, lcount, opts, old_arena))
+     | Some L &#8658; do {
+        b &#8592; mop_get_saved_phase_heur L heur;
+        let L = (if b then Pos L else Neg L);
+        T &#8592; decide_lit_wl_heur L (M, N&#39;, D&#39;, j, W&#39;, vm, clvls, cach, lbd, outl, stats, heur,
+          vdom, avdom, lcount, opts, old_arena);
+        RETURN (False, T)
+      }
+    })
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>decide_wl_or_skip_D_heur&#39;_decide_wl_or_skip_D_heur</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;decide_wl_or_skip_D_heur&#39; S &#8804; &#8659;Id (decide_wl_or_skip_D_heur S)&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>iff</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;{K. (&#8707;y. K = Some y) &#8743; atm_of (the K) = x2d} = {Some (Pos x2d), Some (Neg x2d)}&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x2d</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>atm_of_eq_atm_of</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span>y</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>S</span><span class="delimiter">,</span><span> </span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>decide_wl_or_skip_D_heur_def</span><span> </span><span>find_unassigned_lit_wl_D_heur_def</span><span>
+</span><span>      </span><span>nres_monad3</span><span> </span><span>prod.case</span><span> </span><span>decide_wl_or_skip_D_heur&#39;_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span> </span><span>bind_triple_unfold</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>decide_wl_or_skip_D_heur_def</span><span> </span><span>find_unassigned_lit_wl_D_heur_def</span><span>
+</span><span>      </span><span>nres_monad3</span><span> </span><span>prod.case</span><span> </span><span>lit_of_found_atm_def</span><span> </span><span>mop_get_saved_phase_heur_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>refine_vcg</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fast</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>bind_RES</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>decide_wl_or_skip_D_heur&#39;_decide_wl_or_skip_D_heur2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(decide_wl_or_skip_D_heur&#39;, decide_wl_or_skip_D_heur) &#8712; Id &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;Id&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>use</span><span> </span><span>decide_wl_or_skip_D_heur&#39;_decide_wl_or_skip_D_heur</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>auto</span><span class="delimiter">)</span><span>
 </span><span>
 </span><span class="keyword2"><span class="keyword">end</span></span></pre>
 
@@ -441,7 +566,7 @@
 </body>
 <div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
 
-<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">5222ffd4 </td><td align="center">Fri 06 Dec 2019 02:43:15 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+<tr><td align="center">Isabelle2019 </td><td align="center">1775f91f0787 </td><td align="center">271ed48b </td><td align="center">Mo 20 Jän 2020 16:45:39 CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
 
 </html>
 
