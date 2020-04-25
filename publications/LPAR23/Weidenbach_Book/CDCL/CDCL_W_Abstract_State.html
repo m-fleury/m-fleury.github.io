@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory CDCL_W_Abstract_State (Isabelle2020: April 2020)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory CDCL_W_Abstract_State</h1>
+
+<span class="command">theory</span> <span class="name">CDCL_W_Abstract_State</span><br/>
+<span class="keyword">imports</span> <a href="CDCL_W_Restart.html"><span class="name">CDCL_W_Restart</span></a> <a href="CDCL_W_Incremental.html"><span class="name">CDCL_W_Incremental</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>CDCL_W_Abstract_State</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>CDCL_W_Full</span><span> </span><span>CDCL_W_Restart</span><span> </span><span>CDCL_W_Incremental</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Instantiation of Weidenbach&#39;s CDCL by Multisets&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We first instantiate the locale of Weidenbach&#39;s locale. Then we refine it to a 2-WL program.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span class="tfree">&#39;v</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;v, &#39;v clause) ann_lit list &#215;
+  &#39;v clauses &#215;
+  &#39;v clauses &#215;
+  &#39;v clause option&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We use definition, otherwise we could not use the simplification theorems we have already
+  shown.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>trail</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;v cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset &#8658; (&#39;v, &#39;v clause) ann_lit list&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;trail (M, _) = M&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>init_clss</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;v cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset &#8658; &#39;v clauses&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;init_clss (_, N, _) = N&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>learned_clss</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;v cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset &#8658; &#39;v clauses&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;learned_clss (_, _, U, _) = U&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>conflicting</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;v cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset &#8658; &#39;v clause option&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;conflicting (_, _, _, C) = C&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>cons_trail</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;v, &#39;v clause) ann_lit &#8658; &#39;v cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset &#8658; &#39;v cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;cons_trail L (M, R) = (L # M, R)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>tl_trail</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;tl_trail (M, R) = (tl M, R)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>add_learned_cls</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;add_learned_cls C (M, N, U, R) = (M, N, {#C#} + U, R)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>add_init_cls</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;add_init_cls C (M, N, U, R) = (M, {#C#} + N, U, R)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>remove_cls</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;remove_cls C (M, N, U, R) = (M, removeAll_mset C N, removeAll_mset C U, R)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>update_conflicting</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;update_conflicting D (M, N, U,  _) = (M, N, U, D)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>init_state</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;init_state N = ([], N, {#}, None)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>trail.simps</span><span class="delimiter">[</span><span>simp</span><span> </span><span>del</span><span class="delimiter">]</span><span> </span><span>cons_trail.simps</span><span class="delimiter">[</span><span>simp</span><span> </span><span>del</span><span class="delimiter">]</span><span> </span><span>tl_trail.simps</span><span class="delimiter">[</span><span>simp</span><span> </span><span>del</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>add_learned_cls.simps</span><span class="delimiter">[</span><span>simp</span><span> </span><span>del</span><span class="delimiter">]</span><span> </span><span>remove_cls.simps</span><span class="delimiter">[</span><span>simp</span><span> </span><span>del</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>update_conflicting.simps</span><span class="delimiter">[</span><span>simp</span><span> </span><span>del</span><span class="delimiter">]</span><span> </span><span>init_clss.simps</span><span class="delimiter">[</span><span>simp</span><span> </span><span>del</span><span class="delimiter">]</span><span> </span><span>learned_clss.simps</span><span class="delimiter">[</span><span>simp</span><span> </span><span>del</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>conflicting.simps</span><span class="delimiter">[</span><span>simp</span><span> </span><span>del</span><span class="delimiter">]</span><span> </span><span>init_state.simps</span><span class="delimiter">[</span><span>simp</span><span> </span><span>del</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset_state</span><span> </span><span class="delimiter">=</span><span> </span><span>trail.simps</span><span> </span><span>cons_trail.simps</span><span> </span><span>tl_trail.simps</span><span> </span><span>add_learned_cls.simps</span><span>
+</span><span>    </span><span>remove_cls.simps</span><span> </span><span>update_conflicting.simps</span><span> </span><span>init_clss.simps</span><span> </span><span>learned_clss.simps</span><span>
+</span><span>    </span><span>conflicting.simps</span><span> </span><span>init_state.simps</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>state</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;state S = (trail S, init_clss S, learned_clss S, conflicting S, ())&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset</span><span class="delimiter">:</span><span> </span><span>state<span class="hidden">&#8681;</span><sub>W</sub>_ops</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span>state</span><span> </span><span class="delimiter">=</span><span> </span><span>state</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>trail</span><span> </span><span class="delimiter">=</span><span> </span><span>trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>init_clss</span><span> </span><span class="delimiter">=</span><span> </span><span>init_clss</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>learned_clss</span><span> </span><span class="delimiter">=</span><span> </span><span>learned_clss</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>conflicting</span><span> </span><span class="delimiter">=</span><span> </span><span>conflicting</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>
+</span><span>  </span><span>cons_trail</span><span> </span><span class="delimiter">=</span><span> </span><span>cons_trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>tl_trail</span><span> </span><span class="delimiter">=</span><span> </span><span>tl_trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>add_learned_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>add_learned_cls</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>remove_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>remove_cls</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>update_conflicting</span><span> </span><span class="delimiter">=</span><span> </span><span>update_conflicting</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>init_state</span><span> </span><span class="delimiter">=</span><span> </span><span>init_state</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>state_eq</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;v cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset &#8658; &#39;v cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset &#8658; bool&quot;</span></span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">infix</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8764;m&quot;</span></span></span><span> </span><span>50</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;S &#8764;m T &#10231; state S = state T&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset</span><span class="delimiter">:</span><span> </span><span>state<span class="hidden">&#8681;</span><sub>W</sub></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span>state</span><span> </span><span class="delimiter">=</span><span> </span><span>state</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>trail</span><span> </span><span class="delimiter">=</span><span> </span><span>trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>init_clss</span><span> </span><span class="delimiter">=</span><span> </span><span>init_clss</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>learned_clss</span><span> </span><span class="delimiter">=</span><span> </span><span>learned_clss</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>conflicting</span><span> </span><span class="delimiter">=</span><span> </span><span>conflicting</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>state_eq</span><span> </span><span class="delimiter">=</span><span> </span><span>state_eq</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>cons_trail</span><span> </span><span class="delimiter">=</span><span> </span><span>cons_trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>tl_trail</span><span> </span><span class="delimiter">=</span><span> </span><span>tl_trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>add_learned_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>add_learned_cls</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>remove_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>remove_cls</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>update_conflicting</span><span> </span><span class="delimiter">=</span><span> </span><span>update_conflicting</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>init_state</span><span> </span><span class="delimiter">=</span><span> </span><span>init_state</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>unfold_locales</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset_state</span><span> </span><span>state_eq_def</span><span> </span><span>state_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>backtrack_lvl</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;v cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset &#8658; nat&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;backtrack_lvl &#8801; cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.backtrack_lvl&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset</span><span class="delimiter">:</span><span> </span><span>conflict_driven_clause_learning<span class="hidden">&#8681;</span><sub>W</sub></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span>state</span><span> </span><span class="delimiter">=</span><span> </span><span>state</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>trail</span><span> </span><span class="delimiter">=</span><span> </span><span>trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>init_clss</span><span> </span><span class="delimiter">=</span><span> </span><span>init_clss</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>learned_clss</span><span> </span><span class="delimiter">=</span><span> </span><span>learned_clss</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>conflicting</span><span> </span><span class="delimiter">=</span><span> </span><span>conflicting</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>
+</span><span>  </span><span>state_eq</span><span> </span><span class="delimiter">=</span><span> </span><span>state_eq</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>cons_trail</span><span> </span><span class="delimiter">=</span><span> </span><span>cons_trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>tl_trail</span><span> </span><span class="delimiter">=</span><span> </span><span>tl_trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>add_learned_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>add_learned_cls</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>remove_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>remove_cls</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>update_conflicting</span><span> </span><span class="delimiter">=</span><span> </span><span>update_conflicting</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>init_state</span><span> </span><span class="delimiter">=</span><span> </span><span>init_state</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>unfold_locales</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset_state_eq_eq</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;state_eq = (=)&quot;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>state_eq_def</span><span>
+</span><span>   </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset_state</span><span> </span><span>state_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>clauses_def</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.clauses (M, N, U, C) = N + U&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.clauses_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset_state</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset_reduce_trail_to</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.reduce_trail_to F S =
+    ((if length (trail S) &#8805; length F
+    then drop (length (trail S) - length F) (trail S)
+    else []), init_clss S, learned_clss S, conflicting S)&quot;</span></span></span><span>
+</span><span>    </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;?S = _&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>F</span><span> </span><span>S</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.reduce_trail_to.induct</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>1</span><span> </span><span>F</span><span> </span><span>S</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>IH</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;trail S&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>Nil</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>IH</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>S</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset_state</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Cons</span><span> </span><span>L</span><span> </span><span>M</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Suc (length M) &gt; length F&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subgoal_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Suc (length M) - length F = Suc (length M - length F)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.reduce_trail_to_length_ne</span><span class="delimiter">[</span><span>of</span><span> </span><span>S</span><span> </span><span>F</span><span class="delimiter">]</span><span> </span><span>IH</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>        </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>IH</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.reduce_trail_to_length_ne</span><span class="delimiter">[</span><span>of</span><span> </span><span>S</span><span> </span><span>F</span><span class="delimiter">]</span><span>
+</span><span>          </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>S</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.trail_reduce_trail_to_drop</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset_state</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset</span><span class="delimiter">:</span><span> </span><span>state<span class="hidden">&#8681;</span><sub>W</sub>_adding_init_clause</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span>state</span><span> </span><span class="delimiter">=</span><span> </span><span>state</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>trail</span><span> </span><span class="delimiter">=</span><span> </span><span>trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>init_clss</span><span> </span><span class="delimiter">=</span><span> </span><span>init_clss</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>learned_clss</span><span> </span><span class="delimiter">=</span><span> </span><span>learned_clss</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>conflicting</span><span> </span><span class="delimiter">=</span><span> </span><span>conflicting</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>
+</span><span>  </span><span>state_eq</span><span> </span><span class="delimiter">=</span><span> </span><span>state_eq</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>cons_trail</span><span> </span><span class="delimiter">=</span><span> </span><span>cons_trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>tl_trail</span><span> </span><span class="delimiter">=</span><span> </span><span>tl_trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>add_learned_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>add_learned_cls</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>remove_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>remove_cls</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>update_conflicting</span><span> </span><span class="delimiter">=</span><span> </span><span>update_conflicting</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>init_state</span><span> </span><span class="delimiter">=</span><span> </span><span>init_state</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>add_init_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>add_init_cls</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>unfold_locales</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>state_def</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset_state</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset</span><span class="delimiter">:</span><span> </span><span>conflict_driven_clause_learning_with_adding_init_clause<span class="hidden">&#8681;</span><sub>W</sub></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span>state</span><span> </span><span class="delimiter">=</span><span> </span><span>state</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>trail</span><span> </span><span class="delimiter">=</span><span> </span><span>trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>init_clss</span><span> </span><span class="delimiter">=</span><span> </span><span>init_clss</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>learned_clss</span><span> </span><span class="delimiter">=</span><span> </span><span>learned_clss</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>conflicting</span><span> </span><span class="delimiter">=</span><span> </span><span>conflicting</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>
+</span><span>  </span><span>state_eq</span><span> </span><span class="delimiter">=</span><span> </span><span>state_eq</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>cons_trail</span><span> </span><span class="delimiter">=</span><span> </span><span>cons_trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>tl_trail</span><span> </span><span class="delimiter">=</span><span> </span><span>tl_trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>add_learned_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>add_learned_cls</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>remove_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>remove_cls</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>update_conflicting</span><span> </span><span class="delimiter">=</span><span> </span><span>update_conflicting</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>init_state</span><span> </span><span class="delimiter">=</span><span> </span><span>init_state</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>add_init_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>add_init_cls</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>unfold_locales</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>state_def</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset_state</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>full_cdcl<span class="hidden">&#8681;</span><sub>W</sub>_init_state</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;full cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.cdcl<span class="hidden">&#8681;</span><sub>W</sub>_stgy (init_state {#}) S &#10231; S = init_state {#}&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>full_def</span><span> </span><span>rtranclp_unfold</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>tranclp_unfold_begin</span><span class="delimiter">)</span><span>
+</span><span>     </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span>  </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.cdcl<span class="hidden">&#8681;</span><sub>W</sub>_stgy.simps</span><span>
+</span><span>      </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.conflict.simps</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.cdcl<span class="hidden">&#8681;</span><sub>W</sub>_o.simps</span><span>
+</span><span>       </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.propagate.simps</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.decide.simps</span><span>
+</span><span>       </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.cdcl<span class="hidden">&#8681;</span><sub>W</sub>_bj.simps</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.backtrack.simps</span><span>
+</span><span>      </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.skip.simps</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.resolve.simps</span><span>
+</span><span>      </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset_state</span><span> </span><span>clauses_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>twl_restart_ops</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span>
+</span><span>    </span><span>f</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat &#8658; nat&#8250;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset</span><span class="delimiter">:</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_restart_ops</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span>state</span><span> </span><span class="delimiter">=</span><span> </span><span>state</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>trail</span><span> </span><span class="delimiter">=</span><span> </span><span>trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>init_clss</span><span> </span><span class="delimiter">=</span><span> </span><span>init_clss</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>learned_clss</span><span> </span><span class="delimiter">=</span><span> </span><span>learned_clss</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>conflicting</span><span> </span><span class="delimiter">=</span><span> </span><span>conflicting</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>
+</span><span>  </span><span>state_eq</span><span> </span><span class="delimiter">=</span><span> </span><span>state_eq</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>cons_trail</span><span> </span><span class="delimiter">=</span><span> </span><span>cons_trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>tl_trail</span><span> </span><span class="delimiter">=</span><span> </span><span>tl_trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>add_learned_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>add_learned_cls</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>remove_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>remove_cls</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>update_conflicting</span><span> </span><span class="delimiter">=</span><span> </span><span>update_conflicting</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>init_state</span><span> </span><span class="delimiter">=</span><span> </span><span>init_state</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>f</span><span> </span><span class="delimiter">=</span><span> </span><span>f</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>unfold_locales</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>twl_restart</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span>twl_restart_ops</span><span> </span><span>f</span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>f</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat &#8658; nat&#8250;</span></span></span><span> </span><span class="delimiter">+</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span>
+</span><span>    </span><span>f</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unbounded f&#8250;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">interpretation</span></span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset</span><span class="delimiter">:</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_restart</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span>state</span><span> </span><span class="delimiter">=</span><span> </span><span>state</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>trail</span><span> </span><span class="delimiter">=</span><span> </span><span>trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>init_clss</span><span> </span><span class="delimiter">=</span><span> </span><span>init_clss</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>learned_clss</span><span> </span><span class="delimiter">=</span><span> </span><span>learned_clss</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>conflicting</span><span> </span><span class="delimiter">=</span><span> </span><span>conflicting</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>
+</span><span>  </span><span>state_eq</span><span> </span><span class="delimiter">=</span><span> </span><span>state_eq</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>cons_trail</span><span> </span><span class="delimiter">=</span><span> </span><span>cons_trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>tl_trail</span><span> </span><span class="delimiter">=</span><span> </span><span>tl_trail</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>add_learned_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>add_learned_cls</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>remove_cls</span><span> </span><span class="delimiter">=</span><span> </span><span>remove_cls</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>update_conflicting</span><span> </span><span class="delimiter">=</span><span> </span><span>update_conflicting</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>init_state</span><span> </span><span class="delimiter">=</span><span> </span><span>init_state</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>f</span><span> </span><span class="delimiter">=</span><span> </span><span>f</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>unfold_locales</span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>f</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span> </span><span>conflict_driven_clause_learning<span class="hidden">&#8681;</span><sub>W</sub></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>distinct_cdcl<span class="hidden">&#8681;</span><sub>W</sub>_state_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;distinct_cdcl<span class="hidden">&#8681;</span><sub>W</sub>_state S =
+    ((&#8704;T. conflicting S = Some T &#10230; distinct_mset T) &#8743;
+     distinct_mset_mset (clauses S) &#8743;
+     (&#8704;L mark. Propagated L mark &#8712; set (trail S) &#10230; distinct_mset mark))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>distinct_cdcl<span class="hidden">&#8681;</span><sub>W</sub>_state_def</span><span> </span><span>clauses_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_stgy_cdcl<span class="hidden">&#8681;</span><sub>W</sub>_init_state_empty_no_step</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.cdcl<span class="hidden">&#8681;</span><sub>W</sub>_stgy (init_state {#}) S &#10231; False&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>rtranclp_unfold</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span>  </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.cdcl<span class="hidden">&#8681;</span><sub>W</sub>_stgy.simps</span><span>
+</span><span>      </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.conflict.simps</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.cdcl<span class="hidden">&#8681;</span><sub>W</sub>_o.simps</span><span>
+</span><span>       </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.propagate.simps</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.decide.simps</span><span>
+</span><span>       </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.cdcl<span class="hidden">&#8681;</span><sub>W</sub>_bj.simps</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.backtrack.simps</span><span>
+</span><span>      </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.skip.simps</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.resolve.simps</span><span>
+</span><span>      </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset_state</span><span> </span><span>clauses_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_stgy_cdcl<span class="hidden">&#8681;</span><sub>W</sub>_init_state</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl<span class="hidden">&#8681;</span><sub>W</sub>_restart_mset.cdcl<span class="hidden">&#8681;</span><sub>W</sub>_stgy<span class="hidden">&#8679;</span><sup>*</sup><span class="hidden">&#8679;</span><sup>*</sup> (init_state {#}) S &#10231; S = init_state {#}&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>rtranclp_unfold</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>tranclp_unfold_begin</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>cdcl<span class="hidden">&#8681;</span><sub>W</sub>_stgy_cdcl<span class="hidden">&#8681;</span><sub>W</sub>_init_state_empty_no_step</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IsaSAT_Restart_LLVM (Isabelle2020: April 2020)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IsaSAT_Restart_LLVM</h1>
+
+<span class="command">theory</span> <span class="name">IsaSAT_Restart_LLVM</span><br/>
+<span class="keyword">imports</span> <a href="IsaSAT_Restart.html"><span class="name">IsaSAT_Restart</span></a> <a href="IsaSAT_Restart_Heuristics_LLVM.html"><span class="name">IsaSAT_Restart_Heuristics_LLVM</span></a> <a href="IsaSAT_CDCL_LLVM.html"><span class="name">IsaSAT_CDCL_LLVM</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IsaSAT_Restart_LLVM</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>IsaSAT_Restart</span><span> </span><span>IsaSAT_Restart_Heuristics_LLVM</span><span> </span><span>IsaSAT_CDCL_LLVM</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>mark_to_delete_clauses_wl_D_heur</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>MINIMUM_DELETION_LBD_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry0 (RETURN MINIMUM_DELETION_LBD)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>MINIMUM_DELETION_LBD_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(32)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>delete_index_and_swap</span><span> </span><span>mop_mark_garbage_heur</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>mark_to_delete_clauses_wl_D_heur_fast_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;mark_to_delete_clauses_wl_D_heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;S. length (get_clauses_wl_heur S) &#8804; sint64_max]<span class="hidden">&#8681;</span><sub>a</sub> isasat_bounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; isasat_bounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mark_to_delete_clauses_wl_D_heur_def</span><span>
+</span><span>    </span><span>access_vdom_at_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>length_avdom_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>get_the_propagation_reason_heur_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>clause_is_learned_heur_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>clause_lbd_heur_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>access_length_heur_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>short_circuit_conv</span><span> </span><span>mark_to_delete_clauses_wl_D_heur_is_Some_iff</span><span>
+</span><span>    </span><span>marked_as_used_st_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>if_conn</span><span class="delimiter">(</span><span>4</span><span class="delimiter">)</span><span>
+</span><span>    </span><span>fold_tuple_optimizations</span><span>
+</span><span>    </span><span>mop_arena_lbd_st_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>mop_marked_as_used_st_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>mop_arena_status_st_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>mop_arena_length_st_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>of_nat_snat</span><span class="delimiter">[</span><span>sepref_import_param</span><span class="delimiter">]</span><span>
+</span><span>      </span><span>length_avdom_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">,</span><span> </span><span>simp</span><span class="delimiter">]</span><span> </span><span>access_vdom_at_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &gt; &#8977;&#8250;</span></span></span><span> </span><span>unat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">=</span><span>2</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(64)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>cdcl_twl_full_restart_wl_prog_heur</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>cdcl_twl_full_restart_wl_prog_heur_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_full_restart_wl_prog_heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;S. length (get_clauses_wl_heur S) &#8804; sint64_max]<span class="hidden">&#8681;</span><sub>a</sub> isasat_bounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; isasat_bounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_full_restart_wl_prog_heur_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>cdcl_twl_restart_wl_heur_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_restart_wl_heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;S. length (get_clauses_wl_heur S) &#8804; sint64_max]<span class="hidden">&#8681;</span><sub>a</sub> isasat_bounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; isasat_bounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_restart_wl_heur_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>cdcl_twl_full_restart_wl_D_GC_heur_prog_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_full_restart_wl_D_GC_heur_prog&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;S. length (get_clauses_wl_heur S) &#8804; sint64_max]<span class="hidden">&#8681;</span><sub>a</sub> isasat_bounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; isasat_bounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_full_restart_wl_D_GC_heur_prog_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(32)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>restart_required_heur</span><span> </span><span>cdcl_twl_restart_wl_heur</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>restart_prog_wl_D_heur_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry2 (restart_prog_wl_D_heur)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;((S, n), _). length (get_clauses_wl_heur S) &#8804; sint64_max &#8743; n &lt; uint64_max]<span class="hidden">&#8681;</span><sub>a</sub>
+      isasat_bounded_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; isasat_bounded_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> uint64_nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>restart_prog_wl_D_heur_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(64)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>isasat_fast_bound</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_fast_bound = uint64_max - (uint32_max div 2 + 6)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>isasat_fast_bound_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_fast_bound = 18446744071562067962&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>br_def</span><span> </span><span>isasat_fast_bound_def</span><span>
+</span><span>     </span><span>uint64_max_def</span><span> </span><span>uint32_max_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>isasat_fast</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>isasat_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o isasat_fast&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_bounded_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>isasat_fast_alt_def</span><span> </span><span>isasat_fast_bound_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>isasat_fast_bound_alt_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(64)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_bounded_wl_heur</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_wl_heur_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cdcl_twl_stgy_restart_prog_bounded_wl_heur&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;S. isasat_fast S]<span class="hidden">&#8681;</span><sub>a</sub> isasat_bounded_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594; bool1_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> isasat_bounded_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>cdcl_twl_stgy_restart_prog_bounded_wl_heur_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>isasat_fast_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(64)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">experiment</span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">export_llvm</span></span><span> </span><span>opts_reduction_st_fast_code</span><span>
+</span><span>    </span><span>opts_restart_st_fast_code</span><span>
+</span><span>    </span><span>get_conflict_count_since_last_restart_heur_fast_code</span><span>
+</span><span>    </span><span>get_fast_ema_heur_fast_code</span><span>
+</span><span>    </span><span>get_slow_ema_heur_fast_code</span><span>
+</span><span>    </span><span>get_learned_count_fast_code</span><span>
+</span><span>    </span><span>count_decided_st_heur_pol_fast</span><span>
+</span><span>    </span><span>upper_restart_bound_not_reached_fast_impl</span><span>
+</span><span>    </span><span>minimum_number_between_restarts_impl</span><span>
+</span><span>    </span><span>restart_required_heur_fast_code</span><span>
+</span><span>    </span><span>cdcl_twl_full_restart_wl_D_GC_heur_prog_fast_code</span><span>
+</span><span>    </span><span>cdcl_twl_restart_wl_heur_fast_code</span><span>
+</span><span>    </span><span>cdcl_twl_full_restart_wl_prog_heur_fast_code</span><span>
+</span><span>    </span><span>cdcl_twl_local_restart_wl_D_heur_fast_code</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

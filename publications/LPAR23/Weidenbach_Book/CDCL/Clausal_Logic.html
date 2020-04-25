@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Clausal_Logic (Isabelle2020: April 2020)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Clausal_Logic</h1>
+
+<span class="command">theory</span> <span class="name">Clausal_Logic</span><br/>
+<span class="keyword">imports</span> <a href="Multiset_More.html"><span class="name">Multiset_More</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Title:        Clausal Logic
+    Author:      Jasmin Blanchette &lt;j.c.blanchette at vu.nl&gt;, 2014, 2017
+    Author:      Dmitriy Traytel &lt;traytel at inf.ethz.ch&gt;, 2014
+    Author:      Mathias Fleury &lt;mathias.fleury at mpi-inf.mpg.de&gt;, 2014
+    Maintainer:  Jasmin Blanchette &lt;jasmin.blanchette at inria.fr&gt;
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Clausal Logic&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Clausal_Logic</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Nested_Multisets_Ordinals.Multiset_More</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+Resolution operates of clauses, which are disjunctions of literals. The material formalized here
+corresponds roughly to Sections 2.1 (``Formulas and Clauses&#39;&#39;) of Bachmair and Ganzinger, excluding
+the formula and term syntax.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Literals&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+Literals consist of a polarity (positive or negative) and an atom, of type @{typ &#39;a}.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">datatype</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span>literal</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span>is_pos</span><span class="delimiter">:</span><span> </span><span>Pos</span><span> </span><span class="delimiter">(</span><span>atm_of</span><span class="delimiter">:</span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">)</span><span>
+</span><span class="delimiter">|</span><span> </span><span>Neg</span><span> </span><span class="delimiter">(</span><span>atm_of</span><span class="delimiter">:</span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>is_neg</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a literal &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;is_neg L &#8801; &#172; is_pos L&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>Pos_atm_of_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Pos (atm_of L) = L &#10231; is_pos L&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>L</span><span class="delimiter">)</span><span> </span><span>simp</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>Neg_atm_of_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Neg (atm_of L) = L &#10231; is_neg L&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>L</span><span class="delimiter">)</span><span> </span><span>simp</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>set_literal_atm_of</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;set_literal L = {atm_of L}&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>L</span><span class="delimiter">)</span><span> </span><span>simp</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ex_lit_cases</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8707;L. P L) &#10231; (&#8707;A. P (Pos A) &#8744; P (Neg A))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>literal.exhaust</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instantiation</span></span><span> </span><span>literal</span><span> </span><span class="delimiter">::</span><span> </span><span class="delimiter">(</span><span>type</span><span class="delimiter">)</span><span> </span><span>uminus</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>uminus_literal</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a literal &#8658; &#39;a literal&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;uminus L = (if is_pos L then Neg else Pos) (atm_of L)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span> </span><span class="keyword1"><span class="command">..</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span>
+</span><span>  </span><span>uminus_Pos</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;- Pos A = Neg A&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>uminus_Neg</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;- Neg A = Pos A&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>uminus_literal_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp_all</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atm_of_uminus</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atm_of (-L) = atm_of L&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span>L</span><span class="delimiter">,</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>uminus_of_uminus_id</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;- (- (x :: &#39;v literal)) = x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>uminus_literal_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>uminus_not_id</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8800; - (x:: &#39;v literal)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span>x</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>uminus_not_id&#39;</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;- x &#8800; (x:: &#39;v literal)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span>x</span><span class="delimiter">,</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>uminus_eq_inj</span><span class="delimiter">[</span><span>iff</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;- (a::&#39;v literal) = - b &#10231; a = b&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span>a</span><span class="delimiter">;</span><span> </span><span>case_tac</span><span> </span><span>b</span><span class="delimiter">)</span><span> </span><span>auto</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>uminus_lit_swap</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(a::&#39;a literal) = - b &#10231; - a = b&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_pos_neg_not_is_pos</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_pos (- L) &#10231; &#172; is_pos L&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>L</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instantiation</span></span><span> </span><span>literal</span><span> </span><span class="delimiter">::</span><span> </span><span class="delimiter">(</span><span>preorder</span><span class="delimiter">)</span><span> </span><span>preorder</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>less_literal</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a literal &#8658; &#39;a literal &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;less_literal L M &#10231; atm_of L &lt; atm_of M &#8744; atm_of L &#8804; atm_of M &#8743; is_neg L &lt; is_neg M&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>less_eq_literal</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a literal &#8658; &#39;a literal &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;less_eq_literal L M &#10231; atm_of L &lt; atm_of M &#8744; atm_of L &#8804; atm_of M &#8743; is_neg L &#8804; is_neg M&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>intro_classes</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>less_literal_def</span><span> </span><span>less_eq_literal_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>order_trans</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>less_le_not_le</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instantiation</span></span><span> </span><span>literal</span><span> </span><span class="delimiter">::</span><span> </span><span class="delimiter">(</span><span>order</span><span class="delimiter">)</span><span> </span><span>order</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>intro_classes</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>less_eq_literal_def</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>literal.expand</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pos_less_neg</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Pos A &lt; Neg A&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>less_literal_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pos_less_pos_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Pos A &lt; Pos B &#10231; A &lt; B&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>less_literal_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pos_less_neg_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Pos A &lt; Neg B &#10231; A &#8804; B&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>less_literal_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>less_le_not_le</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>neg_less_pos_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Neg A &lt; Pos B &#10231; A &lt; B&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>less_literal_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>neg_less_neg_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Neg A &lt; Neg B &#10231; A &lt; B&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>less_literal_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pos_le_neg</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Pos A &#8804; Neg A&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>less_eq_literal_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pos_le_pos_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Pos A &#8804; Pos B &#10231; A &#8804; B&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>less_eq_literal_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>less_le_not_le</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pos_le_neg_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Pos A &#8804; Neg B &#10231; A &#8804; B&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>less_eq_literal_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>less_imp_le</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>neg_le_pos_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Neg A &#8804; Pos B &#10231; A &lt; B&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>less_eq_literal_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>neg_le_neg_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Neg A &#8804; Neg B &#10231; A &#8804; B&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>less_eq_literal_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>less_imp_le</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>leq_imp_less_eq_atm_of</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;L &#8804; M &#10233; atm_of L &#8804; atm_of M&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>less_eq_literal_def</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>less_imp_le</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instantiation</span></span><span> </span><span>literal</span><span> </span><span class="delimiter">::</span><span> </span><span class="delimiter">(</span><span>linorder</span><span class="delimiter">)</span><span> </span><span>linorder</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>intro_classes</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>less_eq_literal_def</span><span> </span><span>less_literal_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instantiation</span></span><span> </span><span>literal</span><span> </span><span class="delimiter">::</span><span> </span><span class="delimiter">(</span><span>wellorder</span><span class="delimiter">)</span><span> </span><span>wellorder</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>intro_classes</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>P</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a literal &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>L</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a literal&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span>ih</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;L. (&#8896;M. M &lt; L &#10233; P M) &#10233; P L&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. (&#8896;y. y &lt; x &#10233; P (Pos y) &#8743; P (Neg y)) &#10233; P (Pos x) &#8743; P (Neg x)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>conjI</span><span class="delimiter">[</span><span>OF</span><span> </span><span>ih</span><span> </span><span>ih</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>less_literal_def</span><span> </span><span>atm_of_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>literal.splits</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>ih</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;A. P (Pos A) &#8743; P (Neg A)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>less_induct</span><span class="delimiter">)</span><span> </span><span>blast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P L&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>L</span><span class="delimiter">)</span><span> </span><span>simp</span><span class="delimiter">+</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Clauses&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+Clauses are (finite) multisets of literals.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span>clause</span><span> </span><span class="delimiter">=</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a literal multiset&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>map_clause</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a &#8658; &#39;b) &#8658; &#39;a clause &#8658; &#39;b clause&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;map_clause f &#8801; image_mset (map_literal f)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>rel_clause</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a &#8658; &#39;b &#8658; bool) &#8658; &#39;a clause &#8658; &#39;b clause &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rel_clause R &#8801; rel_mset (rel_literal R)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>poss</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a multiset &#8658; &#39;a clause&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;poss AA &#8801; {#Pos A. A &#8712;# AA#}&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>negs</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a multiset &#8658; &#39;a clause&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;negs AA &#8801; {#Neg A. A &#8712;# AA#}&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>Max_in_lits</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;C &#8800; {#} &#10233; Max_mset C &#8712;# C&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>Max_atm_of_set_mset_commute</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;C &#8800; {#} &#10233; Max (atm_of ` set_mset C) = atm_of (Max_mset C)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>mono_Max_commute</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>mono_def</span><span> </span><span>less_eq_literal_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>Max_pos_neg_less_multiset</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>max</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Max_mset C = Pos A&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>neg</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Neg A &#8712;# D&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;C &lt; D&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Max_mset C &lt; Neg A&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>max</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>neg</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>no_types</span><span class="delimiter">)</span><span> </span><span>Max_less_iff</span><span> </span><span>empty_iff</span><span> </span><span>ex_gt_imp_less_multiset</span><span> </span><span>finite_set_mset</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pos_Max_imp_neg_notin</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Max_mset C = Pos A &#10233; Neg A &#8713;# C&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>Max_pos_neg_less_multiset</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>less_eq_Max_lit</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;C &#8800; {#} &#10233; C &#8804; D &#10233; Max_mset C &#8804; Max_mset D&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>unfold</span><span> </span><span>less_eq_multiset<span class="hidden">&#8681;</span><sub>H</sub><span class="hidden">&#8681;</span><sub>O</sub></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">assume</span></span><span>
+</span><span>    </span><span>ne</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;C &#8800; {#}&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>ex_gt</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;x. count D x &lt; count C x &#10230; (&#8707;y &gt; x. count C y &lt; count D y)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>ne</span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Max_mset C &#8712;# C&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>fast</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>Max_in_lits</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;l. l &#8712;# D &#8743; &#172; l &lt; Max_mset C&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>ex_gt</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>count_greater_zero_iff</span><span> </span><span>count_inI</span><span> </span><span>less_not_sym</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172; Max_mset D &lt; Max_mset C&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>Max.coboundedI</span><span class="delimiter">[</span><span>OF</span><span> </span><span>finite_set_mset</span><span class="delimiter">]</span><span> </span><span>le_less_trans</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>atms_of</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a clause &#8658; &#39;a set&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;atms_of C = atm_of ` set_mset C&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atms_of_empty</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atms_of {#} = {}&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atms_of_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atms_of_singleton</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atms_of {#L#} = {atm_of L}&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atms_of_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atms_of_add_mset</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atms_of (add_mset a A) = insert (atm_of a) (atms_of A)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atms_of_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atms_of_union_mset</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atms_of (A &#8746;# B) = atms_of A &#8746; atms_of B&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atms_of_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>finite_atms_of</span><span class="delimiter">[</span><span>iff</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;finite (atms_of C)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>atms_of_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atm_of_lit_in_atms_of</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;L &#8712;# C &#10233; atm_of L &#8712; atms_of C&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>atms_of_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atms_of_plus</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atms_of (C + D) = atms_of C &#8746; atms_of D&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atms_of_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>in_atms_of_minusD</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8712; atms_of (A - B) &#10233; x &#8712; atms_of A&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>atms_of_def</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>in_diffD</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pos_lit_in_atms_of</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Pos A &#8712;# C &#10233; A &#8712; atms_of C&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atms_of_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>force</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>neg_lit_in_atms_of</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Neg A &#8712;# C &#10233; A &#8712; atms_of C&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atms_of_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>force</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atm_imp_pos_or_neg_lit</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;A &#8712; atms_of C &#10233; Pos A &#8712;# C &#8744; Neg A &#8712;# C&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atms_of_def</span><span> </span><span>image_def</span><span> </span><span>mem_Collect_eq</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>Neg_atm_of_iff</span><span> </span><span>Pos_atm_of_iff</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atm_iff_pos_or_neg_lit</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;A &#8712; atms_of L &#10231; Pos A &#8712;# L &#8744; Neg A &#8712;# L&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>pos_lit_in_atms_of</span><span> </span><span>neg_lit_in_atms_of</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>atm_imp_pos_or_neg_lit</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atm_of_eq_atm_of</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atm_of L = atm_of L&#39; &#10231; (L = L&#39; &#8744; L = -L&#39;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>L</span><span class="delimiter">;</span><span> </span><span>cases</span><span> </span><span>L&#39;</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atm_of_in_atm_of_set_iff_in_set_or_uminus_in_set</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atm_of L &#8712; atm_of ` I &#10231; (L &#8712; I &#8744; -L &#8712; I)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>rev_image_eqI</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>atm_of_eq_atm_of</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lits_subseteq_imp_atms_subseteq</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;set_mset C &#8838; set_mset D &#10233; atms_of C &#8838; atms_of D&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atms_of_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atms_empty_iff_empty</span><span class="delimiter">[</span><span>iff</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atms_of C = {} &#10231; C = {#}&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atms_of_def</span><span> </span><span>image_def</span><span> </span><span>Collect_empty_eq</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span>
+</span><span>  </span><span>atms_of_poss</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atms_of (poss AA) = set_mset AA&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>atms_of_negs</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atms_of (negs AA) = set_mset AA&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atms_of_def</span><span> </span><span>image_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>less_eq_Max_atms_of</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;C &#8800; {#} &#10233; C &#8804; D &#10233; Max (atms_of C) &#8804; Max (atms_of D)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atms_of_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>Max_atm_of_set_mset_commute</span><span> </span><span>leq_imp_less_eq_atm_of</span><span> </span><span>less_eq_Max_lit</span><span>
+</span><span>      </span><span>less_eq_multiset_empty_right</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>le_multiset_Max_in_imp_Max</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Max (atms_of D) = A &#10233; C &#8804; D &#10233; A &#8712; atms_of C &#10233; Max (atms_of C) = A&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>Max.coboundedI</span><span class="delimiter">[</span><span>OF</span><span> </span><span>finite_atms_of</span><span class="delimiter">]</span><span> </span><span>atms_of_def</span><span> </span><span>empty_iff</span><span> </span><span>eq_iff</span><span> </span><span>image_subsetI</span><span>
+</span><span>      </span><span>less_eq_Max_atms_of</span><span> </span><span>set_mset_empty</span><span> </span><span>subset_Compl_self_eq</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atm_of_Max_lit</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;C &#8800; {#} &#10233; atm_of (Max_mset C) = Max (atms_of C)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atms_of_def</span><span> </span><span>Max_atm_of_set_mset_commute</span><span> </span><span class="keyword1"><span class="command">..</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>Max_lit_eq_pos_or_neg_Max_atm</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;C &#8800; {#} &#10233; Max_mset C = Pos (Max (atms_of C)) &#8744; Max_mset C = Neg (Max (atms_of C))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>Neg_atm_of_iff</span><span> </span><span>Pos_atm_of_iff</span><span> </span><span>atm_of_Max_lit</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atms_less_imp_lit_less_pos</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8896;B. B &#8712; atms_of C &#10233; B &lt; A) &#10233; L &#8712;# C &#10233; L &lt; Pos A&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atms_of_def</span><span> </span><span>less_literal_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>force</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atms_less_eq_imp_lit_less_eq_neg</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8896;B. B &#8712; atms_of C &#10233; B &#8804; A) &#10233; L &#8712;# C &#10233; L &#8804; Neg A&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>less_eq_literal_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>atm_of_lit_in_atms_of</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

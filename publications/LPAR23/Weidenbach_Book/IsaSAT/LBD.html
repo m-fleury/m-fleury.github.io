@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory LBD (Isabelle2020: April 2020)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory LBD</h1>
+
+<span class="command">theory</span> <span class="name">LBD</span><br/>
+<span class="keyword">imports</span> <a href="IsaSAT_Literals.html"><span class="name">IsaSAT_Literals</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>LBD</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>IsaSAT_Literals</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">chapter</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;LBD&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;LBD (literal block distance) or glue is a measure of usefulness of clauses: It is the number
+of different levels involved in a clause. This measure has been introduced by Glucose in 2009
+(Audemart and Simon).
+
+LBD has also another advantage, explaining why we implemented it even before working on restarts: It
+can speed the conflict minimisation. Indeed a literal might be redundant only if there is a literal
+of the same level in the conflict.
+
+The LBD data structure is well-suited to do so: We mark every level that appears in the conflict in
+a hash-table like data structure.
+
+Remark that we combine the LBD with a MTF scheme.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Types and relations&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>lbd</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bool list&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>lbd_ref</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat list &#215; nat &#215; nat&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Beside the actual ``lookup&#39;&#39; table, we also keep the highest level marked so far to unmark
+all levels faster (but we currently don&#39;t save the LBD and have to iterate over the data structure).
+We also handle growing of the structure by hand instead of using a proper hash-table.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>lbd_ref</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(lbd_ref &#215; lbd) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_ref = {((lbd, stamp, m), lbd&#39;).
+      length lbd&#39; &#8804; Suc (Suc (uint32_max div 2)) &#8743;
+      m = length (filter id lbd&#39;) &#8743;
+      stamp &gt; 0 &#8743;
+      length lbd = length lbd&#39; &#8743;
+     (&#8704;v &#8712; set lbd. v &#8804; stamp) &#8743;
+     (&#8704;i &lt; length lbd&#39;. lbd&#39; ! i &#10231;  lbd ! i = stamp)
+}&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Testing if a level is marked&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>level_in_lbd</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat &#8658; lbd &#8658; bool&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;level_in_lbd i = (&#955;lbd. i &lt; length lbd &#8743; lbd!i)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>level_in_lbd_ref</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat &#8658; lbd_ref &#8658; bool&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;level_in_lbd_ref = (&#955;i (lbd, stamp, _). i &lt; length_uint32_nat lbd &#8743; lbd!i = stamp)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>level_in_lbd_ref_level_in_lbd</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry (RETURN oo level_in_lbd_ref), uncurry (RETURN oo level_in_lbd)) &#8712;
+    nat_rel &#215;<span class="hidden">&#8681;</span><sub>r</sub> lbd_ref &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;bool_rel&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>level_in_lbd_ref_def</span><span> </span><span>level_in_lbd_def</span><span> </span><span>lbd_ref_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Marking more levels&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>list_grow</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;list_grow xs n x = xs @ replicate (n - length xs) x&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>lbd_write</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd &#8658; nat &#8658; lbd&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_write = (&#955;lbd i.
+    (if i &lt; length lbd then (lbd[i := True])
+     else ((list_grow lbd (i + 1) False)[i := True])))&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>lbd_ref_write</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_ref &#8658; nat &#8658; lbd_ref nres&#8250;</span></span></span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_ref_write = (&#955;(lbd, stamp, n) i. do {
+    ASSERT(length lbd &#8804; uint32_max &#8743; n + 1 &#8804; uint32_max);
+    (if i &lt; length_uint32_nat lbd then
+       let n = if lbd ! i = stamp then n else n+1 in
+       RETURN (lbd[i := stamp], stamp, n)
+     else do {
+        ASSERT(i + 1 &#8804; uint32_max);
+        RETURN ((list_grow lbd (i + 1) 0)[i := stamp], stamp, n + 1)
+     })
+  })&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>length_list_grow</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length (list_grow xs n a) = max (length xs) n&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>list_grow_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>list_update_append2</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &#8805; length xs &#10233; (xs @ ys)[i := x] = xs @ ys[i - length xs := x]&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>xs</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>i</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>nat.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lbd_ref_write_lbd_write</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry (lbd_ref_write), uncurry (RETURN oo lbd_write)) &#8712;
+    [&#955;(lbd, i). i &#8804; Suc (uint32_max div 2)]<span class="hidden">&#8681;</span><sub>f</sub>
+     lbd_ref &#215;<span class="hidden">&#8681;</span><sub>f</sub> nat_rel &#8594; &#10216;lbd_ref&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lbd_ref_write_def</span><span> </span><span>lbd_write_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>level_in_lbd_ref_def</span><span> </span><span>level_in_lbd_def</span><span> </span><span>lbd_ref_def</span><span> </span><span>list_grow_def</span><span>
+</span><span>        </span><span>nth_append</span><span> </span><span>uint32_max_def</span><span> </span><span>length_filter_update_true</span><span> </span><span>list_update_append2</span><span>
+</span><span>        </span><span>length_filter_update_false</span><span>
+</span><span>      </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>ASSERT_leI</span><span> </span><span>le_trans</span><span class="delimiter">[</span><span>OF</span><span> </span><span>length_filter_le</span><span class="delimiter">]</span><span>
+</span><span>      </span><span>elim</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>in_set_upd_cases</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Cleaning the marked levels&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>lbd_emtpy_inv</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat list &#8658; nat list &#215; nat &#8658; bool&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_emtpy_inv ys = (&#955;(xs, i). (&#8704;j &lt; i. xs ! j = 0) &#8743; i &#8804; length xs &#8743; length ys = length xs)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>lbd_empty_loop_ref</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_empty_loop_ref = (&#955;(xs, _, _). do {
+    (xs, i) &#8592;
+       WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup>lbd_emtpy_inv xs<span class="hidden">&#8662;</span></sup>
+         (&#955;(xs, i). i &lt; length xs)
+         (&#955;(xs, i). do {
+            ASSERT(i &lt; length xs);
+            ASSERT(i + 1 &lt; uint32_max);
+            RETURN (xs[i := 0], i + 1)})
+         (xs, 0);
+     RETURN (xs, 1, 0)
+  })&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>lbd_empty</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_empty xs = RETURN (replicate (length xs) False)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lbd_empty_loop_ref</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((xs, m, n), ys) &#8712; lbd_ref&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_empty_loop_ref (xs, m, n) &#8804; &#8659; lbd_ref (RETURN (replicate (length ys) False))&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>le_xs</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length xs &#8804; uint32_max div 2 + 2&#8250;</span></span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length ys = length xs&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lbd_ref_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>iff</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#8704;j. &#172; j &lt; (b :: nat)) &#10231; b = 0&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>b</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>init</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_emtpy_inv xs (xs, 0)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lbd_emtpy_inv_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lbd_ref_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>lbd_remove</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_emtpy_inv xs (a[b := 0], b + 1)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">if</span></span><span>
+</span><span>      </span><span>inv</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_emtpy_inv xs s&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;case s of (ys, i) &#8658; length ys = length xs&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>cond</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;case s of (xs, i) &#8658; i &lt; length xs&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>s</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;s = (a, b)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>b_le</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;b &lt; length a&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>s</span><span> </span><span>a</span><span> </span><span>b</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>1</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;a[b := 0] ! j = 0&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">if</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;j&lt;b&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>j</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>inv</span><span> </span><span>that</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lbd_emtpy_inv_def</span><span> </span><span>s</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;a[b := 0] ! j = 0&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">if</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;j&lt;b + 1&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>j</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>1</span><span class="delimiter">[</span><span>of</span><span> </span><span>j</span><span class="delimiter">]</span><span> </span><span>that</span><span> </span><span>cond</span><span> </span><span>b_le</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;j = b&#8250;</span></span></span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>cond</span><span> </span><span>inv</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lbd_emtpy_inv_def</span><span> </span><span>s</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>lbd_final</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((a, 1, 0), replicate (length ys) False) &#8712; lbd_ref&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">if</span></span><span>
+</span><span>      </span><span>lbd</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_emtpy_inv xs s&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>I&#39;</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;case s of (ys, i) &#8658; length ys = length xs&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>cond</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#172; (case s of (xs, i) &#8658; i &lt; length xs)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>s</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;s = (a, b)&#8250;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>s</span><span> </span><span>a</span><span> </span><span>b</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>1</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;a[b := 0] ! j = 0&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">if</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;j&lt;b&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>j</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>lbd</span><span> </span><span>that</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lbd_emtpy_inv_def</span><span> </span><span>s</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length a = length xs&#8250;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>I&#39;</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>s</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &lt; length xs &#10233; a ! i = 0&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>i</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>1</span><span class="delimiter">[</span><span>of</span><span> </span><span>i</span><span class="delimiter">]</span><span> </span><span>lbd</span><span> </span><span>cond</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>s</span><span> </span><span>lbd_emtpy_inv_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &lt; Suc m&#8250;</span></span></span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;a = replicate (length xs) 0&#8250;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>list_eq_iff_nth_eq</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>conjI</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>le_xs</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lbd_ref_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lbd_empty_loop_ref_def</span><span> </span><span>conc_fun_RETURN</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarify</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>WHILEIT_rule_stronger_inv</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>R</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;measure (&#955;(xs, i). length xs - i)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>I&#39;</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#955;(ys, i). length ys = length xs&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>init</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lbd_ref_def</span><span> </span><span>lbd_emtpy_inv_def</span><span> </span><span>uint32_max_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>lbd_remove</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lbd_emtpy_inv_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>lbd_final</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>lbd_empty_cheap_ref</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_empty_cheap_ref = (&#955;(xs, stamp, n). RETURN (xs, stamp + 1, 0))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lbd_empty_cheap_ref</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((xs, m, n), ys) &#8712; lbd_ref&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_empty_cheap_ref (xs, m, n) &#8804; &#8659; lbd_ref (RETURN (replicate (length ys) False))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lbd_empty_cheap_ref_def</span><span> </span><span>lbd_ref_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>filter_empty_conv</span><span> </span><span>all_set_conv_nth</span><span> </span><span>in_set_conv_nth</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>lbd_empty_ref</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_ref &#8658;  lbd_ref nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_empty_ref = (&#955;(xs, m, n). if m = uint32_max then lbd_empty_loop_ref (xs,m,n)
+    else lbd_empty_cheap_ref (xs, m, n)) &#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lbd_empty_ref</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((xs, m, n), ys) &#8712; lbd_ref&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_empty_ref (xs, m, n) &#8804; &#8659; lbd_ref (RETURN (replicate (length ys) False))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>lbd_empty_cheap_ref</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">]</span><span> </span><span>lbd_empty_loop_ref</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lbd_empty_ref_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lbd_empty_ref_lbd_empty</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(lbd_empty_ref, lbd_empty) &#8712; lbd_ref &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;lbd_ref&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarify</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>lbd</span><span> </span><span>m</span><span> </span><span>lbd&#39;</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>lbd_empty_ref</span><span class="delimiter">[</span><span>of</span><span> </span><span>lbd</span><span> </span><span>m</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lbd_empty_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span>empty_lbd</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;empty_lbd = (replicate 32 False)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>empty_lbd_ref</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_ref&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;empty_lbd_ref = (replicate 32 0, 1, 0)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>empty_lbd_ref_empty_lbd</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#955;_. (RETURN empty_lbd_ref), &#955;_. (RETURN empty_lbd)) &#8712; unit_rel &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;lbd_ref&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>empty_lbd_def</span><span> </span><span>lbd_ref_def</span><span> </span><span>empty_lbd_ref_def</span><span>
+</span><span>      </span><span>uint32_max_def</span><span> </span><span>nth_Cons</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>nat.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Extracting the LBD&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We do not prove correctness of our algorithm, as we don&#39;t care about the actual returned
+value (for correctness).&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>get_LBD</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd &#8658; nat nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;get_LBD lbd = SPEC(&#955;_. True)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>get_LBD_ref</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd_ref &#8658; nat nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;get_LBD_ref = (&#955;(xs, m, n). RETURN n)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>get_LBD_ref</span><span class="delimiter">:</span><span>
+</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((lbd, m), lbd&#39;) &#8712; lbd_ref &#10233; get_LBD_ref (lbd, m) &#8804; &#8659; nat_rel (get_LBD lbd&#39;)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>get_LBD_ref_def</span><span> </span><span>get_LBD_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span>prod.splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>get_LBD_ref_get_LBD</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(get_LBD_ref, get_LBD) &#8712; lbd_ref &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;nat_rel&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarify</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>lbd</span><span> </span><span>m</span><span> </span><span>n</span><span> </span><span>lbd&#39;</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>get_LBD_ref</span><span class="delimiter">[</span><span>of</span><span> </span><span>lbd</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>lbd_empty_def</span><span> </span><span>lbd_ref_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

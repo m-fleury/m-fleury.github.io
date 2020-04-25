@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IsaSAT_Sorting (Isabelle2020: April 2020)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IsaSAT_Sorting</h1>
+
+<span class="command">theory</span> <span class="name">IsaSAT_Sorting</span><br/>
+<span class="keyword">imports</span> <a href="IsaSAT_Setup.html"><span class="name">IsaSAT_Setup</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IsaSAT_Sorting</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>IsaSAT_Setup</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">chapter</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sorting of clauses&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We use the sort function developped by Peter Lammich.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>clause_score_ordering</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;clause_score_ordering = (&#955;(lbd, act) (lbd&#39;, act&#39;). lbd &lt; lbd&#39; &#8744; (lbd = lbd&#39; &#8743; act &lt; act&#39;))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span> </span><span>clause_score_extract</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;arena &#8658; nat &#8658; nat &#215; nat&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;clause_score_extract arena C = (
+     if arena_status arena C = DELETED
+     then (uint32_max, 0) &#8213; &#8249;deleted elements are the
+        largest possible&#8250;
+     else
+       let lbd = arena_lbd arena C in
+       (lbd, C)
+  )&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>valid_sort_clause_score_pre_at</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;valid_sort_clause_score_pre_at arena C &#10231;
+    (&#8707;i vdom. C = vdom ! i &#8743; arena_is_valid_clause_vdom arena (vdom!i) &#8743;
+          (arena_status arena (vdom!i) &#8800; DELETED &#10230;
+             (get_clause_LBD_pre arena (vdom!i) &#8743; arena_act_pre arena (vdom!i)))
+          &#8743; i &lt; length vdom)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span>valid_sort_clause_score_pre</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;valid_sort_clause_score_pre arena vdom &#10231;
+    (&#8704;C &#8712; set vdom. arena_is_valid_clause_vdom arena C &#8743;
+        (arena_status arena C &#8800; DELETED &#10230;
+             (get_clause_LBD_pre arena C &#8743; arena_act_pre arena C)))&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>clause_score_less</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;arena &#8658; nat &#8658; nat &#8658; bool&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;clause_score_less arena i j &#10231;
+     clause_score_ordering (clause_score_extract arena i) (clause_score_extract arena j)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>idx_cdom</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;arena &#8658; nat set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;idx_cdom arena &#8801; {i. valid_sort_clause_score_pre_at arena i}&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>mop_clause_score_less</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;mop_clause_score_less arena i j = do {
+    ASSERT(valid_sort_clause_score_pre_at arena i);
+    ASSERT(valid_sort_clause_score_pre_at arena j);
+    RETURN (clause_score_ordering (clause_score_extract arena i) (clause_score_extract arena j))
+  }&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

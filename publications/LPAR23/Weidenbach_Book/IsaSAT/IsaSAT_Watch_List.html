@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IsaSAT_Watch_List (Isabelle2020: April 2020)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IsaSAT_Watch_List</h1>
+
+<span class="command">theory</span> <span class="name">IsaSAT_Watch_List</span><br/>
+<span class="keyword">imports</span> <a href="IsaSAT_Literals.html"><span class="name">IsaSAT_Literals</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IsaSAT_Watch_List</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>IsaSAT_Literals</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">chapter</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Refinement of the Watched Function&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;There is not much to say about watch lists since they are arrays of resizeable arrays,
+  which are defined in a separate theory.
+
+  However, when replacing the elements in our watch lists from &#8249;(nat &#215; uint32)&#8250;
+  to &#8249;(nat &#215; uint32 &#215; bool)&#8250; to enable special handling of binary clauses, we got a huge and
+  unexpected slowdown, due to a much higher
+  number of cache misses (roughly 3.5 times as many on a eq.atree.braun.8.unsat.cnf which also took
+  66s instead of 50s). While toying with the generated ML code, we found out that our version of
+  the tuples with booleans were using 40 bytes instead of 24 previously. Just merging the
+  &#8249;uint32&#8250; and the \&lt;^typ&gt;&#8249;bool&#8250; to a single &#8249;uint64&#8250; was sufficient to get the
+  performance back.
+
+  Remark that however, the evaluation of terms like &#8249;(2::uint64) ^ 32&#8250; was not done automatically
+  and even worse, was redone each time, leading to a complete performance blow-up (75s on my macbook
+  for eq.atree.braun.7.unsat.cnf instead of 7s).
+
+  None of the problems appears in the LLVM code.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Definition&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>map_fun_rel</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(nat &#215; &#39;key) set &#8658; (&#39;b &#215; &#39;a) set &#8658; (&#39;b list &#215; (&#39;key &#8658; &#39;a)) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span>map_fun_rel_def_internal</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;map_fun_rel D R = {(m, f). &#8704;(i, j)&#8712;D. i &lt; length m &#8743; (m ! i, f j) &#8712; R}&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>map_fun_rel_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#10216;R&#10217;map_fun_rel D = {(m, f). &#8704;(i, j)&#8712;D. i &lt; length m &#8743; (m ! i, f j) &#8712; R}&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>relAPP_def</span><span> </span><span>map_fun_rel_def_internal</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>mop_append_ll</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#39;a list list &#8658; nat literal &#8658; &#39;a &#8658; &#39;a list list nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;mop_append_ll xs i x = do {
+     ASSERT(nat_of_lit i &lt; length xs);
+     RETURN (append_ll xs (nat_of_lit i) x)
+  }&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Operations&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>length_ll_length_ll_f</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry (RETURN oo length_ll), uncurry (RETURN oo length_ll_f)) &#8712;
+     [&#955;(W, L). L &#8712;# &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> &#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>]<span class="hidden">&#8681;</span><sub>f</sub> ((&#10216;Id&#10217;map_fun_rel (D<span class="hidden">&#8681;</span><sub>0</sub> &#119964;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>)) &#215;<span class="hidden">&#8681;</span><sub>r</sub> nat_lit_rel) &#8594;
+       &#10216;nat_rel&#10217; nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>length_ll_def</span><span> </span><span>length_ll_f_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fref_def</span><span> </span><span>map_fun_rel_def</span><span> </span><span>prod_rel_def</span><span> </span><span>nres_rel_def</span><span> </span><span>p2rel_def</span><span> </span><span>br_def</span><span>
+</span><span>      </span><span>nat_lit_rel_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mop_append_ll</span><span class="delimiter">:</span><span>
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry2 mop_append_ll, uncurry2 (RETURN ooo (&#955;W i x. W(i := W i @ [x])))) &#8712;
+    [&#955;((W, i), x). i &#8712;# &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> &#119964;]<span class="hidden">&#8681;</span><sub>f</sub> &#10216;Id&#10217;map_fun_rel (D<span class="hidden">&#8681;</span><sub>0</sub> &#119964;) &#215;<span class="hidden">&#8681;</span><sub>f</sub> Id &#215;<span class="hidden">&#8681;</span><sub>f</sub> Id &#8594; &#10216;&#10216;Id&#10217;map_fun_rel (D<span class="hidden">&#8681;</span><sub>0</sub> &#119964;)&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>uncurry_def</span><span> </span><span>mop_append_ll_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>ASSERT_leI</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>map_fun_rel_def</span><span> </span><span>append_ll_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>delete_index_and_swap_update</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#39;a &#8658; &#39;b list) &#8658; &#39;a &#8658; nat &#8658; &#39;a &#8658; &#39;b list&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;delete_index_and_swap_update W K w = W(K := delete_index_and_swap (W K) w)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The precondition is not necessary.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>delete_index_and_swap_ll_delete_index_and_swap_update</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry2 (RETURN ooo delete_index_and_swap_ll), uncurry2 (RETURN ooo delete_index_and_swap_update))
+  &#8712;[&#955;((W, L), i). L &#8712;# &#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> &#119964;]<span class="hidden">&#8681;</span><sub>f</sub> (&#10216;Id&#10217;map_fun_rel (D<span class="hidden">&#8681;</span><sub>0</sub> &#119964;) &#215;<span class="hidden">&#8681;</span><sub>r</sub> nat_lit_rel) &#215;<span class="hidden">&#8681;</span><sub>r</sub> nat_rel &#8594;
+      &#10216;&#10216;Id&#10217;map_fun_rel (D<span class="hidden">&#8681;</span><sub>0</sub> &#119964;)&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>delete_index_and_swap_ll_def</span><span> </span><span>uncurry_def</span><span> </span><span>fref_def</span><span> </span><span>nres_rel_def</span><span>
+</span><span>      </span><span>delete_index_and_swap_update_def</span><span> </span><span>map_fun_rel_def</span><span> </span><span>p2rel_def</span><span> </span><span>nat_lit_rel_def</span><span> </span><span>br_def</span><span>
+</span><span>      </span><span>nth_list_update&#39;</span><span> </span><span>nat_lit_rel_def</span><span>
+</span><span>      </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>literal_of_nat.simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>append_update</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#39;a &#8658; &#39;b list) &#8658; &#39;a &#8658; &#39;b &#8658; &#39;a &#8658; &#39;b list&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;append_update W L a = W(L:= W (L) @ [a])&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>nat_clauses_l</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat list list&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Refinement of the Watched Function&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>watched_by_nth</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat twl_st_wl &#8658; nat literal &#8658; nat &#8658; nat watcher&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;watched_by_nth = (&#955;(M, N, D, NE, UE, NS, US, Q, W) L i. W L ! i)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>watched_app</span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(nat literal &#8658; (nat watcher) list) &#8658; nat literal &#8658; nat &#8658; nat watcher&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;watched_app M L i &#8801; M L ! i&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>watched_by_nth_watched_app</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;watched_by S K ! w = watched_app ((snd o snd o snd o snd o snd o snd o snd o snd) S) K w&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>S</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>watched_app_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nth_ll_watched_app</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry2 (RETURN ooo nth_rll), uncurry2 (RETURN ooo watched_app)) &#8712;
+     [&#955;((W, L), i). L &#8712;# (&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub> &#119964;)]<span class="hidden">&#8681;</span><sub>f</sub> ((&#10216;Id&#10217;map_fun_rel (D<span class="hidden">&#8681;</span><sub>0</sub> &#119964;)) &#215;<span class="hidden">&#8681;</span><sub>r</sub> nat_lit_rel) &#215;<span class="hidden">&#8681;</span><sub>r</sub> nat_rel &#8594;
+       &#10216;nat_rel &#215;<span class="hidden">&#8681;</span><sub>r</sub> Id&#10217; nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>watched_app_def</span><span> </span><span>nth_rll_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fref_def</span><span> </span><span>map_fun_rel_def</span><span> </span><span>prod_rel_def</span><span> </span><span>nres_rel_def</span><span> </span><span>p2rel_def</span><span> </span><span>br_def</span><span>
+</span><span>      </span><span>nat_lit_rel_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

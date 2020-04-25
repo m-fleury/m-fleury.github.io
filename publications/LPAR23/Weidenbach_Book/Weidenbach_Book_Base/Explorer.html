@@ -1,0 +1,584 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Explorer (Isabelle2020: April 2020)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Explorer</h1>
+
+<span class="command">theory</span> <span class="name">Explorer</span><br/>
+<span class="keyword">imports</span> <a href="../../HOL/HOL/Main.html"><span class="name">Main</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* Title: Explorer
+   Initial author: Florian Haftmann
+   Initial author: Fabian Immler
+   Maintainer: Mathias Fleury
+   License: ?
+   From: The isabelle-dev mailing list. &quot;Re: [isabelle-dev] The coming release of Isabelle2017&quot;
+   Link: http://www.mail-archive.com/isabelle-dev@mailbroy.informatik.tu-muenchen.de/msg07448.html
+
+Remark that a similar version (with fewer variants) is now in Isabelle in the theory
+&quot;HOL-ex.Sketch_and_Explore&quot;.
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Explorer</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span>
+</span><span class="keyword2"><span class="keyword">keywords</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;explore&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;explore_have&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;explore_lemma&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;explore_context&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span>diag</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Explore command&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;This theory contains the definition of four tactics that work on goals
+and put them in an Isar proof:
+  &#9642; &#8249;explore&#8250; generates an assume-show proof block
+  &#9642; &#8249;explore_have&#8250; generates an have-if-for block
+  &#9642; &#8249;lemma&#8250; generates a lemma-fixes-assumes-shows block
+  &#9642; &#8249;explore_context&#8250; is mostly meaningful on several goals: it combines assumptions and variables
+    between the goals to generate a context-fixes-begin-end bloc with lemmas in the middle. This
+    tactic is mostly useful when a lot of assumption and proof steps would be shared.
+
+
+If you use any of those tactic or have an idea how to improve it, please send an email to the
+current maintainer!
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+signature EXPLORER_LIB =
+sig
+  datatype explorer_quote = QUOTES | GUILLEMOTS
+  val set_default_raw_param: theory -&gt; theory
+  val default_raw_params: theory -&gt; string * explorer_quote
+  val switch_to_cartouches: theory -&gt; theory
+  val switch_to_quotes: theory -&gt; theory
+end
+
+structure Explorer_Lib : EXPLORER_LIB =
+struct
+  datatype explorer_quote = QUOTES | GUILLEMOTS
+  type raw_param = string * explorer_quote
+  val default_params = (&quot;explorer_quotes&quot;, QUOTES)
+
+structure Data = Theory_Data
+(
+  type T = raw_param list
+  val empty = single default_params
+  val extend = I
+  fun merge data : T = AList.merge (op =) (K true) data
+)
+
+fun set_default_raw_param thy =
+    thy |&gt; Data.map (AList.update (op =) default_params)
+
+fun switch_to_quotes thy =
+   thy |&gt; Data.map (AList.update (op =) (&quot;explorer_quotes&quot;, QUOTES))
+
+fun switch_to_cartouches thy =
+   thy |&gt; Data.map (AList.update (op =) (&quot;explorer_quotes&quot;, GUILLEMOTS))
+
+fun default_raw_params thy =
+  Data.get thy |&gt; hd
+
+end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">setup</span></span><span> </span><span>Explorer_Lib.set_default_raw_param</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Explorer_Lib.default_raw_params @{theory}
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+
+signature EXPLORER =
+sig
+  datatype explore_kind = HAVE_IF | ASSUME_SHOW | ASSUMES_SHOWS | CONTEXT
+  val explore: explore_kind -&gt; Toplevel.state -&gt; Proof.state
+end
+
+structure Explorer: EXPLORER =
+struct
+datatype explore_kind = HAVE_IF | ASSUME_SHOW | ASSUMES_SHOWS | CONTEXT
+
+fun split_clause t =
+  let
+    val (fixes, horn) = funpow_yield (length (Term.strip_all_vars t)) Logic.dest_all t;
+    val assms = Logic.strip_imp_prems horn;
+    val shows = Logic.strip_imp_concl horn;
+  in (fixes, assms, shows) end;
+
+fun space_implode_with_line_break l =
+  if length l &gt; 1 then
+     &quot;\n    &quot; ^ space_implode  &quot; and\n    &quot; l
+  else
+    space_implode  &quot; and\n    &quot; l
+
+fun keyword_fix HAVE_IF =          &quot;  for &quot;
+  | keyword_fix ASSUME_SHOW =      &quot;  fix &quot;
+  | keyword_fix ASSUMES_SHOWS =    &quot;  fixes &quot;
+
+fun keyword_assume HAVE_IF =       &quot;  if &quot;
+  | keyword_assume ASSUME_SHOW =   &quot;  assume &quot;
+  | keyword_assume ASSUMES_SHOWS = &quot;  assumes &quot;
+
+fun keyword_goal HAVE_IF =        &quot;&quot;
+  | keyword_goal ASSUME_SHOW =    &quot;  show &quot;
+  | keyword_goal ASSUMES_SHOWS =  &quot;  shows &quot;
+
+fun isar_skeleton ctxt aim enclosure (fixes, assms, shows) =
+  let
+    val kw_fix = keyword_fix aim
+    val kw_assume = keyword_assume aim
+    val kw_goal = keyword_goal aim
+    val fixes_s = if null fixes then NONE
+      else SOME (kw_fix ^ space_implode &quot; and &quot;
+        (map (fn (v, T) =&gt; v ^ &quot; :: &quot; ^ enclosure (Syntax.string_of_typ ctxt T)) fixes));
+    val (_, ctxt&#39;) = Variable.add_fixes (map fst fixes) ctxt;
+    val assumes_s = if null assms then NONE
+      else SOME (kw_assume ^ space_implode_with_line_break
+        (map (enclosure o Syntax.string_of_term ctxt&#39;) assms))
+    val shows_s = (kw_goal ^ (enclosure o Syntax.string_of_term ctxt&#39;) shows)
+    val s =
+      (case aim of
+        HAVE_IF =&gt;  (map_filter I [fixes_s], map_filter I [assumes_s], shows_s)
+      | ASSUME_SHOW =&gt;  (map_filter I [fixes_s], map_filter I [assumes_s], shows_s ^&quot; sorry&quot;)
+      | ASSUMES_SHOWS =&gt;   (map_filter I [fixes_s], map_filter I [assumes_s], shows_s));
+  in
+    s
+  end;
+
+fun generate_text ASSUME_SHOW context enclosure clauses =
+  let val lines = clauses
+      |&gt; map (isar_skeleton context ASSUME_SHOW enclosure)
+      |&gt; map (fn (a, b, c) =&gt; a @ b @ [c])
+      |&gt; map cat_lines
+  in
+  (&quot;proof -&quot; :: separate &quot;next&quot; lines @ [&quot;qed&quot;])
+ end
+ | generate_text HAVE_IF context enclosure clauses =
+    let
+      val raw_lines = map (isar_skeleton context HAVE_IF enclosure) clauses
+      fun treat_line (fixes_s, assumes_s, shows_s) =
+        let val combined_line = [shows_s] @ assumes_s @ fixes_s |&gt; cat_lines
+        in
+          &quot;have &quot; ^ combined_line ^ &quot;\nproof -\n  show ?thesis sorry\nqed&quot;
+       end
+      val raw_lines_with_proof_body = map treat_line raw_lines
+    in
+      separate &quot;\n&quot; raw_lines_with_proof_body
+    end
+ | generate_text ASSUMES_SHOWS context enclosure clauses =
+    let
+      val raw_lines = map (isar_skeleton context ASSUMES_SHOWS enclosure) clauses
+      fun treat_line (fixes_s, assumes_s, shows_s) =
+        let val combined_line = fixes_s @ assumes_s @ [shows_s] |&gt; cat_lines
+        in
+          &quot;lemma\n&quot; ^ combined_line ^ &quot;\nproof -\n  show ?thesis sorry\nqed&quot;
+       end
+      val raw_lines_with_lemma_and_proof_body = map treat_line raw_lines
+    in
+      separate &quot;\n&quot; raw_lines_with_lemma_and_proof_body
+    end;
+
+
+datatype proof_step = ASSUMPTION of term | FIXES of (string * typ) | GOAL of term
+  | Step of (proof_step * proof_step)
+  | Branch of (proof_step list)
+
+datatype cproof_step = cASSUMPTION of term list | cFIXES of ((string * typ) list) | cGOAL of term
+  | cStep of (cproof_step * cproof_step)
+  | cBranch of (cproof_step list)
+  | cLemma of ((string * typ) list * term list * term)
+
+fun explore_context_init (FIXES var :: cgoal) =
+    Step ((FIXES var), explore_context_init cgoal)
+  | explore_context_init (ASSUMPTION assm :: cgoal) =
+    Step ((ASSUMPTION assm), explore_context_init cgoal)
+  | explore_context_init ([GOAL show]) =
+    GOAL show
+  | explore_context_init (GOAL show :: cgoal) =
+    Step (GOAL show, explore_context_init cgoal)
+
+fun branch_hd_fixes_is P (Step (FIXES var, _)) = P var
+  | branch_hd_fixes_is P _ = false
+
+fun branch_hd_assms_is P (Step (ASSUMPTION var, _)) = P var
+  | branch_hd_assms_is P (Step (GOAL var, _)) = P var
+  | branch_hd_assms_is P (GOAL var) = P var
+  | branch_hd_assms_is _ _ = false
+
+fun find_find_pos P brs =
+    let
+      fun f accs (br :: brs) = if P br then SOME (accs, br, brs)
+           else f (accs @ [br]) brs
+       | f _ [] = NONE
+    in f [] brs end
+(* Term.exists_subterm (curry (op =) t) *)
+fun explore_context_merge (FIXES var :: cgoal)  (Step (FIXES var&#39;, steps)) =
+    if var = var&#39; then
+       Step (FIXES var&#39;,
+         explore_context_merge cgoal steps)
+    else
+       Step (FIXES var&#39;, explore_context_merge cgoal steps)
+
+  | explore_context_merge (FIXES var :: cgoal) (Branch brs) =
+    (case find_find_pos (branch_hd_fixes_is (curry (op =) var)) brs of
+      SOME (b, (Step (fixe, st)), after) =&gt;
+         Branch (b @ Step (fixe, explore_context_merge cgoal st) :: after)
+    | NONE =&gt;
+         Branch (brs @ [Step (FIXES var, explore_context_init cgoal)]))
+  | explore_context_merge (FIXES var :: cgoal) steps =
+       Branch (steps :: [Step (FIXES var, explore_context_init cgoal)])
+
+  | explore_context_merge (ASSUMPTION assm :: cgoal)  (Step (ASSUMPTION assm&#39;,  steps)) =
+    if assm = assm&#39; then
+      Step (ASSUMPTION assm&#39;,  explore_context_merge cgoal steps)
+    else
+      Branch [Step (ASSUMPTION assm&#39;,  steps), explore_context_init (ASSUMPTION assm :: cgoal)]
+  | explore_context_merge (ASSUMPTION assm :: cgoal) (Step (GOAL assm&#39;,  steps)) =
+    if assm = assm&#39; then
+      Step (GOAL assm&#39;,  explore_context_merge cgoal steps)
+    else
+      Branch [Step (GOAL assm&#39;,  steps), explore_context_init (ASSUMPTION assm :: cgoal)]
+  | explore_context_merge (ASSUMPTION assm :: cgoal) (GOAL assm&#39;) =
+    if assm = assm&#39; then
+      Step (GOAL assm&#39;,  explore_context_init cgoal)
+    else
+      Branch [GOAL assm&#39;, explore_context_init (ASSUMPTION assm :: cgoal)]
+  | explore_context_merge (ASSUMPTION assm :: cgoal)  (Branch brs) =
+    (case find_find_pos (branch_hd_assms_is (fn t =&gt; assm = (t))) brs of
+      SOME (b, (Step (assm, st)), after) =&gt;
+         Branch (b @ Step (assm, explore_context_merge cgoal st) :: after)
+    | SOME (b, (GOAL goal), after) =&gt;
+         Branch (b @ Step (GOAL goal, explore_context_init cgoal) :: after)
+    | NONE =&gt;
+         Branch (brs @ [Step (ASSUMPTION assm, explore_context_init cgoal)]))
+
+  | explore_context_merge (GOAL show :: [])  (Step (GOAL show&#39;,  steps)) =
+    if show = show&#39; then
+      GOAL show&#39;
+    else
+      Branch [Step (GOAL show&#39;,  steps), GOAL show]
+  | explore_context_merge clause ps =
+    Branch [ps, explore_context_init clause]
+
+fun explore_context_all (clause :: clauses) =
+  fold explore_context_merge clauses (explore_context_init clause)
+
+fun convert_proof (ASSUMPTION a) = cASSUMPTION [a]
+  | convert_proof (FIXES a) = cFIXES [a]
+  |  convert_proof (GOAL a) = cGOAL a
+  |  convert_proof (Step (a, b)) = cStep (convert_proof a, convert_proof b)
+  |  convert_proof (Branch brs) = cBranch (map convert_proof brs)
+
+fun compress_proof (cStep (cASSUMPTION a, cStep (cASSUMPTION b, step))) =
+    compress_proof (cStep (cASSUMPTION (a @ b), compress_proof step))
+  | compress_proof (cStep (cFIXES a, cStep (cFIXES b, step))) =
+    compress_proof (cStep (cFIXES (a @ b), compress_proof step))
+  | compress_proof (cStep (cFIXES a, cStep (cASSUMPTION b,
+              cStep (cFIXES a&#39;, step)))) =
+    compress_proof (cStep (cFIXES (a @ a&#39;), compress_proof (cStep (cASSUMPTION b, step))))
+
+  | compress_proof (cStep (a, b)) =
+    let
+      val a&#39; = compress_proof a
+      val b&#39; = compress_proof b
+    in
+      if a = a&#39; andalso b = b&#39; then cStep (a&#39;, b&#39;)
+      else compress_proof (cStep (a&#39;, b&#39;))
+   end
+  | compress_proof (cBranch brs) =
+    cBranch (map compress_proof brs)
+  | compress_proof a = a
+
+fun compress_proof2 (cStep (cFIXES a, cStep (cASSUMPTION b, cGOAL g))) =
+    cLemma (a, b, g)
+  | compress_proof2 (cStep (cASSUMPTION b, cGOAL g)) =
+    cLemma ([], b, g)
+  | compress_proof2 (cStep (cFIXES b, cGOAL g)) =
+    cLemma (b, [], g)
+  | compress_proof2 (cStep (a, b)) =
+    cStep (compress_proof2 a, compress_proof2 b)
+  | compress_proof2 (cBranch brs) =
+    cBranch (map compress_proof2 brs)
+  | compress_proof2 a = a
+
+fun reorder_assumptions_wrt_fixes (fixes, assms, goal) =
+  let
+     fun depends_on t (fix) = Term.exists_subterm (curry (op =) (Term.Free fix)) t
+     fun depends_on_any t (fix :: fixes) = depends_on t fix orelse depends_on_any t fixes
+       | depends_on_any _ [] = false
+     fun insert_all_assms [] assms = map ASSUMPTION assms
+       | insert_all_assms fixes [] = map FIXES fixes
+       | insert_all_assms (fix :: fixes) (assm :: assms) =
+         if depends_on_any assm (fix :: fixes) then
+           FIXES fix :: insert_all_assms fixes (assm :: assms)
+         else
+           ASSUMPTION assm :: insert_all_assms (fix :: fixes) assms
+  in
+    insert_all_assms fixes assms @ [GOAL goal]
+  end
+fun generate_context_proof ctxt enclosure (cFIXES fixes) =
+    let
+      val kw_fix = &quot;  fixes &quot;
+      val fixes_s = if null fixes then NONE
+        else SOME (kw_fix ^ space_implode &quot; and &quot;
+          (map (fn (v, T) =&gt; v ^ &quot; :: &quot; ^ enclosure (Syntax.string_of_typ ctxt T)) fixes));
+    in the_default &quot;&quot; fixes_s end
+  | generate_context_proof ctxt enclosure (cASSUMPTION assms) =
+    let
+      val kw_assume = &quot;  assumes &quot;
+      val assumes_s = if null assms then NONE
+        else SOME (kw_assume ^ space_implode_with_line_break
+          (map (enclosure o Syntax.string_of_term ctxt) assms))
+    in the_default &quot;&quot; assumes_s end
+  | generate_context_proof ctxt enclosure (cGOAL shows) =
+    hd (generate_text ASSUMES_SHOWS ctxt enclosure [([], [], shows)])
+  | generate_context_proof ctxt enclosure (cStep (cFIXES f, cStep (cASSUMPTION assms, st))) =
+    let val (_, ctxt&#39;) = Variable.add_fixes (map fst f) ctxt in
+      [&quot;context&quot; ,
+       generate_context_proof ctxt enclosure (cFIXES f),
+       generate_context_proof ctxt&#39; enclosure (cASSUMPTION assms),
+       &quot;begin&quot;,
+       generate_context_proof ctxt&#39; enclosure st,
+       &quot;end&quot;]
+    |&gt; cat_lines
+    end
+  | generate_context_proof ctxt enclosure (cStep (cFIXES f, st)) =
+    let val (_, ctxt&#39;) = Variable.add_fixes (map fst f) ctxt in
+      [&quot;context&quot; ,
+       generate_context_proof ctxt enclosure (cFIXES f),
+       &quot;begin&quot;,
+       generate_context_proof ctxt&#39; enclosure st,
+       &quot;end&quot;]
+      |&gt; cat_lines
+    end
+  | generate_context_proof ctxt enclosure (cStep (cASSUMPTION assms, st)) =
+    [&quot;context&quot; ,
+     generate_context_proof ctxt enclosure (cASSUMPTION assms),
+     &quot;begin&quot;,
+     generate_context_proof ctxt enclosure st,
+     &quot;end&quot;]
+    |&gt; cat_lines
+  | generate_context_proof ctxt enclosure (cStep (st, st&#39;)) =
+    [generate_context_proof ctxt enclosure st,
+     generate_context_proof ctxt enclosure st&#39;]
+    |&gt; cat_lines
+  | generate_context_proof ctxt enclosure (cBranch st) =
+    separate &quot;\n&quot; (map (generate_context_proof ctxt enclosure) st)
+    |&gt; cat_lines
+  | generate_context_proof ctxt enclosure (cLemma (fixes, assms, shows)) =
+    hd (generate_text ASSUMES_SHOWS ctxt enclosure [(fixes, assms, shows)])
+
+(*
+  We cannot reuse ATP_Util.maybe_quote because it does not support selecting the
+  quoting function. But, this is a copy-paste of that function.
+*)
+val unquote_tvar = perhaps (try (unprefix &quot;&#39;&quot;))
+val unquery_var = perhaps (try (unprefix &quot;?&quot;))
+
+val is_long_identifier = forall Symbol_Pos.is_identifier o Long_Name.explode
+fun maybe_quote_with keywords quote y =
+  let val s = YXML.content_of y in
+    y |&gt; ((not (is_long_identifier (unquote_tvar s)) andalso
+           not (is_long_identifier (unquery_var s))) orelse
+           Keyword.is_literal keywords s) ? quote
+  end
+
+fun explore aim st =
+  let
+    val thy = Toplevel.theory_of st
+    val quote_type = Explorer_Lib.default_raw_params thy |&gt; snd
+    val ctxt = Toplevel.presentation_context st
+    val enclosure =
+      (case quote_type of
+         Explorer_Lib.GUILLEMOTS =&gt; maybe_quote_with (Thy_Header.get_keywords&#39; ctxt) cartouche
+       | Explorer_Lib.QUOTES =&gt; maybe_quote_with (Thy_Header.get_keywords&#39; ctxt) quote)
+    val st = Toplevel.proof_of st
+    val { context, facts = _, goal } = Proof.goal st;
+    val goal_props = Logic.strip_imp_prems (Thm.prop_of goal);
+    val clauses = map split_clause goal_props;
+    val text =
+      if aim = CONTEXT then
+          (clauses
+          |&gt; map reorder_assumptions_wrt_fixes
+          |&gt; explore_context_all
+          |&gt; convert_proof
+          |&gt; compress_proof
+          |&gt; compress_proof2
+          |&gt; generate_context_proof context enclosure)
+        else cat_lines (generate_text aim context enclosure clauses);
+    val message = Active.sendback_markup_properties [] text;
+  in
+    st
+    |&gt; tap (fn _ =&gt; Output.information (&quot;Proof outline with cases:\n&quot; ^ message))
+  end
+
+end
+
+val explore_cmd =
+  Toplevel.keep_proof (K () o Explorer.explore Explorer.ASSUME_SHOW)
+
+val _ =
+  Outer_Syntax.command @{command_keyword &quot;explore&quot;}
+    &quot;explore current goal state as Isar proof&quot;
+    (Scan.succeed (explore_cmd))
+
+val explore_have_cmd =
+  Toplevel.keep_proof (K () o Explorer.explore Explorer.HAVE_IF)
+
+val _ =
+  Outer_Syntax.command @{command_keyword &quot;explore_have&quot;}
+    &quot;explore current goal state as Isar proof with have, if and for&quot;
+    (Scan.succeed explore_have_cmd)
+
+val explore_lemma_cmd =
+  Toplevel.keep_proof (K () o Explorer.explore Explorer.ASSUMES_SHOWS)
+
+val _ =
+  Outer_Syntax.command @{command_keyword &quot;explore_lemma&quot;}
+    &quot;explore current goal state as Isar proof with lemma, fixes, assumes, and shows&quot;
+    (Scan.succeed explore_lemma_cmd)
+
+val explore_ctxt_cmd =
+  Toplevel.keep_proof (K () o Explorer.explore Explorer.CONTEXT)
+
+val _ =
+  Outer_Syntax.command @{command_keyword &quot;explore_context&quot;}
+    &quot;explore current goal state as Isar proof with context and lemmas&quot;
+    (Scan.succeed explore_ctxt_cmd)
+&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Examples&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;You can choose cartouches&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">setup</span></span><span> </span><span>Explorer_Lib.switch_to_cartouches</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;distinct xs &#10233; P xs &#10233; length (filter (&#955;x. x = y) xs) &#8804; 1&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>xs</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>xs</span><span class="delimiter">)</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*   apply simp_all
+  apply auto *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">explore</span></span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* 
+proof -
+  assume 
+    &#8249;distinct []&#8250; and
+    &#8249;P []&#8250;
+  show &#8249;length (filter (&#955;x. x = y) []) &#8804; 1&#8250; sorry
+next
+  fix a :: &#8249;&#39;a&#8250; and xs :: &#8249;&#39;a list&#8250;
+  assume 
+    &#8249;distinct xs &#10233; P xs &#10233; length (filter (&#955;x. x = y) xs) &#8804; 1&#8250; and
+    &#8249;distinct (a # xs)&#8250; and
+    &#8249;P (a # xs)&#8250;
+  show &#8249;length (filter (&#955;x. x = y) (a # xs)) &#8804; 1&#8250; sorry
+qed
+ *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">explore_have</span></span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* 
+have &#8249;length (filter (&#955;x. x = y) []) &#8804; 1&#8250;
+  if 
+    &#8249;distinct []&#8250; and
+    &#8249;P []&#8250;
+proof -
+  show ?thesis sorry
+qed
+
+
+have &#8249;length (filter (&#955;x. x = y) (a # xs)) &#8804; 1&#8250;
+  if 
+    &#8249;distinct xs &#10233; P xs &#10233; length (filter (&#955;x. x = y) xs) &#8804; 1&#8250; and
+    &#8249;distinct (a # xs)&#8250; and
+    &#8249;P (a # xs)&#8250;
+  for a :: &#8249;&#39;a&#8250; and xs :: &#8249;&#39;a list&#8250;
+proof -
+  show ?thesis sorry
+qed
+ *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">explore_lemma</span></span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* 
+lemma
+  assumes 
+    &#8249;distinct []&#8250; and
+    &#8249;P []&#8250;
+  shows &#8249;length (filter (&#955;x. x = y) []) &#8804; 1&#8250;
+proof -
+  show ?thesis sorry
+qed
+
+
+lemma
+  fixes a :: &#8249;&#39;a&#8250; and xs :: &#8249;&#39;a list&#8250;
+  assumes 
+    &#8249;distinct xs &#10233; P xs &#10233; length (filter (&#955;x. x = y) xs) &#8804; 1&#8250; and
+    &#8249;distinct (a # xs)&#8250; and
+    &#8249;P (a # xs)&#8250;
+  shows &#8249;length (filter (&#955;x. x = y) (a # xs)) &#8804; 1&#8250;
+proof -
+  show ?thesis sorry
+qed
+ *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">oops</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. A1 x &#10233; A2&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x y. A1 x &#10233; B2 y&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x y z s. B2 y &#10233;  A1 x &#10233; C2 z &#10233; C3 s&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x y z s. B2 y &#10233;  A1 x &#10233; C2 z &#10233; C4 s&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x y z s t. B2 y &#10233;  A1 x &#10233; C2 z &#10233; C4 s &#10233; C3&#39; t&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x y z s t. B2 y &#10233;  A1 x &#10233; C2 z &#10233; C4 s &#10233; C4&#39; t&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x y z s t. B2 y &#10233;  A1 x &#10233; C2 z &#10233; C4 s &#10233; C5&#39; t&quot;</span></span></span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*   apply simp_all
+  apply auto *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">explore_context</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">explore_have</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">explore_lemma</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">oops</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;You can also choose quotes&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">setup</span></span><span> </span><span>Explorer_Lib.switch_to_quotes</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;distinct xs &#10233; P xs &#10233; length (filter (&#955;x. x = y) xs) &#8804; 1&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>xs</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>xs</span><span class="delimiter">)</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*   apply simp_all
+  apply auto *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">explore</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">explore_have</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">explore_lemma</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">oops</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;And switch back&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">setup</span></span><span> </span><span>Explorer_Lib.switch_to_cartouches</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;distinct xs &#10233; P xs &#10233; sh &#10233; length (filter (&#955;x. x = y) xs) &#8804; 1&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>xs</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>xs</span><span class="delimiter">)</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*   apply simp_all
+  apply auto *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">explore</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">explore_have</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">explore_lemma</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">oops</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

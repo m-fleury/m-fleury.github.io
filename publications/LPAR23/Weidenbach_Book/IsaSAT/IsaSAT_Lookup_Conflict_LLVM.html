@@ -1,0 +1,777 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IsaSAT_Lookup_Conflict_LLVM (Isabelle2020: April 2020)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IsaSAT_Lookup_Conflict_LLVM</h1>
+
+<span class="command">theory</span> <span class="name">IsaSAT_Lookup_Conflict_LLVM</span><br/>
+<span class="keyword">imports</span> <a href="IsaSAT_Lookup_Conflict.html"><span class="name">IsaSAT_Lookup_Conflict</span></a> <a href="IsaSAT_Trail_LLVM.html"><span class="name">IsaSAT_Trail_LLVM</span></a> <a href="IsaSAT_Clauses_LLVM.html"><span class="name">IsaSAT_Clauses_LLVM</span></a> <a href="LBD_LLVM.html"><span class="name">LBD_LLVM</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IsaSAT_Lookup_Conflict_LLVM</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span>
+</span><span>    </span><span>IsaSAT_Lookup_Conflict</span><span>
+</span><span>    </span><span>IsaSAT_Trail_LLVM</span><span>
+</span><span>    </span><span>IsaSAT_Clauses_LLVM</span><span>
+</span><span>    </span><span>LBD_LLVM</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>set_lookup_conflict_aa</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>lookup_clause_assn</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;32 word &#215; (1 word) ptr&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span> </span><span>option_lookup_clause_assn</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;1 word &#215; lookup_clause_assn&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span> </span><span>out_learned_assn</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;32 word array_list64&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span> </span><span>out_learned_assn</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;out_learned &#8658; out_learned_assn &#8658; assn&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;out_learned_assn &#8801; arl64_assn unat_lit_assn&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>minimize_status_int_rel</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(nat &#215; minimize_status) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;minimize_status_int_rel = {(0, SEEN_UNKNOWN), (1, SEEN_FAILED),  (2, SEEN_REMOVABLE)}&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>minimize_status_ref_rel</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;minimize_status_ref_rel &#8801; snat_rel&#39; TYPE(8)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>minimize_status_ref_assn</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;minimize_status_ref_assn &#8801; pure minimize_status_ref_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>minimize_status_rel</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;minimize_status_rel = minimize_status_ref_rel O minimize_status_int_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>minimize_status_assn</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;minimize_status_assn &#8801; pure minimize_status_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>minimize_status_assn_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;minimize_status_assn = pure (snat_rel O minimize_status_int_rel)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>minimize_status_rel_def</span><span> </span><span class="keyword1"><span class="command">..</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>fcomp_norm_unfold</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>minimize_status_assn_alt_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>minimize_status_rel_eq</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;minimize_status &#8658; minimize_status &#8658; bool&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;minimize_status_rel_eq = (=)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>minimize_status_rel_eq</span><span class="delimiter">:</span><span>
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((=), minimize_status_rel_eq) &#8712; minimize_status_int_rel &#8594; minimize_status_int_rel &#8594; bool_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>minimize_status_int_rel_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>minimize_status_rel_eq_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo (=))&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;minimize_status_ref_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> minimize_status_ref_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>minimize_status_rel_eq</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>minimize_status_rel_eq_impl.refine</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>convert_fref</span><span class="delimiter">,</span><span> </span><span>FCOMP</span><span> </span><span>minimize_status_rel_eq</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span>
+</span><span>   </span><span>SEEN_FAILED_rel</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(1, SEEN_FAILED) &#8712; minimize_status_int_rel&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>   </span><span>SEEN_UNKNOWN_rel</span><span class="delimiter">:</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(0, SEEN_UNKNOWN) &#8712; minimize_status_int_rel&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>   </span><span>SEEN_REMOVABLE_rel</span><span class="delimiter">:</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(2, SEEN_REMOVABLE) &#8712; minimize_status_int_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>minimize_status_int_rel_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>SEEN_FAILED_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry0 (RETURN 1)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> minimize_status_ref_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(8)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>SEEN_UNKNOWN_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry0 (RETURN 0)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> minimize_status_ref_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(8)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>SEEN_REMOVABLE_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry0 (RETURN 2)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> minimize_status_ref_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(8)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>SEEN_FAILED_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>SEEN_FAILED_rel</span><span class="delimiter">]</span><span>
+</span><span>   </span><span>SEEN_UNKNOWN_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>SEEN_UNKNOWN_rel</span><span class="delimiter">]</span><span>
+</span><span>   </span><span>SEEN_REMOVABLE_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>SEEN_REMOVABLE_rel</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>option_bool_impl_rel</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;option_bool_impl_rel = bool1_rel O option_bool_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>option_bool_impl_assn</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;option_bool_impl_assn &#8801; pure (option_bool_impl_rel)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>option_bool_impl_assn_alt_def</span><span class="delimiter">:</span><span>
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;option_bool_impl_assn = hr_comp bool1_assn option_bool_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>option_bool_impl_rel_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>hr_comp_pure</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>fcomp_norm_unfold</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>option_bool_impl_assn_alt_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>   </span><span>option_bool_impl_rel_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>Some_rel</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#955;_. True, ISIN) &#8712; bool_rel &#8594; option_bool_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>option_bool_rel_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>Some_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o (&#955;_. True)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bool1_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>Some_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>Some_rel</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_Notin_rel</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#955;x. &#172;x, is_NOTIN) &#8712; option_bool_rel &#8594; bool_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>option_bool_rel_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>is_Notin_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o (&#955;x. &#172;x)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bool1_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>is_Notin_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>is_Notin_rel</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>NOTIN_rel</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(False, NOTIN) &#8712; option_bool_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>option_bool_rel_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>NOTIN_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry0 (RETURN False)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>NOTIN_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>NOTIN_rel</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span> </span><span>lookup_clause_rel_assn</span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lookup_clause_rel &#8658; lookup_clause_assn &#8658; assn&#8250;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lookup_clause_rel_assn &#8801; (uint32_nat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> array_assn option_bool_impl_assn)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span>conflict_option_rel_assn</span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;conflict_option_rel &#8658; option_lookup_clause_assn &#8658; assn&#8250;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;conflict_option_rel_assn &#8801; (bool1_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> lookup_clause_rel_assn)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>fcomp_norm_unfold</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>conflict_option_rel_assn_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>lookup_clause_rel_assn_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span>ana_refinement_fast_rel</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;ana_refinement_fast_rel &#8801; snat_rel&#39; TYPE(64) &#215;<span class="hidden">&#8681;</span><sub>r</sub> unat_rel&#39; TYPE(32) &#215;<span class="hidden">&#8681;</span><sub>r</sub> bool1_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span>ana_refinement_fast_assn</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;ana_refinement_fast_assn &#8801; sint64_nat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ana_refinement_fast_assn_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;ana_refinement_fast_assn = pure ana_refinement_fast_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ana_refinement_fast_rel_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span>analyse_refinement_fast_assn</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;analyse_refinement_fast_assn &#8801;
+    arl64_assn ana_refinement_fast_assn&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lookup_clause_assn_is_None_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o lookup_clause_assn_is_None = (&#955;(b, _, _). RETURN b)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lookup_clause_assn_is_None_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>lookup_clause_assn_is_None_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o lookup_clause_assn_is_None&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;conflict_option_rel_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lookup_clause_assn_is_None_alt_def</span><span> </span><span>conflict_option_rel_assn_def</span><span>
+</span><span>    </span><span>lookup_clause_rel_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>size_lookup_conflict_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o size_lookup_conflict = (&#955;(_, b, _). RETURN b)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>size_lookup_conflict_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>size_lookup_conflict_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o size_lookup_conflict&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;conflict_option_rel_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>size_lookup_conflict_alt_def</span><span> </span><span>conflict_option_rel_assn_def</span><span>
+</span><span>    </span><span>lookup_clause_rel_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>is_in_conflict_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo is_in_lookup_conflict)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;((n, xs), L). atm_of L &lt; length xs]<span class="hidden">&#8681;</span><sub>a</sub>
+       lookup_clause_rel_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; bool1_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_in_lookup_conflict_def</span><span> </span><span>is_NOTIN_alt_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>lookup_clause_rel_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lookup_clause_assn_is_empty_alt_def</span><span class="delimiter">:</span><span>
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lookup_clause_assn_is_empty = (&#955;S. size_lookup_conflict S = 0)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>size_lookup_conflict_def</span><span> </span><span>lookup_clause_assn_is_empty_def</span><span> </span><span>fun_eq_iff</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>lookup_clause_assn_is_empty_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o lookup_clause_assn_is_empty&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;conflict_option_rel_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lookup_clause_assn_is_empty_alt_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(32)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>the_lookup_conflict</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;conflict_option_rel &#8658; _&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;the_lookup_conflict = snd&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>the_lookup_conflict_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o the_lookup_conflict = (&#955;(_, (n, xs)). RETURN (n, xs))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>the_lookup_conflict_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>the_lookup_conflict_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o the_lookup_conflict&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;conflict_option_rel_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> lookup_clause_rel_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>the_lookup_conflict_alt_def</span><span> </span><span>conflict_option_rel_assn_def</span><span>
+</span><span>    </span><span>lookup_clause_rel_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>Some_lookup_conflict</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8658; conflict_option_rel&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Some_lookup_conflict xs = (False, xs)&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>Some_lookup_conflict_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o Some_lookup_conflict = (&#955;xs. RETURN (False, xs))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>Some_lookup_conflict_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>Some_lookup_conflict_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o Some_lookup_conflict&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lookup_clause_rel_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> conflict_option_rel_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>Some_lookup_conflict_alt_def</span><span> </span><span>conflict_option_rel_assn_def</span><span>
+</span><span>    </span><span>lookup_clause_rel_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>Some_lookup_conflict</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>cach_refinement_l_assn</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;8 word ptr &#215; 32 word array_list64&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span> </span><span>cach_refinement_l_assn</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8658; cach_refinement_l_assn &#8658; _&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cach_refinement_l_assn &#8801; array_assn minimize_status_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> arl64_assn atom_assn&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>conflict_min_cach_l</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>delete_from_lookup_conflict_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry delete_from_lookup_conflict&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> lookup_clause_rel_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> lookup_clause_rel_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>delete_from_lookup_conflict_def</span><span> </span><span>NOTIN_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>conflict_option_rel_assn_def</span><span>
+</span><span>    </span><span>lookup_clause_rel_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(32)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arena_is_valid_clause_idx_le_uint64_max</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;arena_is_valid_clause_idx be bd &#10233;
+    length be &#8804; sint64_max &#10233;
+   bd + arena_length be bd &#8804; sint64_max&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;arena_is_valid_clause_idx be bd &#10233; length be &#8804; sint64_max &#10233;
+   bd &#8804; sint64_max&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lifting</span><span class="delimiter">(</span><span>10</span><span class="delimiter">)</span><span class="delimiter">[</span><span>of</span><span> </span><span>be</span><span> </span><span>_</span><span> </span><span>_</span><span> </span><span>bd</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arena_lifting</span><span> </span><span>arena_is_valid_clause_idx_def</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>add_to_lookup_conflict_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN oo add_to_lookup_conflict = (&#955;L (n, xs). RETURN (if xs ! atm_of L = NOTIN then n + 1 else n,
+      xs[atm_of L := ISIN (is_pos L)]))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>add_to_lookup_conflict_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fun_eq_iff</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>ISIN</span><span> </span><span>NOTIN</span><span> </span><span>atm_of</span><span> </span><span>add_to_lookup_conflict</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>add_to_lookup_conflict_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo add_to_lookup_conflict)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;(L, (n, xs)). atm_of L &lt; length xs &#8743; n + 1 &#8804; uint32_max]<span class="hidden">&#8681;</span><sub>a</sub>
+      unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (lookup_clause_rel_assn)<span class="hidden">&#8679;</span><sup>d</sup> &#8594; lookup_clause_rel_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>add_to_lookup_conflict_alt_def</span><span> </span><span>lookup_clause_rel_assn_def</span><span>
+</span><span>     </span><span>is_NOTIN_alt_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>fold_is_None</span><span> </span><span>NOTIN_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ + &#8977;&#8250;</span></span></span><span> </span><span>unat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;32&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>isa_lookup_conflict_merge_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isa_lookup_conflict_merge i0  = (&#955;M N i zs clvls outl.
+ do {
+     let xs = the_lookup_conflict zs;
+    ASSERT( arena_is_valid_clause_idx N i);
+     (_, clvls, zs, outl) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup>&#955;(i::nat, clvls :: nat, zs, outl).
+         length (snd zs) = length (snd xs) &#8743;
+             Suc (fst zs) &#8804; uint32_max &#8743; Suc clvls &#8804; uint32_max<span class="hidden">&#8662;</span></sup>
+       (&#955;(j :: nat, clvls, zs, outl). j &lt; i + arena_length N i)
+       (&#955;(j :: nat, clvls, zs, outl). do {
+           ASSERT(j &lt; length N);
+           ASSERT(arena_lit_pre N j);
+           ASSERT(get_level_pol_pre (M, arena_lit N j));
+	   ASSERT(get_level_pol M (arena_lit N j) &#8804; Suc (uint32_max div 2));
+           ASSERT(atm_of (arena_lit N j) &lt; length (snd zs));
+           ASSERT(&#172;is_in_lookup_conflict zs (arena_lit N j) &#10230; length outl &lt; uint32_max);
+           let outl = isa_outlearned_add M (arena_lit N j) zs outl;
+           let clvls = isa_clvls_add M (arena_lit N j) zs clvls;
+           let zs = add_to_lookup_conflict (arena_lit N j) zs;
+           RETURN(Suc j, clvls, zs, outl)
+        })
+       (i + i0, clvls, xs, outl);
+     RETURN (Some_lookup_conflict zs, clvls, outl)
+   })&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>isa_lookup_conflict_merge_def</span><span> </span><span>Some_lookup_conflict_def</span><span>
+</span><span>    </span><span>the_lookup_conflict_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fun_eq_iff</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>resolve_lookup_conflict_merge_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry5 isa_set_lookup_conflict_aa&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;(((((M, N), i), (_, xs)), _), out).
+         length N &#8804; sint64_max]<span class="hidden">&#8681;</span><sub>a</sub>
+      trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> arena_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> sint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> conflict_option_rel_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub>
+         uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> out_learned_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;
+      conflict_option_rel_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> out_learned_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span>
+</span><span>    </span><span>literals_are_in_&#8466;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>_trail_get_level_uint32_max</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>arena_is_valid_clause_idx_le_uint64_max</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>isa_set_lookup_conflict_aa_def</span><span> </span><span>lookup_conflict_merge_def</span><span>
+</span><span>    </span><span>PR_CONST_def</span><span> </span><span>nth_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>isa_outlearned_add_def</span><span> </span><span>isa_clvls_add_def</span><span>
+</span><span>    </span><span>isa_lookup_conflict_merge_alt_def</span><span>
+</span><span>    </span><span>fmap_rll_u_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>fmap_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>is_NOTIN_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>add_0_right</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN (&#8977;, _ ,_, _)&#8250;</span></span></span><span>  </span><span>Suc_eq_plus1</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN (_ + &#8977;, _ ,_, _)&#8250;</span></span></span><span> </span><span>snat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;If _ &#8977;&#8250;</span></span></span><span> </span><span>unat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;32&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fold_tuple_optimizations</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>isa_resolve_merge_conflict_gt2</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arena_is_valid_clause_idx_le_uint64_max2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;arena_is_valid_clause_idx be bd &#10233;
+    length be &#8804; sint64_max &#10233;
+   bd + arena_length be bd &#8804; sint64_max&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;arena_is_valid_clause_idx be bd &#10233; length be &#8804; sint64_max &#10233;
+   bd &lt; sint64_max&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lifting</span><span class="delimiter">(</span><span>10</span><span class="delimiter">)</span><span class="delimiter">[</span><span>of</span><span> </span><span>be</span><span> </span><span>_</span><span> </span><span>_</span><span> </span><span>bd</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arena_lifting</span><span> </span><span>arena_is_valid_clause_idx_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lengthI</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span>less_le_trans</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>resolve_merge_conflict_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry5 isa_resolve_merge_conflict_gt2&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[uncurry5 (&#955;M N i (b, xs) clvls outl. length N &#8804; sint64_max)]<span class="hidden">&#8681;</span><sub>a</sub>
+      trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> arena_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> sint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> conflict_option_rel_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub>
+         uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub>  out_learned_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;
+      conflict_option_rel_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> out_learned_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span>
+</span><span>    </span><span>literals_are_in_&#8466;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>_trail_get_level_uint32_max</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>fmap_length_rll_u_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>arena_is_valid_clause_idx_le_uint64_max</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>arena_is_valid_clause_idx_le_uint64_max2</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>isa_resolve_merge_conflict_gt2_def</span><span> </span><span>lookup_conflict_merge_def</span><span>
+</span><span>    </span><span>PR_CONST_def</span><span> </span><span>nth_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>isa_outlearned_add_def</span><span> </span><span>isa_clvls_add_def</span><span>
+</span><span>    </span><span>isa_lookup_conflict_merge_alt_def</span><span>
+</span><span>    </span><span>fmap_rll_u_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>fmap_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>is_NOTIN_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>add_0_right</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN (&#8977;, _ ,_, _)&#8250;</span></span></span><span>  </span><span>Suc_eq_plus1</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;WHILEIT _ _ _ (_ + &#8977;, _ ,_, _)&#8250;</span></span></span><span> </span><span>snat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN (_ + &#8977;, _ ,_, _)&#8250;</span></span></span><span> </span><span>snat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;If _ &#8977;&#8250;</span></span></span><span> </span><span>unat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;32&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fold_tuple_optimizations</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>atm_in_conflict_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo atm_in_conflict_lookup)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[uncurry atm_in_conflict_lookup_pre]<span class="hidden">&#8681;</span><sub>a</sub>
+     atom_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> lookup_clause_rel_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; bool1_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atm_in_conflict_lookup_def</span><span> </span><span>atm_in_conflict_lookup_pre_def</span><span>
+</span><span>     </span><span>is_NOTIN_alt_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>fold_is_None</span><span> </span><span>NOTIN_def</span><span> </span><span>lookup_clause_rel_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; _ ! _&#8250;</span></span></span><span> </span><span>annot_index_of_atm</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>conflict_min_cach_l_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo conflict_min_cach_l)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[conflict_min_cach_l_pre]<span class="hidden">&#8681;</span><sub>a</sub> cach_refinement_l_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> atom_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; minimize_status_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>conflict_min_cach_l_def</span><span> </span><span>conflict_min_cach_l_pre_def</span><span> </span><span>cach_refinement_l_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nth _&#8250;</span></span></span><span> </span><span>eta_expand</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; _ ! _&#8250;</span></span></span><span> </span><span>annot_index_of_atm</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>conflict_min_cach_set_failed_l_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;conflict_min_cach_set_failed_l = (&#955;(cach, sup) L. do {
+     ASSERT(L &lt; length cach);
+     ASSERT(length sup &#8804; 1 + uint32_max div 2);
+     let b = (cach ! L = SEEN_UNKNOWN);
+     RETURN (cach[L := SEEN_FAILED], if b  then sup @ [L] else sup)
+   })&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>conflict_min_cach_set_failed_l_def</span><span> </span><span>Let_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>le_uint32_max_div2_le_uint32_max</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;a2&#39; &#8804; Suc (uint32_max div 2) &#10233; a2&#39; &lt; uint32_max&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>uint32_max_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>conflict_min_cach_set_failed_l_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry conflict_min_cach_set_failed_l&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cach_refinement_l_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> atom_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> cach_refinement_l_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>le_uint32_max_div2_le_uint32_max</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>conflict_min_cach_set_failed_l_alt_def</span><span>
+</span><span>    </span><span>minimize_status_rel_eq_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>cach_refinement_l_assn_def</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; _ ! _&#8250;</span></span></span><span> </span><span>annot_index_of_atm</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;list_update _ _ _&#8250;</span></span></span><span> </span><span>annot_index_of_atm</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>conflict_min_cach_set_removable_l_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;conflict_min_cach_set_removable_l = (&#955;(cach, sup) L. do {
+     ASSERT(L &lt; length cach);
+     ASSERT(length sup &#8804; 1 + uint32_max div 2);
+     let b = (cach ! L = SEEN_UNKNOWN);
+     RETURN (cach[L := SEEN_REMOVABLE], if b then sup @ [L] else sup)
+   })&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>conflict_min_cach_set_removable_l_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>conflict_min_cach_set_removable_l_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry conflict_min_cach_set_removable_l&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;cach_refinement_l_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> atom_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> cach_refinement_l_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>conflict_min_cach_set_removable_l_alt_def</span><span>
+</span><span>    </span><span>minimize_status_rel_eq_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>cach_refinement_l_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; _ ! _&#8250;</span></span></span><span> </span><span>annot_index_of_atm</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;list_update _ _ _&#8250;</span></span></span><span> </span><span>annot_index_of_atm</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lookup_conflict_size_impl_alt_def</span><span class="delimiter">:</span><span>
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o (&#955;(n, xs). n) = (&#955;(n, xs). RETURN n)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO: Invalid abstract head! Cannot be registered as sepref_fr_rule!
+  Probably not required at all?
+*)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>lookup_conflict_size_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="delimiter">[</span><span class="delimiter">]</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o (&#955;(n, xs). n)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lookup_clause_rel_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lookup_clause_rel_assn_def</span><span> </span><span>lookup_conflict_size_impl_alt_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>single_replicate</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[C] = op_list_append [] C&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>lookup_conflict_remove1</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>isa_lit_redundant_rec_wl_lookup</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>isa_mark_failed_lits_stack</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>lit_redundant_rec_wl_lookup</span><span> </span><span>conflict_min_cach_set_removable_l</span><span>
+</span><span>  </span><span>get_propagation_reason_pol</span><span> </span><span>lit_redundant_reason_stack_wl_lookup</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>isa_minimize_and_extract_highest_lookup_conflict</span><span> </span><span>isa_literal_redundant_wl_lookup</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span>  </span><span>set_lookup_empty_conflict_to_none_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o set_lookup_empty_conflict_to_none = (&#955;(n, xs). RETURN (True, n, xs))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>set_lookup_empty_conflict_to_none_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>set_lookup_empty_conflict_to_none_imple</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN o set_lookup_empty_conflict_to_none&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lookup_clause_rel_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> conflict_option_rel_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>set_lookup_empty_conflict_to_none_alt_def</span><span>
+</span><span>    </span><span>lookup_clause_rel_assn_def</span><span> </span><span>conflict_option_rel_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>isa_mark_failed_lits_stackI</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length ba &#8804; Suc (uint32_max div 2)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;a1&#39; &lt; length ba&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Suc a1&#39; &#8804; uint32_max&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>uint32_max_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>conflict_min_cach_set_failed_l</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>isa_mark_failed_lits_stack_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry2 (isa_mark_failed_lits_stack)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;((N, _), _). length N &#8804; sint64_max]<span class="hidden">&#8681;</span><sub>a</sub>
+    arena_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> analyse_refinement_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> cach_refinement_l_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;
+    cach_refinement_l_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>neq_Nil_revE</span><span class="delimiter">[</span><span>elim</span><span class="delimiter">!</span><span class="delimiter">]</span><span> </span><span>image_image</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>mark_failed_lits_stack_inv_helper1</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span> </span><span>mark_failed_lits_stack_inv_helper2</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>fmap_length_rll_u_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span>isa_mark_failed_lits_stackI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>arena_is_valid_clause_idx_le_uint64_max</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span> </span><span>le_uint32_max_div2_le_uint32_max</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>isa_mark_failed_lits_stack_def</span><span> </span><span>PR_CONST_def</span><span>
+</span><span>    </span><span>conflict_min_cach_set_failed_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>conflict_min_cach_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>get_literal_and_remove_of_analyse_wl_def</span><span>
+</span><span>    </span><span>nth_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>fmap_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>arena_lit_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>minimize_status_rel_eq_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span>1</span><span>  </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;conflict_min_cach_set_failed_l _ &#8977;&#8250;</span></span></span><span> </span><span>snat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;RETURN (_ + &#8977;, _)&#8250;</span></span></span><span> </span><span>snat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span>0</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#8977;, _)&#8250;</span></span></span><span>  </span><span>snat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;arena_lit _ (_ + &#8977; - _)&#8250;</span></span></span><span> </span><span>annot_unat_snat_upcast</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;l</span><span> </span><span class="delimiter">=</span><span> </span><span>64</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>isa_get_literal_and_remove_of_analyse_wl_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo isa_get_literal_and_remove_of_analyse_wl)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;(arena, analyse). isa_get_literal_and_remove_of_analyse_wl_pre arena analyse &#8743;
+         length arena &#8804; sint64_max]<span class="hidden">&#8681;</span><sub>a</sub>
+      arena_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> analyse_refinement_fast_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;
+      unat_lit_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> analyse_refinement_fast_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>arena_lit_pre_le2</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span>  </span><span>arena_lit_implI</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>isa_get_literal_and_remove_of_analyse_wl_pre_def</span><span>
+</span><span>  </span><span>isa_get_literal_and_remove_of_analyse_wl_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length _ - &#8977;&#8250;</span></span></span><span> </span><span>snat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">=</span><span>64</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;arena_lit _ (_ + &#8977;)&#8250;</span></span></span><span> </span><span>annot_unat_snat_upcast</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;l</span><span> </span><span class="delimiter">=</span><span> </span><span>64</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(32)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>ana_lookup_conv_lookup_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo ana_lookup_conv_lookup)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[uncurry ana_lookup_conv_lookup_pre]<span class="hidden">&#8681;</span><sub>a</sub> arena_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub>
+    (ana_refinement_fast_assn)<span class="hidden">&#8679;</span><sup>k</sup>
+     &#8594; sint64_nat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> sint64_nat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> sint64_nat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> sint64_nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ana_lookup_conv_lookup_pre_def</span><span> </span><span>ana_lookup_conv_lookup_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(_, _, &#8977;, _)&#8250;</span></span></span><span> </span><span>annot_unat_snat_upcast</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;l</span><span> </span><span class="delimiter">=</span><span> </span><span>64</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(64)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>arena_lit</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>lit_redundant_reason_stack_wl_lookup_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry2 (RETURN ooo lit_redundant_reason_stack_wl_lookup)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[uncurry2 lit_redundant_reason_stack_wl_lookup_pre]<span class="hidden">&#8681;</span><sub>a</sub>
+      unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> arena_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> sint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;
+      ana_refinement_fast_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lit_redundant_reason_stack_wl_lookup_def</span><span> </span><span>lit_redundant_reason_stack_wl_lookup_pre_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#8977; &lt; _&#8250;</span></span></span><span> </span><span>snat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">=</span><span>64</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(32)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>isa_lit_redundant_rec_wl_lookupI</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length ba &#8804; Suc (uint32_max div 2)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length ba &lt; uint32_max&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>uint32_max_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>arena_lit_pre_le</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+       arena_lit_pre a i &#10233; length a &#8804; sint64_max &#10233; i &#8804; sint64_max&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lifting</span><span class="delimiter">(</span><span>7</span><span class="delimiter">)</span><span class="delimiter">[</span><span>of</span><span> </span><span>a</span><span> </span><span>_</span><span> </span><span>_</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arena_lit_pre_def</span><span> </span><span>arena_is_valid_clause_idx_and_access_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>get_propagation_reason_pol_get_propagation_reason_pol_raw</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;do {
+		 C &#8592; get_propagation_reason_pol M (-L);
+		 case C of
+		   Some C &#8658; f C
+		 | None &#8658; g
+            } = do {
+		 C &#8592; get_propagation_reason_raw_pol M (-L);
+		 if C &#8800; DECISION_REASON then f C else g
+            }&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>M</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>get_propagation_reason_pol_def</span><span> </span><span>get_propagation_reason_raw_pol_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>atm_in_conflict_lookup</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>lit_redundant_rec_wl_lookup_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry5 (isa_lit_redundant_rec_wl_lookup)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;(((((M, NU), D), cach), analysis), lbd). length NU &#8804; sint64_max]<span class="hidden">&#8681;</span><sub>a</sub>
+      trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> arena_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (lookup_clause_rel_assn)<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub>
+        cach_refinement_l_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> analyse_refinement_fast_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> lbd_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;
+      cach_refinement_l_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> analyse_refinement_fast_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>neq_Nil_revE</span><span class="delimiter">[</span><span>elim</span><span class="delimiter">]</span><span> </span><span>image_image</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>literals_are_in_&#8466;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>_trail_uminus_in_lits_of_l</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>literals_are_in_&#8466;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>_trail_in_lits_of_l_atms</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>literals_are_in_&#8466;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>_trail_uminus_in_lits_of_l_atms</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span> </span><span>nth_rll_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>fmap_length_rll_u_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*fmap_length_rll_def[simp]*)</span></span></span></span></span><span>  </span><span>isa_lit_redundant_rec_wl_lookupI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>arena_lit_pre_le</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span>  </span><span>isa_mark_failed_lits_stackI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>isa_lit_redundant_rec_wl_lookup_def</span><span>
+</span><span>    </span><span>conflict_min_cach_set_removable_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>conflict_min_cach_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>get_literal_and_remove_of_analyse_wl_def</span><span>
+</span><span>    </span><span>nth_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>PR_CONST_def</span><span>
+</span><span>    </span><span>fmap_rll_u_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>minimize_status_rel_eq_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>fmap_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>length_0_conv</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>get_propagation_reason_pol_get_propagation_reason_pol_raw</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;get_level_pol _ _ = &#8977;&#8250;</span></span></span><span> </span><span>unat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">=</span><span>32</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(_, &#8977;, _)&#8250;</span></span></span><span> </span><span>annotate_assn</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>A</span><span class="delimiter">=</span><span>analyse_refinement_fast_assn</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(64)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>nth_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>fmap_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>fmap_length_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>nth_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>fmap_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>fmap_length_rll_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>fmap_rll_u_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*slow *)</span></span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>delete_index_and_swap_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo delete_index_and_swap)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;(xs, i). i &lt; length xs]<span class="hidden">&#8681;</span><sub>a</sub>
+      (arl64_assn unat_lit_assn)<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> sint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; arl64_assn unat_lit_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>delete_index_and_swap.simps</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>lookup_conflict_upd_None_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo lookup_conflict_upd_None)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;((n, xs), i). i &lt; length xs &#8743; n &gt; 0]<span class="hidden">&#8681;</span><sub>a</sub>
+     lookup_clause_rel_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> sint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594; lookup_clause_rel_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lookup_conflict_upd_None_RETURN_def</span><span> </span><span>lookup_clause_rel_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(32)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>uint32_max_ge0</span><span class="delimiter">:</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;0 &lt; uint32_max&#8250;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>uint32_max_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>literal_redundant_wl_lookup_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry5 isa_literal_redundant_wl_lookup&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;(((((M, NU), D), cach), L), lbd). length NU &#8804; sint64_max]<span class="hidden">&#8681;</span><sub>a</sub>
+      trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> arena_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> lookup_clause_rel_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub>
+      cach_refinement_l_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> lbd_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;
+      cach_refinement_l_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> analyse_refinement_fast_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> bool1_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>literals_are_in_&#8466;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>_trail_uminus_in_lits_of_l</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span> </span><span>uint32_max_ge0</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">!</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>literals_are_in_&#8466;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>_trail_uminus_in_lits_of_l_atms</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>isa_literal_redundant_wl_lookup_def</span><span> </span><span>PR_CONST_def</span><span>
+</span><span>    </span><span>minimize_status_rel_eq_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(_, &#8977;, _)&#8250;</span></span></span><span> </span><span>al_fold_custom_empty</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;l</span><span class="delimiter">=</span><span>64</span><span class="delimiter">]</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>single_replicate</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;get_level_pol _ _ = &#8977;&#8250;</span></span></span><span> </span><span>unat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">=</span><span>32</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>al_fold_custom_empty</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;l</span><span class="delimiter">=</span><span>64</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>get_propagation_reason_pol_get_propagation_reason_pol_raw</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>conflict_remove1_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo lookup_conflict_remove1)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[lookup_conflict_remove1_pre]<span class="hidden">&#8681;</span><sub>a</sub> unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> lookup_clause_rel_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;
+     lookup_clause_rel_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>2</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>lookup_conflict_remove1_def</span><span> </span><span>lookup_conflict_remove1_pre_def</span><span> </span><span>lookup_clause_rel_assn_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_unat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(32)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>minimize_and_extract_highest_lookup_conflict_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry5 isa_minimize_and_extract_highest_lookup_conflict&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;(((((M, NU), D), cach), lbd), outl). length NU &#8804; sint64_max]<span class="hidden">&#8681;</span><sub>a</sub>
+       trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> arena_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> lookup_clause_rel_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub>
+        cach_refinement_l_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> lbd_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> out_learned_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;
+      lookup_clause_rel_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> cach_refinement_l_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> out_learned_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>literals_are_in_&#8466;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>_trail_uminus_in_lits_of_l</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>minimize_and_extract_highest_lookup_conflict_inv_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>in_&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub>_less_uint32_max&#39;</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>isa_minimize_and_extract_highest_lookup_conflict_def</span><span>
+</span><span>    </span><span>PR_CONST_def</span><span>
+</span><span>    </span><span>minimize_and_extract_highest_lookup_conflict_inv_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(_, &#8977;, _, _)&#8250;</span></span></span><span> </span><span>snat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span> </span><span class="delimiter">=</span><span> </span><span>64</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>annot_snat_const</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TYPE(64)&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>isasat_lookup_merge_eq2_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_lookup_merge_eq2 L M N C = (&#955;zs clvls outl. do {
+    let zs = the_lookup_conflict zs;
+    ASSERT(arena_lit_pre N C);
+    ASSERT(arena_lit_pre N (C+1));
+    let L0 = arena_lit N C;
+    let L&#39; = (if L0 = L then arena_lit N (C + 1) else L0);
+    ASSERT(get_level_pol_pre (M, L&#39;));
+    ASSERT(get_level_pol M L&#39; &#8804; Suc (uint32_max div 2));
+    ASSERT(atm_of L&#39; &lt; length (snd zs));
+    ASSERT(length outl &lt; uint32_max);
+    let outl = isa_outlearned_add M L&#39; zs outl;
+    ASSERT(clvls &lt; uint32_max);
+    ASSERT(fst zs &lt; uint32_max);
+    let clvls = isa_clvls_add M L&#39; zs clvls;
+    let zs = add_to_lookup_conflict L&#39; zs;
+    RETURN(Some_lookup_conflict zs, clvls, outl)
+  })&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>the_lookup_conflict_def</span><span> </span><span>Some_lookup_conflict_def</span><span> </span><span>Let_def</span><span>
+</span><span>     </span><span>isasat_lookup_merge_eq2_def</span><span> </span><span>fun_eq_iff</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_def</span></span><span> </span><span>isasat_lookup_merge_eq2_fast_code</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry6 isasat_lookup_merge_eq2&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;[&#955;((((((L, M), NU), _), _), _), _). length NU &#8804; sint64_max]<span class="hidden">&#8681;</span><sub>a</sub>
+     unat_lit_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> trail_pol_fast_assn<span class="hidden">&#8679;</span><sup>k</sup>  *<span class="hidden">&#8681;</span><sub>a</sub> arena_fast_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> sint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub>
+       conflict_option_rel_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> out_learned_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;
+      conflict_option_rel_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> uint32_nat_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> out_learned_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span> </span><span class="delimiter">=</span><span> </span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>isasat_lookup_merge_eq2_alt_def</span><span>
+</span><span>    </span><span>isa_outlearned_add_def</span><span> </span><span>isa_clvls_add_def</span><span>
+</span><span>    </span><span>is_NOTIN_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span>
+</span><span>    </span><span>image_image</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span>literals_are_in_&#8466;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>_in_&#8466;<span class="hidden">&#8681;</span><sub>a</sub><span class="hidden">&#8681;</span><sub>l</sub><span class="hidden">&#8681;</span><sub>l</sub></span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>literals_are_in_&#8466;<span class="hidden">&#8681;</span><sub>i</sub><span class="hidden">&#8681;</span><sub>n</sub>_trail_get_level_uint32_max</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>fmap_length_rll_u_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span> </span><span>the_lookup_conflict_def</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>arena_is_valid_clause_idx_le_uint64_max</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>arena_lit_pre_le2</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span> </span><span>arena_lit_pre_le</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;if _ then _ + &#8977; else _&#8250;</span></span></span><span> </span><span>unat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">=</span><span>32</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;if _ then arena_lit _ (_ + &#8977;) else _&#8250;</span></span></span><span> </span><span>snat_const_fold</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="tfree">&#39;a</span><span class="delimiter">=</span><span>64</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">experiment</span></span><span> </span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">export_llvm</span></span><span>
+</span><span>  </span><span>nat_lit_eq_impl</span><span>
+</span><span>  </span><span>minimize_status_rel_eq_impl</span><span>
+</span><span>  </span><span>SEEN_FAILED_impl</span><span>
+</span><span>  </span><span>SEEN_UNKNOWN_impl</span><span>
+</span><span>  </span><span>SEEN_REMOVABLE_impl</span><span>
+</span><span>  </span><span>Some_impl</span><span>
+</span><span>  </span><span>is_Notin_impl</span><span>
+</span><span>  </span><span>NOTIN_impl</span><span>
+</span><span>  </span><span>lookup_clause_assn_is_None_impl</span><span>
+</span><span>  </span><span>size_lookup_conflict_impl</span><span>
+</span><span>  </span><span>is_in_conflict_code</span><span>
+</span><span>  </span><span>lookup_clause_assn_is_empty_impl</span><span>
+</span><span>  </span><span>the_lookup_conflict_impl</span><span>
+</span><span>  </span><span>Some_lookup_conflict_impl</span><span>
+</span><span>  </span><span>delete_from_lookup_conflict_code</span><span>
+</span><span>  </span><span>add_to_lookup_conflict_impl</span><span>
+</span><span>  </span><span>resolve_lookup_conflict_merge_fast_code</span><span>
+</span><span>  </span><span>resolve_merge_conflict_fast_code</span><span>
+</span><span>  </span><span>atm_in_conflict_code</span><span>
+</span><span>  </span><span>conflict_min_cach_l_code</span><span>
+</span><span>  </span><span>conflict_min_cach_set_failed_l_code</span><span>
+</span><span>  </span><span>conflict_min_cach_set_removable_l_code</span><span>
+</span><span>  </span><span>lookup_conflict_size_impl</span><span>
+</span><span>  </span><span>set_lookup_empty_conflict_to_none_imple</span><span>
+</span><span>  </span><span>isa_mark_failed_lits_stack_fast_code</span><span>
+</span><span>  </span><span>isa_get_literal_and_remove_of_analyse_wl_fast_code</span><span>
+</span><span>  </span><span>ana_lookup_conv_lookup_fast_code</span><span>
+</span><span>  </span><span>lit_redundant_reason_stack_wl_lookup_fast_code</span><span>
+</span><span>  </span><span>lit_redundant_rec_wl_lookup_fast_code</span><span>
+</span><span>  </span><span>delete_index_and_swap_code</span><span>
+</span><span>  </span><span>lookup_conflict_upd_None_code</span><span>
+</span><span>  </span><span>literal_redundant_wl_lookup_fast_code</span><span>
+</span><span>  </span><span>conflict_remove1_code</span><span>
+</span><span>  </span><span>minimize_and_extract_highest_lookup_conflict_fast_code</span><span>
+</span><span>  </span><span>isasat_lookup_merge_eq2_fast_code</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

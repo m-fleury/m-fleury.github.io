@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IsaSAT_Rephase (Isabelle2020: April 2020)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IsaSAT_Rephase</h1>
+
+<span class="command">theory</span> <span class="name">IsaSAT_Rephase</span><br/>
+<span class="keyword">imports</span> <a href="IsaSAT_Show.html"><span class="name">IsaSAT_Show</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IsaSAT_Rephase</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>IsaSAT_Setup</span><span> </span><span>IsaSAT_Show</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">chapter</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Rephasing&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  We implement the idea in CaDiCaL of rephasing:
+  &#9642; We remember the best model found so far. It is used as base.
+  &#9642; We flip the phase saving heuristics between \&lt;^term&gt;&#8249;True&#8250;,
+   \&lt;^term&gt;&#8249;False&#8250;, and random.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>rephase_init</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bool &#8658; bool list &#8658; bool list nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;rephase_init b &#966; = do {
+  let n = length &#966;;
+  nfoldli [0..&lt;n]
+    (&#955;_. True)
+    (&#955; a &#966;. do {
+       ASSERT(a &lt; length &#966;);
+       RETURN (&#966;[a := b])
+   })
+   &#966;
+ }&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rephase_init_spec</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;rephase_init b &#966; &#8804; SPEC(&#955;&#968;. length &#968; = length &#966;)&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>rephase_init_def</span><span> </span><span>Let_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>nfoldli_rule</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>I</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#955;_ _ &#968;. length &#966; = length &#968;&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>in_list_in_setD</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>copy_phase</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bool list &#8658; bool list &#8658; bool list nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;copy_phase &#966; &#966;&#39; = do {
+  ASSERT(length &#966; = length &#966;&#39;);
+  let n = length &#966;&#39;;
+  nfoldli [0..&lt;n]
+    (&#955;_. True)
+    (&#955; a &#966;&#39;. do {
+       ASSERT(a &lt; length &#966;);
+       ASSERT(a &lt; length &#966;&#39;);
+       RETURN (&#966;&#39;[a := &#966;!a])
+   })
+   &#966;&#39;
+ }&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>copy_phase_alt_def</span><span class="delimiter">:</span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;copy_phase &#966; &#966;&#39; = do {
+  ASSERT(length &#966; = length &#966;&#39;);
+  let n = length &#966;;
+  nfoldli [0..&lt;n]
+    (&#955;_. True)
+    (&#955; a &#966;&#39;. do {
+       ASSERT(a &lt; length &#966;);
+       ASSERT(a &lt; length &#966;&#39;);
+       RETURN (&#966;&#39;[a := &#966;!a])
+   })
+   &#966;&#39;
+ }&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>copy_phase_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ASSERT_same_eq_conv</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>copy_phase_spec</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length &#966; = length &#966;&#39; &#10233; copy_phase &#966; &#966;&#39; &#8804; SPEC(&#955;&#968;. length &#968; = length &#966;)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>copy_phase_def</span><span> </span><span>Let_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>ASSERT_leI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>nfoldli_rule</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>I</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#955;_ _ &#968;. length &#966; = length &#968;&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>in_list_in_setD</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>rephase_random</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64 word &#8658; bool list &#8658; bool list nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;rephase_random b &#966; = do {
+  let n = length &#966;;
+  (_, &#966;) &#8592; nfoldli [0..&lt;n]
+      (&#955;_. True)
+      (&#955;a (state, &#966;). do {
+        ASSERT(a &lt; length &#966;);
+       let state = state * 6364136223846793005 + 1442695040888963407;
+       RETURN (state, &#966;[a := (state &lt; 2147483648)])
+     })
+     (b, &#966;);
+  RETURN &#966;
+ }&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rephase_random_spec</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;rephase_random b &#966; &#8804; SPEC(&#955;&#968;. length &#968; = length &#966;)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>rephase_random_def</span><span> </span><span>Let_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>nfoldli_rule</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>I</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#955;_ _ (_, &#968;). length &#966; = length &#968;&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>in_list_in_setD</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>phase_rephase</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64 word &#8658; phase_save_heur &#8658; phase_save_heur nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;phase_rephase = (&#955;b (&#966;, target_assigned, target, best_assigned, best, end_of_phase, curr_phase, length_phase).
+    if b = 0
+    then do {
+      if curr_phase = 0
+      then do {
+         &#966; &#8592; rephase_init False &#966;;
+         RETURN (&#966;, target_assigned, target, best_assigned, best, length_phase*100+end_of_phase, 1, length_phase)
+      }
+      else if curr_phase = 1
+      then do {
+         &#966; &#8592; copy_phase best &#966;;
+         RETURN (&#966;, target_assigned, target, best_assigned, best, length_phase*100+end_of_phase, 2, length_phase)
+      }
+      else if curr_phase = 2
+      then do {
+         &#966; &#8592; rephase_init True &#966;;
+         RETURN (&#966;, target_assigned, target, best_assigned, best, length_phase*100+end_of_phase, 3, length_phase)
+      }
+      else if curr_phase = 3
+      then do {
+         &#966; &#8592; rephase_random end_of_phase &#966;;
+         RETURN (&#966;, target_assigned, target, best_assigned, best, length_phase*100+end_of_phase, 4, length_phase)
+      }
+      else do {
+         &#966; &#8592; copy_phase best &#966;;
+         RETURN (&#966;, target_assigned, target, best_assigned, best, (1+length_phase)*100+end_of_phase, 0,
+            length_phase+1)
+      }
+    }
+    else do {
+      if curr_phase = 0
+      then do {
+         &#966; &#8592; rephase_init False &#966;;
+         RETURN (&#966;, target_assigned, target, best_assigned, best, length_phase*100+end_of_phase, 1, length_phase)
+      }
+      else if curr_phase = 1
+      then do {
+         &#966; &#8592; copy_phase best &#966;;
+         RETURN (&#966;, target_assigned, target, best_assigned, best, length_phase*100+end_of_phase, 2, length_phase)
+      }
+      else if curr_phase = 2
+      then do {
+         &#966; &#8592; rephase_init True &#966;;
+         RETURN (&#966;, target_assigned, target, best_assigned, best, length_phase*100+end_of_phase, 3, length_phase)
+      }
+      else do {
+         &#966; &#8592; copy_phase best &#966;;
+         RETURN (&#966;, target_assigned, target, best_assigned, best, (1+length_phase)*100+end_of_phase, 0,
+           length_phase+1)
+     }
+    })&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>phase_rephase_spec</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;phase_save_heur_rel &#119964; &#966;&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;phase_rephase b &#966; &#8804; &#8659;Id (SPEC(phase_save_heur_rel &#119964;))&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>&#966;&#39;</span><span> </span><span>target_assigned</span><span> </span><span>target</span><span> </span><span>best_assigned</span><span> </span><span>best</span><span> </span><span>end_of_phase</span><span> </span><span>curr_phase</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span>&#966;</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#966; = (&#966;&#39;, target_assigned, target, best_assigned, best, end_of_phase, curr_phase)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>&#966;</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length &#966;&#39; = length best&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>phase_save_heur_rel_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>1</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#8659;Id (SPEC(phase_save_heur_rel &#119964;)) &#8805;
+    &#8659;Id((&#955;(&#966;, target_assigned, target, best_assigned, best, end_of_phase, curr_phase, length_phase).
+      if b = 0
+      then do {
+        if curr_phase = 0 then  do {
+          &#966;&#39; &#8592; SPEC (&#955;&#966;&#39;. length &#966; = length &#966;&#39;);
+          RETURN (&#966;&#39;, target_assigned, target, best_assigned, best,length_phase*100+end_of_phase, 1, length_phase)
+        }
+       else if curr_phase = 1 then  do {
+          &#966;&#39; &#8592; SPEC (&#955;&#966;&#39;. length &#966; = length &#966;&#39;);
+          RETURN (&#966;&#39;, target_assigned, target, best_assigned, best, length_phase*100+end_of_phase, 2, length_phase)
+       }
+       else if curr_phase = 2 then  do {
+          &#966;&#39; &#8592; SPEC (&#955;&#966;&#39;. length &#966; = length &#966;&#39;);
+          RETURN (&#966;&#39;, target_assigned, target, best_assigned, best, length_phase*100+end_of_phase, 3, length_phase)
+       }
+       else if curr_phase = 3 then  do {
+          &#966;&#39; &#8592; SPEC (&#955;&#966;&#39;. length &#966; = length &#966;&#39;);
+          RETURN (&#966;&#39;, target_assigned, target, best_assigned, best, length_phase*100+end_of_phase, 4, length_phase)
+       }
+       else do {
+          &#966;&#39; &#8592; SPEC (&#955;&#966;&#39;. length &#966; = length &#966;&#39;);
+          RETURN (&#966;&#39;, target_assigned, target, best_assigned, best, (1+length_phase)*100+end_of_phase, 0, length_phase+1)
+       }
+     }
+     else do {
+        if curr_phase = 0 then  do {
+          &#966;&#39; &#8592; SPEC (&#955;&#966;&#39;. length &#966; = length &#966;&#39;);
+          RETURN (&#966;&#39;, target_assigned, target, best_assigned, best,length_phase*100+end_of_phase, 1, length_phase)
+        }
+       else if curr_phase = 1 then  do {
+          &#966;&#39; &#8592; SPEC (&#955;&#966;&#39;. length &#966; = length &#966;&#39;);
+          RETURN (&#966;&#39;, target_assigned, target, best_assigned, best, length_phase*100+end_of_phase, 2, length_phase)
+       }
+       else if curr_phase = 2 then  do {
+          &#966;&#39; &#8592; SPEC (&#955;&#966;&#39;. length &#966; = length &#966;&#39;);
+          RETURN (&#966;&#39;, target_assigned, target, best_assigned, best, length_phase*100+end_of_phase, 3, length_phase)
+       }
+       else do {
+          &#966;&#39; &#8592; SPEC (&#955;&#966;&#39;. length &#966; = length &#966;&#39;);
+          RETURN (&#966;&#39;, target_assigned, target, best_assigned, best, (1+length_phase)*100+end_of_phase, 0,
+            length_phase+1)
+       }
+     }
+     ) &#966;)&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>   </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>&#966;</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>phase_save_heur_rel_def</span><span> </span><span>phase_saving_def</span><span> </span><span>RES_RETURN_RES</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>phase_rephase_def</span><span> </span><span>&#966;</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>prod.case</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>order_trans</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">defer</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>1</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>prod.case</span><span> </span><span>&#966;</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>if_mono</span><span> </span><span>rephase_init_spec</span><span> </span><span>copy_phase_spec</span><span> </span><span>rephase_random_spec</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>phase_rephase_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>rephase_heur</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64 word &#8658; restart_heuristics &#8658; restart_heuristics nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;rephase_heur = (&#955;b (fast_ema, slow_ema, restart_info, wasted, &#966;).
+    do {
+      &#966; &#8592; phase_rephase b &#966;;
+      RETURN (fast_ema, slow_ema, restart_info, wasted, &#966;)
+   })&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rephase_heur_spec</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;heuristic_rel &#119964; heur &#10233; rephase_heur b heur &#8804;  &#8659;Id (SPEC(heuristic_rel &#119964;))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>rephase_heur_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>phase_rephase_spec</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>order_trans</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>heuristic_rel_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>rephase_heur_st</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;twl_st_wl_heur &#8658; twl_st_wl_heur nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;rephase_heur_st = (&#955;(M&#39;, arena, D&#39;, j, W&#39;, vm, clvls, cach, lbd, outl, stats, heur,
+       vdom, avdom, lcount, opts, old_arena). do {
+      let b = current_restart_phase heur;
+      heur &#8592; rephase_heur b heur;
+      let _ = isasat_print_progress (current_rephasing_phase heur) b stats lcount;
+      RETURN (M&#39;, arena, D&#39;, j, W&#39;, vm, clvls, cach, lbd, outl, stats, heur,
+       vdom, avdom, lcount, opts, old_arena)
+   })&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rephase_heur_st_spec</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(S, S&#39;) &#8712; twl_st_heur &#10233; rephase_heur_st S &#8804; SPEC(&#955;S. (S, S&#39;) &#8712; twl_st_heur)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>rephase_heur_st_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>S&#39;</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>rephase_heur_spec</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>order_trans</span><span class="delimiter">,</span><span> </span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;all_atms_st S&#39;&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span>  </span><span>twl_st_heur_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>phase_save_phase</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat &#8658; phase_save_heur &#8658; phase_save_heur nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;phase_save_phase = (&#955;n (&#966;, target_assigned, target, best_assigned, best, end_of_phase, curr_phase). do {
+       target &#8592; (if n &gt; target_assigned
+          then copy_phase &#966; target else RETURN target);
+       target_assigned &#8592; (if n &gt; target_assigned
+          then RETURN n else RETURN target_assigned);
+       best &#8592; (if n &gt; best_assigned
+          then copy_phase &#966; best else RETURN best);
+       best_assigned &#8592; (if n &gt; best_assigned
+          then RETURN n else RETURN best_assigned);
+       RETURN (&#966;, target_assigned, target, best_assigned, best, end_of_phase, curr_phase)
+   })&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>phase_save_phase_spec</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;phase_save_heur_rel &#119964; &#966;&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;phase_save_phase n &#966; &#8804; &#8659;Id (SPEC(phase_save_heur_rel &#119964;))&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>&#966;&#39;</span><span> </span><span>target_assigned</span><span> </span><span>target</span><span> </span><span>best_assigned</span><span> </span><span>best</span><span> </span><span>end_of_phase</span><span> </span><span>curr_phase</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span>&#966;</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#966; = (&#966;&#39;, target_assigned, target, best_assigned, best, end_of_phase, curr_phase)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>&#966;</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length &#966;&#39; = length best&#8250;</span></span></span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length target = length best&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>phase_save_heur_rel_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>1</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#8659;Id (SPEC(phase_save_heur_rel &#119964;)) &#8805;
+    &#8659;Id((&#955;(&#966;, target_assigned, target, best_assigned, best, end_of_phase, curr_phase). do {
+        target &#8592; (if n &gt; target_assigned
+          then SPEC (&#955;&#966;&#39;. length &#966; = length &#966;&#39;) else RETURN target);
+        target_assigned &#8592; (if n &gt; target_assigned
+          then RETURN n else RETURN target_assigned);
+        best &#8592; (if n &gt; best_assigned
+          then SPEC (&#955;&#966;&#39;. length &#966; = length &#966;&#39;) else RETURN best);
+        best_assigned &#8592; (if n &gt; best_assigned
+          then RETURN n else RETURN best_assigned);
+        RETURN (&#966;&#39;, target_assigned, target, best_assigned, best, end_of_phase, curr_phase)
+     }) &#966;)&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>   </span><span class="keyword1"><span class="command">by</span></span><span>  </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>phase_save_heur_rel_def</span><span> </span><span>phase_saving_def</span><span> </span><span>RES_RETURN_RES</span><span> </span><span>&#966;</span><span> </span><span>RES_RES_RETURN_RES</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>phase_save_phase_def</span><span> </span><span>&#966;</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>prod.case</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>order_trans</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">defer</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>1</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>only</span><span class="delimiter">:</span><span> </span><span>prod.case</span><span> </span><span>&#966;</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>if_mono</span><span> </span><span>rephase_init_spec</span><span> </span><span>copy_phase_spec</span><span> </span><span>rephase_random_spec</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>phase_rephase_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>save_rephase_heur</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat &#8658; restart_heuristics &#8658; restart_heuristics nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;save_rephase_heur = (&#955;n (fast_ema, slow_ema, restart_info, wasted, &#966;).
+    do {
+      &#966; &#8592; phase_save_phase n &#966;;
+      RETURN (fast_ema, slow_ema, restart_info, wasted, &#966;)
+   })&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>save_phase_heur_spec</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;heuristic_rel &#119964; heur &#10233; save_rephase_heur n heur &#8804;  &#8659;Id (SPEC(heuristic_rel &#119964;))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>save_rephase_heur_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>phase_save_phase_spec</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>order_trans</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>heuristic_rel_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>save_phase_st</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;twl_st_wl_heur &#8658; twl_st_wl_heur nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;save_phase_st = (&#955;(M&#39;, arena, D&#39;, j, W&#39;, vm, clvls, cach, lbd, outl, stats, heur,
+       vdom, avdom, lcount, opts, old_arena). do {
+      ASSERT(isa_length_trail_pre M&#39;);
+      let n = isa_length_trail M&#39;;
+      heur &#8592; save_rephase_heur n heur;
+      RETURN (M&#39;, arena, D&#39;, j, W&#39;, vm, clvls, cach, lbd, outl, stats, heur,
+       vdom, avdom, lcount, opts, old_arena)
+   })&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>save_phase_st_spec</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(S, S&#39;) &#8712; twl_st_heur &#10233; save_phase_st S &#8804; SPEC(&#955;S. (S, S&#39;) &#8712; twl_st_heur)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>save_phase_st_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>S&#39;</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>save_phase_heur_spec</span><span class="delimiter">[</span><span>THEN</span><span> </span><span>order_trans</span><span class="delimiter">,</span><span> </span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;all_atms_st S&#39;&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp_all</span><span> </span><span>add</span><span class="delimiter">:</span><span>  </span><span>twl_st_heur_def</span><span> </span><span>isa_length_trail_pre</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>isa_length_trail_pre</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>blast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

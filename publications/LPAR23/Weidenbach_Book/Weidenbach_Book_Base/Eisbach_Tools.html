@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Eisbach_Tools (Isabelle2020: April 2020)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Eisbach_Tools</h1>
+
+<span class="command">theory</span> <span class="name">Eisbach_Tools</span><br/>
+<span class="keyword">imports</span> <a href="../../AFP/Automatic_Refinement/Eisbach.html"><span class="name">Eisbach</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*  Title:      HOL/Eisbach/Eisbach_Tools.thy
+    Author:     Daniel Matichuk, NICTA/UNSW
+
+Usability tools for Eisbach.
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Eisbach_Tools</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Eisbach</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+local
+
+fun trace_method parser print =
+  Scan.lift (Args.mode &quot;dummy&quot;) -- parser &gt;&gt;
+    (fn (dummy, x) =&gt; fn ctxt =&gt; SIMPLE_METHOD (fn st =&gt;
+      (if dummy orelse not (Method.detect_closure_state st)
+       then tracing (print ctxt x) else ();
+       all_tac st)));
+
+fun setup_trace_method binding parser print =
+  Method.setup binding
+    (trace_method parser (fn ctxt =&gt; fn x =&gt; Binding.name_of binding ^ &quot;: &quot; ^ print ctxt x))
+    &quot;&quot;;
+
+in
+
+val _ =
+  Theory.setup
+   (setup_trace_method \&lt;^binding&gt;&#8249;print_fact&#8250;
+      (Scan.lift (Scan.ahead Parse.not_eof) -- Attrib.thms)
+      (fn ctxt =&gt; fn (tok, thms) =&gt;
+        (* FIXME proper formatting!? *)
+        Token.unparse tok ^ &quot;: &quot; ^ commas (map (Thm.string_of_thm ctxt) thms)) #&gt;
+    setup_trace_method \&lt;^binding&gt;&#8249;print_term&#8250;
+      (Scan.lift (Scan.ahead Parse.not_eof) -- Args.term)
+      (fn ctxt =&gt; fn (tok, t) =&gt;
+        (* FIXME proper formatting!? *)
+        Token.unparse tok ^ &quot;: &quot; ^ Syntax.string_of_term ctxt t) #&gt;
+    setup_trace_method \&lt;^binding&gt;&#8249;print_type&#8250;
+      (Scan.lift (Scan.ahead Parse.not_eof) -- Args.typ)
+      (fn ctxt =&gt; fn (tok, t) =&gt;
+        (* FIXME proper formatting!? *)
+        Token.unparse tok ^ &quot;: &quot; ^ Syntax.string_of_typ ctxt t));
+
+end
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  fun try_map v seq =
+    (case try Seq.pull seq of
+      SOME (SOME (x, seq&#39;)) =&gt; Seq.make (fn () =&gt; SOME(x, try_map v seq&#39;))
+    | SOME NONE =&gt; Seq.empty
+    | NONE =&gt; v);
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>catch</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Method.text_closure -- Method.text_closure &gt;&gt;
+    (fn (text, text&#39;) =&gt; fn ctxt =&gt; fn using =&gt; fn st =&gt;
+      let
+        val method = Method.evaluate_runtime text ctxt using;
+        val backup_results = Method.evaluate_runtime text&#39; ctxt using st;
+      in
+        (case try method st of
+          SOME seq =&gt; try_map backup_results seq
+        | NONE =&gt; backup_results)
+      end)
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  fun uncurry_rule thm = Conjunction.uncurry_balanced (Thm.nprems_of thm) thm;
+  fun curry_rule thm =
+    if Thm.no_prems thm then thm
+    else
+      let val conjs = Logic.dest_conjunctions (Thm.major_prem_of thm);
+      in Conjunction.curry_balanced (length conjs) thm end;
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">attribute_setup</span></span><span> </span><span>uncurry</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (Thm.rule_attribute [] (K uncurry_rule))&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">attribute_setup</span></span><span> </span><span>curry</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Scan.succeed (Thm.rule_attribute [] (K curry_rule))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

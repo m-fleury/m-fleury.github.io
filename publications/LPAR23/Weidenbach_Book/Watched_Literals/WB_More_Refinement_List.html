@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory WB_More_Refinement_List (Isabelle2018: August 2018)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory WB_More_Refinement_List</h1>
+
+<span class="command">theory</span> <span class="name">WB_More_Refinement_List</span><br/>
+<span class="keyword">imports</span> <a href="../../AFP/Sepref_IICF/IICF.html"><span class="name">IICF</span></a> <a href="../CDCL/WB_List_More.html"><span class="name">WB_List_More</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>WB_More_Refinement_List</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Refine_Imperative_HOL.IICF</span><span> </span><span>Weidenbach_Book_Base.WB_List_More</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;More theorems about list&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;This should theorem and functions that defined in the Refinement Framework, but not in
+\&lt;^theory&gt;&#8249;HOL.List&#8250;. There might be moved somewhere eventually in the AFP or so.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>swap_nth_irrelevant</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;k &#8800; i &#10233; k &#8800; j &#10233; swap xs i j ! k = xs ! k&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swap_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>swap_nth_relevant</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &lt; length xs &#10233; j &lt; length xs &#10233; swap xs i j ! i = xs ! j&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i = j&#8250;</span></span></span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swap_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>swap_nth_relevant2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &lt; length xs &#10233; j &lt; length xs &#10233; swap xs j i ! i = xs ! j&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swap_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>swap_nth_if</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &lt; length xs &#10233; j &lt; length xs &#10233; swap xs i j ! k =
+    (if k = i then xs ! j else if k = j then xs ! i else xs ! k)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swap_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>drop_swap_irrelevant</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;k &gt; i &#10233; k &gt; j &#10233; drop k (swap outl&#39; j i) = drop k outl&#39;&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>list_eq_iff_nth_eq</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>take_swap_relevant</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;k &gt; i &#10233; k &gt; j &#10233;  take k (swap outl&#39; j i) = swap (take k outl&#39;) i j&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>list_eq_iff_nth_eq</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swap_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>tl_swap_relevant</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &gt; 0 &#10233; j &gt; 0 &#10233; tl (swap outl&#39; j i) = swap (tl outl&#39;) (i - 1) (j - 1)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>list_eq_iff_nth_eq</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;outl&#39; = []&#8250;</span></span></span><span class="delimiter">;</span><span> </span><span>cases</span><span> </span><span>i</span><span class="delimiter">;</span><span> </span><span>cases</span><span> </span><span>j</span><span class="delimiter">;</span><span> </span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swap_def</span><span> </span><span>tl_update_swap</span><span> </span><span>nth_tl</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>swap_only_first_relevant</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;b &#8805; i &#10233; a &lt; length xs  &#10233;take i (swap xs a b) = take i (xs[a := xs ! b])&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>swap_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TODO this should go to a different place from the previous lemmas, since it concerns
+\&lt;^term&gt;&#8249;Misc.slice&#8250;, which is not part of \&lt;^theory&gt;&#8249;HOL.List&#8250; but only part of the Refinement Framework.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>slice_nth</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#10214;from &#8804; length xs; i &lt; to - from&#10215; &#10233; Misc.slice from to xs ! i = xs ! (from + i)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>slice_def</span><span> </span><span>Misc.slice_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>nth_take</span><span class="delimiter">,</span><span> </span><span>assumption</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>nth_drop</span><span class="delimiter">,</span><span> </span><span>assumption</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">..</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>slice_irrelevant</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &lt; from &#10233; Misc.slice from to (xs[i := C]) = Misc.slice from to xs&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &#8805; to &#10233; Misc.slice from to (xs[i := C]) = Misc.slice from to xs&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &#8805; to &#8744; i &lt; from &#10233; Misc.slice from to (xs[i := C]) = Misc.slice from to xs&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>Misc.slice_def</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>drop_take</span><span> </span><span>take_update_cancel</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>slice_update_swap</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &lt; to &#10233; i &#8805; from &#10233; i &lt; length xs &#10233;
+     Misc.slice from to (xs[i := C]) = (Misc.slice from to xs)[(i - from) := C]&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>Misc.slice_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>drop_update_swap</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>drop_slice</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;drop n (Misc.slice from to xs) = Misc.slice (from + n) to xs&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;from&quot;</span></span></span><span> </span><span>n</span><span> </span><span>to</span><span> </span><span>xs</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>Misc.slice_def</span><span> </span><span>drop_take</span><span> </span><span>ac_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>take_slice</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;take n (Misc.slice from to xs) = Misc.slice from (min to (from + n)) xs&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;from&quot;</span></span></span><span> </span><span>n</span><span> </span><span>to</span><span> </span><span>xs</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>antisym_conv</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>Misc.slice_def</span><span> </span><span>drop_take</span><span> </span><span>ac_simps</span><span> </span><span>min_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>slice_append</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;to &#8804; length xs &#10233; Misc.slice from to (xs @ ys) = Misc.slice from to xs&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>Misc.slice_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>slice_prepend</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;from &#8805; length xs &#10233;
+     Misc.slice from to (xs @ ys) = Misc.slice (from - length xs) (to - length xs) ys&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>Misc.slice_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>slice_len_min_If</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length (Misc.slice from to xs) =
+     (if from &lt; length xs then min (length xs - from) (to - from) else 0)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>min_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>Misc.slice_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>slice_start0</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Misc.slice 0 to xs = take to xs&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>Misc.slice_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>slice_end_length</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;n &#8805; length xs &#10233; Misc.slice to n xs = drop to xs&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>Misc.slice_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>slice_swap</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;l &#8805; from &#10233; l &lt; to &#10233; k &#8805; from &#10233; k &lt; to &#10233; from &lt; length arena &#10233;
+     Misc.slice from to (swap arena l k) = swap (Misc.slice from to arena) (k - from) (l - from)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;k = l&#8250;</span></span></span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>Misc.slice_def</span><span> </span><span>swap_def</span><span> </span><span>drop_update_swap</span><span> </span><span>list_update_swap</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>drop_swap_relevant</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &#8805; k &#10233; j &#8805; k &#10233; j &lt; length outl&#39; &#10233;drop k (swap outl&#39; j i) = swap (drop k outl&#39;) (j - k) (i - k)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;j = i&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>Misc.slice_def</span><span> </span><span>swap_def</span><span> </span><span>drop_update_swap</span><span> </span><span>list_update_swap</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>swap_swap</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;k &lt; length xs &#10233; l &lt; length xs &#10233; swap xs k l = swap xs l k&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;k = l&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>Misc.slice_def</span><span> </span><span>swap_def</span><span> </span><span>drop_update_swap</span><span> </span><span>list_update_swap</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>in_mset_rel_eq_f_iff</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(a, b) &#8712; &#10216;{(c, a). a = f c}&#10217;mset_rel &#10231; b = f `# a&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>ex_mset</span><span class="delimiter">[</span><span>of</span><span> </span><span>a</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>mset_rel_def</span><span> </span><span>br_def</span><span> </span><span>rel2p_def</span><span class="delimiter">[</span><span>abs_def</span><span class="delimiter">]</span><span> </span><span>p2rel_def</span><span> </span><span>rel_mset_def</span><span>
+</span><span>      </span><span>list_all2_op_eq_map_right_iff&#39;</span><span> </span><span>cong</span><span class="delimiter">:</span><span> </span><span>ex_cong</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>in_mset_rel_eq_f_iff_set</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#10216;{(c, a). a = f c}&#10217;mset_rel = {(b, a). a = f `# b}&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>in_mset_rel_eq_f_iff</span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span>_</span><span> </span><span>f</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2018 </td><td align="center">26d8aaa66074 </td><td align="center">24d4e5b9 </td><td align="center">Tue 06 Nov 2018 04:20:56 PM CET </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2019 </td><td align="center">93cdb54371e6+ </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:14:54 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+
+
+
+
+

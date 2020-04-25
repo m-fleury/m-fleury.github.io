@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Cancellation (Isabelle2020: April 2020)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Cancellation</h1>
+
+<span class="command">theory</span> <span class="name">Cancellation</span><br/>
+<span class="keyword">imports</span> <a href="../../HOL/HOL/Main.html"><span class="name">Main</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*  Title:      HOL/Library/Cancellation.thy
+    Author:     Mathias Fleury, MPII
+    Copyright   2017
+
+This theory defines cancelation simprocs that work on cancel_comm_monoid_add and support the simplification of an operation
+that repeats the additions.
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Cancellation</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>cancelation_simproc_pre</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;These theorems are here to normalise the term. Special
+  handling of constructors should be here. Remark that only the simproc @{term NO_MATCH} is also
+  included.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>cancelation_simproc_post</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;These theorems are here to normalise the term, after the
+  cancelation simproc. Normalisation of &#8249;iterate_add&#8250; back to the normale representation
+  should be put here.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>cancelation_simproc_eq_elim</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;These theorems are here to help deriving contradiction
+  (e.g., &#8249;Suc _ = 0&#8250;).&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>iterate_add</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat &#8658; &#39;a::cancel_comm_monoid_add &#8658; &#39;a&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;iterate_add n a = (((+) a) ^^ n) 0&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iterate_add_simps</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;iterate_add 0 a = 0&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;iterate_add (Suc n) a = a + iterate_add n a&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>iterate_add_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iterate_add_empty</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;iterate_add n 0 = 0&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>iterate_add_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>n</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iterate_add_distrib</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;iterate_add (m+n) a = iterate_add m a + iterate_add n a&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>n</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ac_simps</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iterate_add_Numeral1</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;iterate_add n Numeral1 = of_nat n&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>n</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iterate_add_1</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;iterate_add n 1 = of_nat n&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>iterate_add_Numeral1</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iterate_add_eq_add_iff1</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &#8804; j &#10233; (iterate_add j u + m = iterate_add i u + n) = (iterate_add (j - i) u + m = n)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>le_Suc_ex</span><span> </span><span>add_right_imp_eq</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ab_semigroup_add_class.add_ac</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iterate_add_eq_add_iff2</span><span class="delimiter">:</span><span>
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &#8804; j &#10233; (iterate_add i u + m = iterate_add j u + n) = (m = iterate_add (j - i) u + n)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>le_Suc_ex</span><span> </span><span>add_right_imp_eq</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ab_semigroup_add_class.add_ac</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iterate_add_less_iff1</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;j &#8804; (i::nat) &#10233; (iterate_add i (u:: &#39;a :: {cancel_comm_monoid_add, ordered_ab_semigroup_add_imp_le}) + m &lt; iterate_add j u + n) = (iterate_add (i-j) u + m &lt; n)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>le_Suc_ex</span><span> </span><span>add_right_imp_eq</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ab_semigroup_add_class.add_ac</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iterate_add_less_iff2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;i &#8804; (j::nat) &#10233; (iterate_add i (u:: &#39;a :: {cancel_comm_monoid_add, ordered_ab_semigroup_add_imp_le}) + m &lt; iterate_add j u + n) = (m &lt;iterate_add (j - i) u + n)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>le_Suc_ex</span><span> </span><span>add_right_imp_eq</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ab_semigroup_add_class.add_ac</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iterate_add_less_eq_iff1</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;j &#8804; (i::nat) &#10233; (iterate_add i (u:: &#39;a :: {cancel_comm_monoid_add, ordered_ab_semigroup_add_imp_le}) + m &#8804; iterate_add j u + n) = (iterate_add (i-j) u + m &#8804; n)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>le_Suc_ex</span><span> </span><span>add_right_imp_eq</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ab_semigroup_add_class.add_ac</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iterate_add_less_eq_iff2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;i &#8804; (j::nat) &#10233; (iterate_add i (u:: &#39;a :: {cancel_comm_monoid_add, ordered_ab_semigroup_add_imp_le}) + m &#8804; iterate_add j u + n) = (m &#8804; iterate_add (j - i) u + n)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>le_Suc_ex</span><span> </span><span>add_right_imp_eq</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ab_semigroup_add_class.add_ac</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iterate_add_add_eq1</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;j &#8804; (i::nat) &#10233; ((iterate_add i u + m) - (iterate_add j u + n)) = ((iterate_add (i-j) u + m) - n)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>le_Suc_ex</span><span> </span><span>add_right_imp_eq</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ab_semigroup_add_class.add_ac</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iterate_add_diff_add_eq2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;i &#8804; (j::nat) &#10233; ((iterate_add i u + m) - (iterate_add j u + n)) = (m - (iterate_add (j-i) u + n))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>le_Suc_ex</span><span> </span><span>add_right_imp_eq</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ab_semigroup_add_class.add_ac</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Simproc Set-Up&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML_file</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Cancellation/cancel.ML&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">ML_file</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Cancellation/cancel_data.ML&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">ML_file</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Cancellation/cancel_simprocs.ML&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

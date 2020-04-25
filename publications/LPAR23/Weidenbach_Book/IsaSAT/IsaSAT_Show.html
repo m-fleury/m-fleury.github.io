@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IsaSAT_Show (Isabelle2020: April 2020)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IsaSAT_Show</h1>
+
+<span class="command">theory</span> <span class="name">IsaSAT_Show</span><br/>
+<span class="keyword">imports</span> <a href="Show_Instances.html"><span class="name">Show_Instances</span></a> <a href="IsaSAT_Setup.html"><span class="name">IsaSAT_Setup</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IsaSAT_Show</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span>
+</span><span>    </span><span>Show.Show_Instances</span><span>
+</span><span>    </span><span>IsaSAT_Setup</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">chapter</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Printing information about progress&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We provide a function to print some information about the state.
+  This is mostly meant to ease extracting statistics and printing information
+  during the run.
+  Remark that this function is basically an FFI (to follow Andreas Lochbihler words) and is
+  not unsafe (since printing has not side effects), but we do not need any correctness theorems.
+
+  However, it seems that the PolyML as targeted by &#8249;export_code checking&#8250; does
+  not support that print function. Therefore, we cannot provide the code printing equations
+  by default.
+
+  For the LLVM version code equations are not supported and hence we replace the function by
+  hand.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>println_string</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;String.literal &#8658; unit&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;println_string _ = ()&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>print_c</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64 word &#8658; unit&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;print_c _ = ()&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>print_char</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64 word &#8658; unit&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;print_char _ = ()&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>print_uint64</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64 word &#8658; unit&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;print_uint64 _ = ()&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Print Information for IsaSAT&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Printing the information slows down the solver by a huge factor.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>isasat_banner_content</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_banner_content =
+&#39;&#39;c  conflicts       decisions     restarts   uset    avg_lbd
+&#39;&#39; @
+&#39;&#39;c        propagations     reductions     GC    Learnt
+&#39;&#39;  @
+&#39;&#39;c                                             clauses &#39;&#39;&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>isasat_information_banner</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8658; unit nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_information_banner _ =
+    RETURN (println_string (String.implode (show isasat_banner_content)))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>print_open_colour</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64 word &#8658; unit&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;print_open_colour _ = ()&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>print_close_colour</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64 word &#8658; unit&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;print_close_colour _ = ()&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>isasat_current_information</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64 word &#8658; stats &#8658; _ &#8658; stats&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_current_information =
+   (&#955;curr_phase (propa, confl, decs, frestarts, lrestarts, uset, gcs, lbds) lcount.
+     if confl AND 8191 = 8191 &#8213; &#8249;\&lt;^term&gt;&#8249;8191 = 8192 - 1&#8250;, i.e., we print when all first bits are 1.&#8250;
+     then do{
+       let _ = print_c propa;
+         _ = if curr_phase = 1 then print_open_colour 33 else ();
+         _ = print_char 126;
+         _ = print_uint64 propa;
+         _ = print_uint64 confl;
+         _ = print_uint64 (of_nat lcount);
+         _ = print_uint64 frestarts;
+         _ = print_uint64 lrestarts;
+         _ = print_uint64 uset;
+         _ = print_uint64 gcs;
+         _ = print_uint64 (ema_extract_value lbds);
+         _ = print_close_colour 0
+       in
+         (propa, confl, decs, frestarts, lrestarts, uset, gcs, lbds)}
+      else (propa, confl, decs, frestarts, lrestarts, uset, gcs, lbds)
+    )&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>isasat_current_status</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;twl_st_wl_heur &#8658; twl_st_wl_heur nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_current_status =
+   (&#955;(M&#39;, N&#39;, D&#39;, j, W&#39;, vm, clvls, cach, lbd, outl, stats,
+       heur, avdom,
+       vdom, lcount, opts, old_arena).
+     let curr_phase = current_restart_phase heur;
+        stats = (isasat_current_information curr_phase stats lcount)
+     in RETURN (M&#39;, N&#39;, D&#39;, j, W&#39;, vm, clvls, cach, lbd, outl, stats,
+       heur, avdom,
+       vdom, lcount, opts, old_arena))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>isasat_current_status_id</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(isasat_current_status, RETURN o id) &#8712;
+  {(S, T). (S, T) &#8712; twl_st_heur &#8743; length (get_clauses_wl_heur S) &#8804; r}  &#8594;<span class="hidden">&#8681;</span><sub>f</sub>
+   &#10216;{(S, T). (S, T) &#8712; twl_st_heur &#8743; length (get_clauses_wl_heur S) &#8804; r}&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>twl_st_heur_def</span><span> </span><span>isasat_current_status_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>isasat_print_progress</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64 word &#8658; 64 word &#8658; stats &#8658; _ &#8658; unit&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_print_progress c curr_phase =
+   (&#955;(propa, confl, decs, frestarts, lrestarts, uset, gcs, lbds) lcount.
+     let
+         _ = print_c propa;
+         _ = if curr_phase = 1 then print_open_colour 33 else ();
+         _ = print_char (48 + c);
+         _ = print_uint64 propa;
+         _ = print_uint64 confl;
+         _ = print_uint64 (of_nat lcount);
+         _ = print_uint64 frestarts;
+         _ = print_uint64 lrestarts;
+         _ = print_uint64 uset;
+         _ = print_uint64 gcs;
+         _ = print_uint64 (ema_extract_value lbds);
+         _ = print_close_colour 0
+     in
+       ())&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>isasat_current_progress</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;64 word &#8658; twl_st_wl_heur &#8658; unit nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;isasat_current_progress =
+   (&#955;c (M&#39;, N&#39;, D&#39;, j, W&#39;, vm, clvls, cach, lbd, outl, stats,
+       heur, avdom,
+       vdom, lcount, opts, old_arena).
+     let
+       curr_phase = current_restart_phase heur;
+       _ = isasat_print_progress c curr_phase stats lcount
+     in RETURN ())&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

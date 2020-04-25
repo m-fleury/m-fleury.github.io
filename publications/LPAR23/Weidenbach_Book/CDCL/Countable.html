@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Countable (Isabelle2020: April 2020)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Countable</h1>
+
+<span class="command">theory</span> <span class="name">Countable</span><br/>
+<span class="keyword">imports</span> <a href="Old_Datatype.html"><span class="name">Old_Datatype</span></a> <a href="../../HOL/HOL/Rat.html"><span class="name">Rat</span></a> <a href="Nat_Bijection.html"><span class="name">Nat_Bijection</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*  Title:      HOL/Library/Countable.thy
+    Author:     Alexander Krauss, TU Muenchen
+    Author:     Brian Huffman, Portland State University
+    Author:     Jasmin Blanchette, TU Muenchen
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Encoding (almost) everything into natural numbers&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Countable</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Old_Datatype</span><span> </span><span>HOL.Rat</span><span> </span><span>Nat_Bijection</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The class of countable types&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">class</span></span><span> </span><span>countable</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>ex_inj</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;to_nat :: &#39;a &#8658; nat. inj to_nat&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>countable_classI</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>f</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; nat&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x y. f x = f y &#10233; x = y&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;OFCLASS(&#39;a, countable_class)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>intro_classes</span><span class="delimiter">,</span><span> </span><span>rule</span><span> </span><span>exI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;inj f&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>injI</span><span> </span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">]</span><span class="delimiter">)</span><span> </span><span>assumption</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Conversion functions&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>to_nat</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::countable &#8658; nat&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;to_nat = (SOME f. inj f)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>from_nat</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat &#8658; &#39;a::countable&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;from_nat = inv (to_nat :: &#39;a &#8658; nat)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>inj_to_nat</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;inj to_nat&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>exE_some</span><span> </span><span class="delimiter">[</span><span>OF</span><span> </span><span>ex_inj</span><span class="delimiter">]</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>to_nat_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>inj_on_to_nat</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>intro</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;inj_on to_nat S&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>inj_to_nat</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>inj_on_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>surj_from_nat</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;surj from_nat&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>from_nat_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>inj_imp_surj_inv</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>to_nat_split</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_nat x = to_nat y &#10231; x = y&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>injD</span><span> </span><span class="delimiter">[</span><span>OF</span><span> </span><span>inj_to_nat</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>from_nat_to_nat</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;from_nat (to_nat x) = x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>from_nat_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Finite types are countable&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subclass</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>finite</span><span class="delimiter">)</span><span> </span><span>countable</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;finite (UNIV::&#39;a set)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>finite_UNIV</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">with</span></span><span> </span><span>finite_conv_nat_seg_image</span><span> </span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;UNIV::&#39;a set&quot;</span></span></span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>n</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>f</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat &#8658; &#39;a&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;UNIV = f ` {i. i &lt; n}&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;surj f&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>surj_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;inj (inv f)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>surj_imp_inj_inv</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;to_nat :: &#39;a &#8658; nat. inj to_nat&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>exI</span><span class="delimiter">[</span><span>of</span><span> </span><span>inj</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Automatically proving countability of old-style datatypes&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">qualified</span></span><span> </span><span class="keyword1"><span class="command">inductive</span></span><span> </span><span>finite_item</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a Old_Datatype.item &#8658; bool&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span>undefined</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;finite_item undefined&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span>In0</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;finite_item x &#10233; finite_item (Old_Datatype.In0 x)&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span>In1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;finite_item x &#10233; finite_item (Old_Datatype.In1 x)&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span>Leaf</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;finite_item (Old_Datatype.Leaf a)&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span>Scons</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;finite_item x; finite_item y&#10215; &#10233; finite_item (Old_Datatype.Scons x y)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">qualified</span></span><span> </span><span class="keyword1"><span class="command">function</span></span><span> </span><span>nth_item</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat &#8658; (&#39;a::countable) Old_Datatype.item&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;nth_item 0 = undefined&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nth_item (Suc n) =
+  (case sum_decode n of
+    Inl i &#8658;
+    (case sum_decode i of
+      Inl j &#8658; Old_Datatype.In0 (nth_item j)
+    | Inr j &#8658; Old_Datatype.In1 (nth_item j))
+  | Inr i &#8658;
+    (case sum_decode i of
+      Inl j &#8658; Old_Datatype.Leaf (from_nat j)
+    | Inr j &#8658;
+      (case prod_decode j of
+        (a, b) &#8658; Old_Datatype.Scons (nth_item a) (nth_item b))))&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span>pat_completeness</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>le_sum_encode_Inl</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8804; y &#10233; x &#8804; sum_encode (Inl y)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sum_encode_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>le_sum_encode_Inr</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8804; y &#10233; x &#8804; sum_encode (Inr y)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>sum_encode_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">qualified</span></span><span> </span><span class="keyword1"><span class="command">termination</span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>relation</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;measure id&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>flip</span><span class="delimiter">:</span><span> </span><span>sum_encode_eq</span><span> </span><span>prod_encode_eq</span><span>
+</span><span>    </span><span>simp</span><span class="delimiter">:</span><span> </span><span>le_imp_less_Suc</span><span> </span><span>le_sum_encode_Inl</span><span> </span><span>le_sum_encode_Inr</span><span>
+</span><span>    </span><span>le_prod_encode_1</span><span> </span><span>le_prod_encode_2</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nth_item_covers</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;finite_item x &#10233; &#8707;n. nth_item n = x&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>set</span><span class="delimiter">:</span><span> </span><span>finite_item</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>undefined</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nth_item 0 = undefined&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">..</span></span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>In0</span><span> </span><span>x</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>n</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nth_item n = x&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">hence</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nth_item (Suc (sum_encode (Inl (sum_encode (Inl n))))) = Old_Datatype.In0 x&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">..</span></span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>In1</span><span> </span><span>x</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>n</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nth_item n = x&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">hence</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nth_item (Suc (sum_encode (Inl (sum_encode (Inr n))))) = Old_Datatype.In1 x&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">..</span></span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Leaf</span><span> </span><span>a</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nth_item (Suc (sum_encode (Inr (sum_encode (Inl (to_nat a)))))) = Old_Datatype.Leaf a&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">..</span></span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Scons</span><span> </span><span>x</span><span> </span><span>y</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>i</span><span> </span><span>j</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nth_item i = x&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nth_item j = y&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">hence</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nth_item
+    (Suc (sum_encode (Inr (sum_encode (Inr (prod_encode (i, j))))))) = Old_Datatype.Scons x y&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">..</span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theorem</span></span><span> </span><span>countable_datatype</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>Rep</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;b &#8658; (&#39;a::countable) Old_Datatype.item&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>Abs</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a::countable) Old_Datatype.item &#8658; &#39;b&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>rep_set</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a::countable) Old_Datatype.item &#8658; bool&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>type</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;type_definition Rep Abs (Collect rep_set)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>finite_item</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. rep_set x &#10233; finite_item x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;OFCLASS(&#39;b, countable_class)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">define</span></span><span> </span><span>f</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f y = (LEAST n. nth_item n = Rep y)&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>y</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>y</span><span> </span><span class="delimiter">::</span><span> </span><span class="tfree">&#39;b</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rep_set (Rep y)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>type_definition.Rep</span><span> </span><span class="delimiter">[</span><span>OF</span><span> </span><span>type</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">hence</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;finite_item (Rep y)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>finite_item</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">hence</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;n. nth_item n = Rep y&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>nth_item_covers</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">hence</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nth_item (f y) = Rep y&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>f_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>LeastI_ex</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">hence</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Abs (nth_item (f y)) = y&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>type_definition.Rep_inverse</span><span> </span><span class="delimiter">[</span><span>OF</span><span> </span><span>type</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">hence</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;inj f&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>inj_on_inverseI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;f::&#39;b &#8658; nat. inj f&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>-</span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>exI</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  fun old_countable_datatype_tac ctxt =
+    SUBGOAL (fn (goal, _) =&gt;
+      let
+        val ty_name =
+          (case goal of
+            (_ $ Const (\&lt;^const_name&gt;&#8249;Pure.type&#8250;, Type (\&lt;^type_name&gt;&#8249;itself&#8250;, [Type (n, _)]))) =&gt; n
+          | _ =&gt; raise Match)
+        val typedef_info = hd (Typedef.get_info ctxt ty_name)
+        val typedef_thm = #type_definition (snd typedef_info)
+        val pred_name =
+          (case HOLogic.dest_Trueprop (Thm.concl_of typedef_thm) of
+            (_ $ _ $ _ $ (_ $ Const (n, _))) =&gt; n
+          | _ =&gt; raise Match)
+        val induct_info = Inductive.the_inductive_global ctxt pred_name
+        val pred_names = #names (fst induct_info)
+        val induct_thms = #inducts (snd induct_info)
+        val alist = pred_names ~~ induct_thms
+        val induct_thm = the (AList.lookup (op =) alist pred_name)
+        val vars = rev (Term.add_vars (Thm.prop_of induct_thm) [])
+        val insts = vars |&gt; map (fn (_, T) =&gt; try (Thm.cterm_of ctxt)
+          (Const (\&lt;^const_name&gt;&#8249;Countable.finite_item&#8250;, T)))
+        val induct_thm&#39; = Thm.instantiate&#39; [] insts induct_thm
+        val rules = @{thms finite_item.intros}
+      in
+        SOLVED&#39; (fn i =&gt; EVERY
+          [resolve_tac ctxt @{thms countable_datatype} i,
+           resolve_tac ctxt [typedef_thm] i,
+           eresolve_tac ctxt [induct_thm&#39;] i,
+           REPEAT (resolve_tac ctxt rules i ORELSE assume_tac ctxt i)]) 1
+      end)
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Automatically proving countability of datatypes&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML_file</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;../Tools/BNF/bnf_lfp_countable.ML&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+fun countable_datatype_tac ctxt st =
+  (case try (fn () =&gt; HEADGOAL (old_countable_datatype_tac ctxt) st) () of
+    SOME res =&gt; res
+  | NONE =&gt; BNF_LFP_Countable.countable_datatype_tac ctxt st);
+
+(* compatibility *)
+fun countable_tac ctxt =
+  SELECT_GOAL (countable_datatype_tac ctxt);
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>countable_datatype</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Scan.succeed (SIMPLE_METHOD o countable_datatype_tac)
+&#8250;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;prove countable class instances for datatypes&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;More Countable types&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Naturals&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span> </span><span>nat</span><span> </span><span class="delimiter">::</span><span> </span><span>countable</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>countable_classI</span><span> </span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;id&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Pairs&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span> </span><span>prod</span><span> </span><span class="delimiter">::</span><span> </span><span class="delimiter">(</span><span>countable</span><span class="delimiter">,</span><span> </span><span>countable</span><span class="delimiter">)</span><span> </span><span>countable</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>countable_classI</span><span> </span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#955;(x, y). prod_encode (to_nat x, to_nat y)&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>prod_encode_eq</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sums&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span> </span><span>sum</span><span> </span><span class="delimiter">::</span><span> </span><span class="delimiter">(</span><span>countable</span><span class="delimiter">,</span><span> </span><span>countable</span><span class="delimiter">)</span><span> </span><span>countable</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>countable_classI</span><span> </span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#955;x. case x of Inl a &#8658; to_nat (False, to_nat a)
+                                     | Inr b &#8658; to_nat (True, to_nat b))&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>simp</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>sum.split_asm</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Integers&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span> </span><span>int</span><span> </span><span class="delimiter">::</span><span> </span><span>countable</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>countable_classI</span><span> </span><span class="delimiter">[</span><span>of</span><span> </span><span>int_encode</span><span class="delimiter">]</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>int_encode_eq</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Options&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span> </span><span>option</span><span> </span><span class="delimiter">::</span><span> </span><span class="delimiter">(</span><span>countable</span><span class="delimiter">)</span><span> </span><span>countable</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>countable_datatype</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Lists&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span> </span><span>list</span><span> </span><span class="delimiter">::</span><span> </span><span class="delimiter">(</span><span>countable</span><span class="delimiter">)</span><span> </span><span>countable</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>countable_datatype</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;String literals&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span> </span><span>String.literal</span><span> </span><span class="delimiter">::</span><span> </span><span>countable</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>countable_classI</span><span> </span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;to_nat &#8728; String.explode&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>String.explode_inject</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Functions&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fun&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="delimiter">(</span><span>finite</span><span class="delimiter">,</span><span> </span><span>countable</span><span class="delimiter">)</span><span> </span><span>countable</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>xs</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a list&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>xs</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;set xs = UNIV&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>finite_list</span><span> </span><span class="delimiter">[</span><span>OF</span><span> </span><span>finite_UNIV</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">..</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;to_nat::(&#39;a &#8658; &#39;b) &#8658; nat. inj to_nat&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;inj (&#955;f. to_nat (map f xs))&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>injI</span><span class="delimiter">,</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>xs</span><span> </span><span>fun_eq_iff</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Typereps&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span> </span><span>typerep</span><span> </span><span class="delimiter">::</span><span> </span><span>countable</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>countable_datatype</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The rationals are countably infinite&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>nat_to_rat_surj</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat &#8658; rat&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;nat_to_rat_surj n = (let (a, b) = prod_decode n in Fract (int_decode a) (int_decode b))&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>surj_nat_to_rat_surj</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;surj nat_to_rat_surj&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>surj_def</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>r</span><span class="delimiter">::</span><span>rat</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;n. r = nat_to_rat_surj n&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>r</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>i</span><span> </span><span>j</span><span> </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;r = Fract i j&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;j &gt; 0&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;r = (let m = int_encode i; n = int_encode j in nat_to_rat_surj (prod_encode (m, n)))&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>Let_def</span><span> </span><span>nat_to_rat_surj_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;n. r = nat_to_rat_surj n&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>Let_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>Rats_eq_range_nat_to_rat_surj</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8474; = range nat_to_rat_surj&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>Rats_def</span><span> </span><span>surj_nat_to_rat_surj</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span> </span><span>field_char_0</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>Rats_eq_range_of_rat_o_nat_to_rat_surj</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8474; = range (of_rat &#8728; nat_to_rat_surj)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>surj_nat_to_rat_surj</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>Rats_def</span><span> </span><span>image_def</span><span> </span><span>surj_def</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>blast</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>arg_cong</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>f</span><span> </span><span class="delimiter">=</span><span> </span><span>of_rat</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>surj_of_rat_nat_to_rat_surj</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;r &#8712; &#8474; &#10233; &#8707;n. r = of_rat (nat_to_rat_surj n)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>Rats_eq_range_of_rat_o_nat_to_rat_surj</span><span> </span><span>image_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">instance</span></span><span> </span><span>rat</span><span> </span><span class="delimiter">::</span><span> </span><span>countable</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;to_nat::rat &#8658; nat. inj to_nat&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;surj nat_to_rat_surj&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>surj_nat_to_rat_surj</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;inj (inv nat_to_rat_surj)&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>surj_imp_inj_inv</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theorem</span></span><span> </span><span>rat_denum</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;f :: nat &#8658; rat. surj f&quot;</span></span></span><span>
+</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>surj_nat_to_rat_surj</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>metis</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

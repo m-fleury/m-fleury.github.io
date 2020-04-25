@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory IsaSAT_Clauses (Isabelle2020: April 2020)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory IsaSAT_Clauses</h1>
+
+<span class="command">theory</span> <span class="name">IsaSAT_Clauses</span><br/>
+<span class="keyword">imports</span> <a href="IsaSAT_Arena.html"><span class="name">IsaSAT_Arena</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>IsaSAT_Clauses</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>IsaSAT_Arena</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO This file should probably be merged with IsaSAT_Arena*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">chapter</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The memory representation: Manipulation of all clauses&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Representation of Clauses&#8250;</span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* TODO kill *)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">named_theorems</span></span><span> </span><span>isasat_codegen</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lemmas that should be unfolded to generate (efficient) code&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>clause_annot</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;clause_status &#215; nat &#215; nat&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>clause_annots</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;clause_annot list&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>list_fmap_rel</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8658; (arena &#215; nat clauses_l) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;list_fmap_rel vdom = {(arena, N). valid_arena arena N vdom}&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nth_clauses_l</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry2 (RETURN ooo (&#955;N i j. arena_lit N (i+j))),
+      uncurry2 (RETURN ooo (&#955;N i j. N &#8733; i ! j)))
+    &#8712; [&#955;((N, i), j). i &#8712;# dom_m N &#8743; j &lt; length (N &#8733; i)]<span class="hidden">&#8681;</span><sub>f</sub>
+      list_fmap_rel vdom &#215;<span class="hidden">&#8681;</span><sub>f</sub> nat_rel &#215;<span class="hidden">&#8681;</span><sub>f</sub> nat_rel &#8594; &#10216;Id&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>list_fmap_rel_def</span><span> </span><span>arena_lifting</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>clauses_l_fmat</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;clauses_l_fmat &#8801; list_fmap_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>vdom</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat set&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fmap_rll</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(nat, &#39;a literal list &#215; bool) fmap &#8658; nat &#8658; nat &#8658; &#39;a literal&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fmap_rll l i j = l &#8733; i ! j&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fmap_rll_u</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(nat, &#39;a literal list &#215; bool) fmap &#8658; nat &#8658; nat &#8658; &#39;a literal&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fmap_rll_u  = fmap_rll&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fmap_rll_u64</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(nat, &#39;a literal list &#215; bool) fmap &#8658; nat &#8658; nat &#8658; &#39;a literal&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fmap_rll_u64  = fmap_rll&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fmap_length_rll_u</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(nat, &#39;a literal list &#215; bool) fmap &#8658; nat &#8658; nat&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fmap_length_rll_u l i = length_uint32_nat (l &#8733; i)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>fmap_length_rll_u_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">,</span><span> </span><span>isasat_codegen</span><span class="delimiter">]</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fmap_length_rll_u64</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(nat, &#39;a literal list &#215; bool) fmap &#8658; nat &#8658; nat&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fmap_length_rll_u64 l i = length_uint32_nat (l &#8733; i)&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>fmap_length_rll_u_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">,</span><span> </span><span>isasat_codegen</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fmap_length_rll</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(nat, &#39;a literal list &#215; bool) fmap &#8658; nat &#8658; nat&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fmap_length_rll l i = length (l &#8733; i)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fmap_swap_ll</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fmap_swap_ll N i j f = (N(i &#8618; swap (N &#8733; i) j f))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;From a performance point of view, appending several time a single element is less efficient
+than reserving a space that is large enough directly. However, in this case the list of clauses \&lt;^term&gt;&#8249;N&#8250;
+is so large that there should not be any difference&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fm_add_new</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fm_add_new b C N0 = do {
+    let s = length C - 2;
+    let lbd = shorten_lbd s;
+    let st = (if b then AStatus IRRED 0 lbd else AStatus LEARNED 0 lbd);
+    let l = length N0;
+    let N = (if is_short_clause C then
+          (((N0 @ [st]))) @ [ASize s]
+          else ((((N0 @ [APos 0]) @ [st]))) @ [ASize (s)]);
+    (i, N) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup> &#955;(i, N). i &lt; length C &#10230; length N &lt; header_size C + length N0 + length C<span class="hidden">&#8662;</span></sup>
+      (&#955;(i, N). i &lt; length C)
+      (&#955;(i, N). do {
+        ASSERT(i &lt; length C);
+        RETURN (i+1, N @ [ALit (C ! i)])
+      })
+      (0, N);
+    RETURN (N, l + header_size C)
+  }&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>header_size_Suc_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;header_size C =
+    (if is_short_clause C then (Suc (Suc 0)) else (Suc (Suc (Suc 0))))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>header_size_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nth_append_clause</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;a &lt; length C &#10233; append_clause b C N ! (length N + header_size C + a) = ALit (C ! a)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>append_clause_def</span><span> </span><span>header_size_Suc_def</span><span> </span><span>append_clause_skeleton_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>nth_Cons</span><span> </span><span>nth_append</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fm_add_new_append_clause</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fm_add_new b C N &#8804; RETURN (append_clause b C N, length N + header_size C)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fm_add_new_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;let _ = length _ in _&#8250;</span></span></span><span> </span><span>Let_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>WHILEIT_rule_stronger_inv</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>R</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;measure (&#955;(i, _). Suc (length C) - i)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>I&#39;</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#955;(i, N&#39;). N&#39; = take (length N + header_size C + i) (append_clause b C N) &#8743;
+      i &#8804; length C&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>append_clause_def</span><span> </span><span>header_size_def</span><span>
+</span><span>    </span><span>append_clause_skeleton_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>append_clause_def</span><span> </span><span>header_size_def</span><span>
+</span><span>    </span><span>append_clause_skeleton_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>take_Suc_conv_app_nth</span><span> </span><span>nth_append_clause</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fm_add_new_at_position</span><span>
+</span><span>   </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bool &#8658; nat &#8658; &#39;v clause_l &#8658; &#39;v clauses_l &#8658; &#39;v clauses_l&#8250;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fm_add_new_at_position b i C N = fmupd i (C, b) N&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>AStatus_IRRED</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;AStatus_IRRED = AStatus IRRED 0&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>AStatus_IRRED2</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;AStatus_IRRED2 = AStatus IRRED 1&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>AStatus_LEARNED</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;AStatus_LEARNED = AStatus LEARNED 1&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>AStatus_LEARNED2</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;AStatus_LEARNED2 = AStatus LEARNED 0&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span>fm_add_new_fast</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fm_add_new_fast = fm_add_new&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span>append_and_length_code_fast</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length ba &#8804; Suc (Suc uint32_max) &#10233;
+       2 &#8804; length ba &#10233;
+       length b &#8804; uint64_max - (uint32_max + 5) &#10233;
+       (aa, header_size ba) &#8712; uint64_nat_rel &#10233;
+       (ab, length b) &#8712; uint64_nat_rel &#10233;
+       length b + header_size ba &#8804; uint64_max&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>uint64_max_def</span><span> </span><span>uint32_max_def</span><span> </span><span>header_size_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span>four_uint64_nat</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;four_uint64_nat = (4 :: nat)&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>-</span><span class="delimiter">)</span><span>five_uint64_nat</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;five_uint64_nat = (5 :: nat)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>append_and_length_fast_code_pre</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;append_and_length_fast_code_pre &#8801; &#955;((b, C), N). length C &#8804; uint32_max+2 &#8743; length C &#8805; 2 &#8743;
+          length N + length C + MAX_HEADER_SIZE &#8804; sint64_max&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fm_add_new_alt_def</span><span class="delimiter">:</span><span>
+</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fm_add_new b C N0 = do {
+      let s = length C - 2;
+      let lbd = shorten_lbd s;
+      let st = (if b then AStatus_IRRED lbd else AStatus_LEARNED2 lbd);
+      let l = length N0;
+      let N =
+        (if is_short_clause C
+          then ((N0 @ [st])) @
+              [ASize s]
+          else (((N0 @ [APos 0]) @ [st])) @
+              [ASize s]);
+      (i, N) &#8592;
+        WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup> &#955;(i, N). i &lt; length C &#10230; length N &lt; header_size C + length N0 + length C<span class="hidden">&#8662;</span></sup>
+          (&#955;(i, N). i &lt; length C)
+          (&#955;(i, N). do {
+                _ &#8592; ASSERT (i &lt; length C);
+                RETURN (i + 1, N @ [ALit (C ! i)])
+              })
+          (0, N);
+      RETURN (N, l + header_size C)
+    }&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fm_add_new_def</span><span> </span><span>Let_def</span><span> </span><span>AStatus_LEARNED2_def</span><span> </span><span>AStatus_IRRED2_def</span><span>
+</span><span>     </span><span>AStatus_LEARNED_def</span><span> </span><span>AStatus_IRRED_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fmap_swap_ll_u64</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fmap_swap_ll_u64 = fmap_swap_ll&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fm_mv_clause_to_new_arena</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fm_mv_clause_to_new_arena C old_arena new_arena0 = do {
+    ASSERT(arena_is_valid_clause_idx old_arena C);
+    ASSERT(C &#8805; (if  (arena_length old_arena C) &#8804; 4 then MIN_HEADER_SIZE else MAX_HEADER_SIZE));
+    let st = C - (if  (arena_length old_arena C) &#8804; 4 then MIN_HEADER_SIZE else MAX_HEADER_SIZE);
+    ASSERT(C +  (arena_length old_arena C) &#8804; length old_arena);
+    let en = C +  (arena_length old_arena C);
+    (i, new_arena) &#8592;
+        WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup> &#955;(i, new_arena). i &lt; en &#10230; length new_arena &lt; length new_arena0 + (arena_length old_arena C) + (if  (arena_length old_arena C) &#8804; 4 then MIN_HEADER_SIZE else MAX_HEADER_SIZE) <span class="hidden">&#8662;</span></sup>
+          (&#955;(i, new_arena). i &lt; en)
+          (&#955;(i, new_arena). do {
+              ASSERT (i &lt; length old_arena &#8743; i &lt; en);
+              RETURN (i + 1, new_arena @ [old_arena ! i])
+          })
+          (st, new_arena0);
+      RETURN (new_arena)
+  }&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>valid_arena_append_clause_slice</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;valid_arena old_arena N vd&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;valid_arena new_arena N&#39; vd&#39;&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;C &#8712;# dom_m N&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;valid_arena (new_arena @ clause_slice old_arena N C)
+    (fmupd (length new_arena + header_size (N &#8733; C)) (N &#8733; C, irred N C) N&#39;)
+    (insert (length new_arena + header_size (N &#8733; C)) vd&#39;)&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">define</span></span><span> </span><span>pos</span><span> </span><span>st</span><span> </span><span>lbd</span><span> </span><span>used</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;pos = (if is_long_clause (N &#8733; C) then arena_pos old_arena C - 2 else 0)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;st = arena_status old_arena C&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;lbd = arena_lbd old_arena C&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;used = arena_used old_arena C&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;2 &#8804; length (N &#8733; C)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>st_def</span><span> </span><span>used_def</span><span> </span><span>lbd_def</span><span>
+</span><span>      </span><span>append_clause_skeleton_def</span><span> </span><span>arena_status_def</span><span>
+</span><span>      </span><span>xarena_status_def</span><span> </span><span>arena_used_def</span><span>
+</span><span>      </span><span>xarena_used_def</span><span>
+</span><span>      </span><span>arena_lbd_def</span><span> </span><span>xarena_lbd_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lifting</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">,</span><span>3</span><span class="delimiter">)</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>is_Status_def</span><span> </span><span>is_Pos_def</span><span> </span><span>is_Size_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span>
+</span><span>    </span><span>45</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;4 = (Suc (Suc (Suc (Suc 0))))&#8250;</span></span></span><span>
+</span><span>     </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;5 = Suc (Suc (Suc (Suc (Suc 0))))&#8250;</span></span></span><span>
+</span><span>     </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;3 = (Suc (Suc (Suc 0)))&#8250;</span></span></span><span>
+</span><span>     </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;2 = (Suc (Suc 0))&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>sl</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;clause_slice old_arena N C =
+     (if is_long_clause (N &#8733; C) then [APos pos]
+     else []) @
+     [AStatus st used lbd, ASize (length (N &#8733; C) - 2)] @
+     map ALit (N &#8733; C)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>st_def</span><span> </span><span>used_def</span><span> </span><span>lbd_def</span><span>
+</span><span>      </span><span>append_clause_skeleton_def</span><span> </span><span>arena_status_def</span><span>
+</span><span>      </span><span>xarena_status_def</span><span> </span><span>arena_used_def</span><span>
+</span><span>      </span><span>xarena_used_def</span><span>
+</span><span>      </span><span>pos_def</span><span> </span><span>arena_pos_def</span><span>
+</span><span>      </span><span>xarena_pos_def</span><span>
+</span><span>      </span><span>arena_lbd_def</span><span> </span><span>xarena_lbd_def</span><span>
+</span><span>      </span><span>arena_length_def</span><span> </span><span>xarena_length_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lifting</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">,</span><span>3</span><span class="delimiter">)</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>is_Status_def</span><span> </span><span>is_Pos_def</span><span> </span><span>is_Size_def</span><span>
+</span><span>      </span><span>header_size_def</span><span> </span><span>45</span><span>
+</span><span>      </span><span>slice_Suc_nth</span><span class="delimiter">[</span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;C - Suc (Suc (Suc (Suc 0)))&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>      </span><span>slice_Suc_nth</span><span class="delimiter">[</span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;C - Suc (Suc (Suc 0))&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>      </span><span>slice_Suc_nth</span><span class="delimiter">[</span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;C - Suc (Suc 0)&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>      </span><span>slice_Suc_nth</span><span class="delimiter">[</span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;C - Suc 0&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>      </span><span>SHIFTS_alt_def</span><span> </span><span>arena_length_def</span><span>
+</span><span>      </span><span>arena_pos_def</span><span> </span><span>xarena_pos_def</span><span>
+</span><span>      </span><span>arena_status_def</span><span> </span><span>xarena_status_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;2 &#8804; length (N &#8733; C)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;pos &#8804; length (N &#8733; C) - 2&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;st = IRRED &#10231; irred N C&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;st &#8800; DELETED&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>st_def</span><span> </span><span>used_def</span><span> </span><span>lbd_def</span><span> </span><span>pos_def</span><span>
+</span><span>      </span><span>append_clause_skeleton_def</span><span> </span><span>st_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lifting</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">,</span><span>3</span><span class="delimiter">)</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;is_short_clause (N &#8733; C)&#8250;</span></span></span><span class="delimiter">;</span><span>
+</span><span>      </span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>arena_el.splits</span><span> </span><span>if_splits</span><span>
+</span><span>        </span><span>simp</span><span class="delimiter">:</span><span> </span><span>header_size_def</span><span> </span><span>arena_pos_def</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;valid_arena (append_clause_skeleton pos st used lbd (N &#8733; C) new_arena)
+    (fmupd (length new_arena + header_size (N &#8733; C)) (N &#8733; C, irred N C) N&#39;)
+    (insert (length new_arena + header_size (N &#8733; C)) vd&#39;)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>-</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>valid_arena_append_clause_skeleton</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span class="delimiter">,</span><span> </span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;N &#8733; C&#8250;</span></span></span><span> </span><span>_</span><span> </span><span>st</span><span>
+</span><span>      </span><span>pos</span><span> </span><span>used</span><span> </span><span>lbd</span><span class="delimiter">]</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;append_clause_skeleton pos st used lbd (N &#8733; C) new_arena =
+      new_arena @ clause_slice old_arena N C&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>append_clause_skeleton_def</span><span> </span><span>sl</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fm_mv_clause_to_new_arena</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;valid_arena old_arena N vd&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;valid_arena new_arena N&#39; vd&#39;&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;C &#8712;# dom_m N&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fm_mv_clause_to_new_arena C old_arena new_arena &#8804;
+    SPEC(&#955;new_arena&#39;.
+      new_arena&#39; = new_arena @ clause_slice old_arena N C &#8743;
+      valid_arena (new_arena @ clause_slice old_arena N C)
+        (fmupd (length new_arena + header_size (N &#8733; C)) (N &#8733; C, irred N C) N&#39;)
+        (insert (length new_arena + header_size (N &#8733; C)) vd&#39;))&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">define</span></span><span> </span><span>st</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>en</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;st = C - (if arena_length old_arena C &#8804; 4 then MIN_HEADER_SIZE else MAX_HEADER_SIZE)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;en = C + arena_length old_arena C&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>st</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;st = C - header_size (N &#8733; C)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>st_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>st_def</span><span> </span><span>header_size_def</span><span>
+</span><span>        </span><span>arena_lifting</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fm_mv_clause_to_new_arena_def</span><span> </span><span>st_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>      </span><span>en_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>Let_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span>
+</span><span>     </span><span>WHILEIT_rule_stronger_inv</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>R</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;measure (&#955;(i, N). en - i)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>       </span><span>I&#39;</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#955;(i, new_arena&#39;). i &#8804; C + length (N&#8733;C) &#8743; i &#8805; st &#8743;
+         new_arena&#39; = new_arena @
+	   Misc.slice (C - header_size (N&#8733;C)) i old_arena&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>arena_is_valid_clause_idx_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lifting</span><span class="delimiter">(</span><span>4</span><span class="delimiter">)</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span>
+</span><span>        </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>arena_lifting</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span>N</span><span> </span><span>_</span><span> </span><span>C</span><span class="delimiter">]</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>header_size_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lifting</span><span class="delimiter">(</span><span>10</span><span class="delimiter">,</span><span> </span><span>4</span><span class="delimiter">)</span><span> </span><span>en_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lifting</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">,</span><span>3</span><span class="delimiter">)</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>st</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>st</span><span> </span><span>arena_lifting</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lifting</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">,</span><span>3</span><span class="delimiter">)</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>st</span><span> </span><span>en_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lifting</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">,</span><span>3</span><span class="delimiter">)</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>st</span><span> </span><span>en_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lifting</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">,</span><span>3</span><span class="delimiter">)</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>slice_len_min_If</span><span> </span><span>en_def</span><span> </span><span>st_def</span><span> </span><span>header_size_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lifting</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">,</span><span>3</span><span class="delimiter">)</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>st</span><span> </span><span>en_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lifting</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">,</span><span>3</span><span class="delimiter">)</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>st</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>st</span><span> </span><span>en_def</span><span> </span><span>arena_lifting</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">(</span><span>1</span><span class="delimiter">,</span><span>3</span><span class="delimiter">)</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>slice_append_nth</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>en_def</span><span> </span><span>arena_lifting</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>valid_arena_append_clause_slice</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">]</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>size_learned_clss_dom_m</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;size (learned_clss_l N) &#8804; size (dom_m N)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>ran_m_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>order_trans</span><span class="delimiter">[</span><span>OF</span><span> </span><span>size_filter_mset_lesseq</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ran_m_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>valid_arena_ge_length_clauses</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;valid_arena arena N vdom&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length arena &#8805; (&#8721;C &#8712;# dom_m N. length (N &#8733; C) + header_size (N &#8733; C))&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>xs</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>    </span><span>mset_xs</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;mset xs = dom_m N&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>sorted</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;sorted xs&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>dist</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;distinct xs&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>set_xs</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;set xs = set_mset (dom_m N)&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>distinct_mset_dom</span><span> </span><span>distinct_mset_mset_distinct</span><span> </span><span>mset_sorted_list_of_multiset</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>1</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;set_mset (mset xs) = set xs&#8250;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>meson</span><span> </span><span>set_mset_mset</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>diff</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;xs &#8800; [] &#10233; a &#8712; set xs &#10233; a &lt; last xs &#10233; a + length (N &#8733; a) &#8804; last xs&#8250;</span></span></span><span>  </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>a</span><span>
+</span><span>     </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>valid_minimal_difference_between_valid_index</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">,</span><span> </span><span>of</span><span> </span><span>a</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;last xs&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>     </span><span>mset_xs</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>sorted</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>xs</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>rev_cases</span><span class="delimiter">;</span><span> </span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sorted_append</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;set xs &#8838; set_mset (dom_m N)&#8250;</span></span></span><span>
+</span><span>     </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>mset_xs</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#8721;A&#8712;set xs. length (N &#8733; A) + header_size (N &#8733; A)) &#8804; Max (insert 0 ((&#955;A. A + length (N &#8733; A)) ` (set xs)))&#8250;</span></span></span><span>
+</span><span>    </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;?P xs &#8804; ?Q xs&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>     </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>sorted</span><span> </span><span>dist</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>xs</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>rev_induct</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>Nil</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>snoc</span><span> </span><span>x</span><span> </span><span>xs</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>IH</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#8721;A&#8712;set xs. length (N &#8733; A) + header_size (N &#8733; A))
+    &#8804; Max (insert 0 ((&#955;A. A + length (N &#8733; A)) ` set xs))&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>x_dom</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;x &#8712;# dom_m N&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>x_max</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#8896;a. a &#8712; set xs &#10233; x &gt; a&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>      </span><span>xs_N</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;set xs &#8838; set_mset (dom_m N)&#8250;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sorted_append</span><span> </span><span>order.order_iff_strict</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>bspec</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>x_ge</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;header_size (N &#8733; x) &#8804; x&#8250;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;x &#8712;# dom_m N&#8250;</span></span></span><span> </span><span>arena_lifting</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>diff</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;a &#8712; set xs &#10233; a + length (N &#8733; a) + header_size (N &#8733; x) &#8804; x&#8250;</span></span></span><span>
+</span><span>       </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;a &#8712; set xs &#10233; a + length (N &#8733; a) &#8804; x&#8250;</span></span></span><span>  </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>a</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>valid_minimal_difference_between_valid_index</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">,</span><span> </span><span>of</span><span> </span><span>a</span><span> </span><span>x</span><span class="delimiter">]</span><span>
+</span><span>      </span><span>x_max</span><span class="delimiter">[</span><span>of</span><span> </span><span>a</span><span class="delimiter">]</span><span> </span><span>xs_N</span><span> </span><span>x_dom</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;?P (xs @ [x]) &#8804; ?P xs + length (N &#8733; x) + header_size (N &#8733; x)&#8250;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>snoc</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">also</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;... &#8804; ?Q xs + (length (N &#8733; x) + header_size (N &#8733; x))&#8250;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>IH</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">also</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;... &#8804; (length (N &#8733; x) + x)&#8250;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>linordered_ab_semigroup_add_class.Max_add_commute2</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">;</span><span> </span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>diff</span><span> </span><span>x_ge</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">also</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;... = Max (insert (x + length (N &#8733; x)) ((&#955;x. x + length (N &#8733; x)) ` set xs))&#8250;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>eq_commute</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>linorder_class.Max_eqI</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>order_trans</span><span class="delimiter">[</span><span>OF</span><span> </span><span>diff</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">finally</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">also</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;... &#8804; (if xs = [] then 0 else last xs + length (N &#8733; last xs))&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>sorted</span><span> </span><span>distinct_sorted_append</span><span class="delimiter">[</span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;butlast xs&#8250;</span></span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;last xs&#8250;</span></span></span><span class="delimiter">]</span><span> </span><span>dist</span><span>
+</span><span>   </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;xs&#8250;</span></span></span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>rev_cases</span><span class="delimiter">)</span><span>
+</span><span>     </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>order_trans</span><span class="delimiter">[</span><span>OF</span><span> </span><span>diff</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">also</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;... &#8804; length arena&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>arena_lifting</span><span class="delimiter">(</span><span>7</span><span class="delimiter">)</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">,</span><span> </span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;last xs&#8250;</span></span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;length (N &#8733; last xs) - 1&#8250;</span></span></span><span class="delimiter">]</span><span> </span><span>mset_xs</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>assms</span><span>
+</span><span>   </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;xs&#8250;</span></span></span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>rev_cases</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>arena_lifting</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">finally</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mset_xs</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>distinct_sum_mset_sum</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>valid_arena_size_dom_m_le_arena</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;valid_arena arena N vdom &#10233; size (dom_m N) &#8804; length arena&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>valid_arena_ge_length_clauses</span><span class="delimiter">[</span><span>of</span><span> </span><span>arena</span><span> </span><span>N</span><span> </span><span>vdom</span><span class="delimiter">]</span><span>
+</span><span>  </span><span>ordered_comm_monoid_add_class.sum_mset_mono</span><span class="delimiter">[</span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;dom_m N&#8250;</span></span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#955;_. 1&#8250;</span></span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#955;C. length (N &#8733; C) + header_size (N &#8733; C)&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>header_size_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+

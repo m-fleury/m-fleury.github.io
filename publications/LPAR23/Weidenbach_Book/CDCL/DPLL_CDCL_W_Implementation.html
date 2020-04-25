@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory DPLL_CDCL_W_Implementation (Isabelle2020: April 2020)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory DPLL_CDCL_W_Implementation</h1>
+
+<span class="command">theory</span> <span class="name">DPLL_CDCL_W_Implementation</span><br/>
+<span class="keyword">imports</span> <a href="CDCL_W_Level.html"><span class="name">CDCL_W_Level</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>DPLL_CDCL_W_Implementation</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span>
+</span><span>  </span><span>Entailment_Definition.Partial_Annotated_Herbrand_Interpretation</span><span>
+</span><span>  </span><span>CDCL_W_Level</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span class="keyword1"><span class="command">chapter</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;List-based Implementation of DPLL and CDCL&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We can now reuse all the theorems to go towards an implementation using 2-watched literals:
+  &#9642; @{file CDCL_W_Abstract_State.thy} defines a better-suited state: the operation operating on it
+  are more constrained, allowing simpler proofs and less edge cases later.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Simple List-Based Implementation of the DPLL and CDCL&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The idea of the list-based implementation is to test the stack: the theories about the
+  calculi, adapting the theorems to a simple implementation and the code exportation. The
+  implementation are very simple ans simply iterate over-and-over on lists.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Common Rules&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Propagation&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The following theorem holds:&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lits_of_l_unfold</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8704;c &#8712; set C. -c &#8712; lits_of_l Ms) &#10231; Ms &#8872;as CNot (mset C)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>true_annots_def</span><span> </span><span>Ball_def</span><span> </span><span>true_annot_def</span><span> </span><span>CNot_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The right-hand version is written at a high-level, but only the left-hand side is executable.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>is_unit_clause</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a literal list &#8658; (&#39;a, &#39;b) ann_lits &#8658; &#39;a literal option&quot;</span></span></span><span>
+</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_unit_clause l M =
+   (case List.filter (&#955;a. atm_of a &#8713; atm_of ` lits_of_l M) l of
+     a # [] &#8658; if M &#8872;as CNot (mset l - {#a#}) then Some a else None
+   | _ &#8658; None)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>is_unit_clause_code</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a literal list &#8658; (&#39;a, &#39;b) ann_lits
+  &#8658; &#39;a literal option&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_unit_clause_code l M =
+   (case List.filter (&#955;a. atm_of a &#8713; atm_of ` lits_of_l M) l of
+     a # [] &#8658; if (&#8704;c &#8712;set (remove1 a l). -c &#8712; lits_of_l M) then Some a else None
+   | _ &#8658; None)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_unit_clause_is_unit_clause_code</span><span class="delimiter">[</span><span>code</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;is_unit_clause l M = is_unit_clause_code l M&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;a. (&#8704;c&#8712;set (remove1 a l). - c &#8712; lits_of_l M) &#10231; M &#8872;as CNot (mset l - {#a#})&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>lits_of_l_unfold</span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;remove1 _ l&quot;</span></span></span><span class="delimiter">,</span><span> </span><span>of</span><span> </span><span>_</span><span> </span><span>M</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_unit_clause_code_def</span><span> </span><span>is_unit_clause_def</span><span> </span><span>1</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_unit_clause_some_undef</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_unit_clause l M = Some a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;undefined_lit M a&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(case [a&#8592;l . atm_of a &#8713; atm_of ` lits_of_l M] of [] &#8658; None
+          | [a] &#8658; if M &#8872;as CNot (mset l - {#a#}) then Some a else None
+          | a # ab # xa &#8658; Map.empty xa) = Some a&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_unit_clause_def</span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;a &#8712; set [a&#8592;l . atm_of a &#8713; atm_of ` lits_of_l M]&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[a&#8592;l . atm_of a &#8713; atm_of ` lits_of_l M]&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rename_tac</span><span> </span><span>aa</span><span> </span><span>list</span><span class="delimiter">;</span><span> </span><span>case_tac</span><span> </span><span>list</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split_asm</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atm_of a &#8713; atm_of ` lits_of_l M&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>Decided_Propagated_in_iff_in_lits_of_l</span><span>
+</span><span>      </span><span>atm_of_in_atm_of_set_iff_in_set_or_uminus_in_set</span><span> </span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_unit_clause_some_CNot</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_unit_clause l M = Some a &#10233; M &#8872;as CNot (mset l - {#a#})&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_unit_clause_def</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(case [a&#8592;l . atm_of a &#8713; atm_of ` lits_of_l M] of [] &#8658; None
+          | [a] &#8658; if M &#8872;as CNot (mset l - {#a#}) then Some a else None
+          | a # ab # xa &#8658; Map.empty xa) = Some a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[a&#8592;l . atm_of a &#8713; atm_of ` lits_of_l M]&quot;</span></span></span><span class="delimiter">,</span><span> </span><span>simp</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rename_tac</span><span> </span><span>aa</span><span> </span><span>list</span><span class="delimiter">,</span><span> </span><span>case_tac</span><span> </span><span>list</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split_asm</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_unit_clause_some_in</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_unit_clause l M = Some a &#10233; a &#8712; set l&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_unit_clause_def</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(case [a&#8592;l . atm_of a &#8713; atm_of ` lits_of_l M] of [] &#8658; None
+         | [a] &#8658; if M &#8872;as CNot (mset l - {#a#}) then Some a else None
+         | a # ab # xa &#8658; Map.empty xa) = Some a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;a &#8712; set l&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[a&#8592;l . atm_of a &#8713; atm_of ` lits_of_l M]&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>       </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>filter_eq_ConsD</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split_asm</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.splits</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_unit_clause_Nil</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_unit_clause [] M = None&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_unit_clause_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Unit propagation for all clauses&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Finding the first clause to propagate&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>find_first_unit_clause</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a literal list list &#8658; (&#39;a, &#39;b) ann_lits
+  &#8658; (&#39;a literal &#215; &#39;a literal list) option&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unit_clause (a # l) M =
+  (case is_unit_clause a M of
+    None &#8658; find_first_unit_clause l M
+  | Some L &#8658; Some (L, a))&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unit_clause [] _ = None&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>find_first_unit_clause_some</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unit_clause l M = Some (a, c)
+  &#10233; c &#8712; set l &#8743;  M &#8872;as CNot (mset c - {#a#}) &#8743; undefined_lit M a &#8743; a &#8712; set c&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>l</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>is_unit_clause_some_in</span><span> </span><span>is_unit_clause_some_CNot</span><span>
+</span><span>         </span><span>is_unit_clause_some_undef</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>propagate_is_unit_clause_not_None</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span>
+</span><span>  </span><span>M</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M &#8872;as CNot (mset c - {#a#})&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>undef</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;undefined_lit M a&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>ac</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;a &#8712; set c&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;is_unit_clause c M &#8800; None&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;[a&#8592;c . atm_of a &#8713; atm_of ` lits_of_l M] = [a]&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>c</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>Nil</span><span> </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>      </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Cons</span><span> </span><span>ac</span><span> </span><span>c</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;a = ac&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>          </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>True</span><span>
+</span><span>          </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>Cons</span><span>
+</span><span>            </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>lits_of_l_unfold</span><span>
+</span><span>                 </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>lits_of_l_unfold</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>Decided_Propagated_in_iff_in_lits_of_l</span><span>
+</span><span>                   </span><span>atm_of_eq_atm_of</span><span> </span><span>atm_of_in_atm_of_set_iff_in_set_or_uminus_in_set</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>          </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>False</span><span>
+</span><span>          </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>T</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mset c + {#ac#} - {#a#} = mset c - {#a#} + {#ac#}&quot;</span></span></span><span>
+</span><span>            </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>multiset_eq_iff</span><span class="delimiter">)</span><span>
+</span><span>          </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>False</span><span> </span><span>Cons</span><span>
+</span><span>            </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>T</span><span> </span><span>atm_of_in_atm_of_set_iff_in_set_or_uminus_in_set</span><span class="delimiter">)</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>M</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>is_unit_clause_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>find_first_unit_clause_none</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;c &#8712; set l &#10233;  M &#8872;as CNot (mset c - {#a#}) &#10233; undefined_lit M a &#10233; a &#8712; set c
+  &#10233; find_first_unit_clause l M &#8800; None&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>l</span><span class="delimiter">)</span><span>
+</span><span>     </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.split</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>propagate_is_unit_clause_not_None</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Decide&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>find_first_unused_var</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a literal list list &#8658; &#39;a literal set &#8658; &#39;a literal option&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unused_var (a # l) M =
+  (case List.find (&#955;lit. lit &#8713; M &#8743; -lit &#8713; M) a of
+    None &#8658; find_first_unused_var l M
+  | Some a &#8658; Some a)&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unused_var [] _ = None&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>find_none</span><span class="delimiter">[</span><span>iff</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;List.find (&#955;lit. lit &#8713; M &#8743; -lit &#8713; M) a = None &#10231;  atm_of ` set a &#8838; atm_of `  M&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>a</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>atm_of_in_atm_of_set_iff_in_set_or_uminus_in_set</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>force</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span>  </span><span>atm_of_in_atm_of_set_iff_in_set_or_uminus_in_set</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>find_some</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;List.find (&#955;lit. lit &#8713; M &#8743; -lit &#8713; M) a = Some b &#10233; b &#8712; set a &#8743; b &#8713; M &#8743; -b &#8713; M&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>find_Some_iff</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>nth_mem</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>find_first_unused_var_None</span><span class="delimiter">[</span><span>iff</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unused_var l M = None &#10231; (&#8704;a &#8712; set l. atm_of ` set a &#8838; atm_of `  M)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>l</span><span class="delimiter">)</span><span>
+</span><span>     </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>find_some</span><span>
+</span><span>       </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>image_subset_iff</span><span> </span><span>atm_of_in_atm_of_set_iff_in_set_or_uminus_in_set</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>find_first_unused_var_Some_not_all_incl</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unused_var l M = Some c&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot; &#172;(&#8704;a &#8712; set l. atm_of ` set a &#8838; atm_of `  M)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unused_var l M &#8800; None&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unused_var l M&quot;</span></span></span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;(&#8704;a &#8712; set l. atm_of ` set a &#8838; atm_of `  M)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>find_first_unused_var_Some</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unused_var l M = Some a &#10233; (&#8707;m &#8712; set l. a &#8712; set m &#8743; a &#8713; M &#8743; -a &#8713; M)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>l</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.splits</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>find_some</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>find_first_unused_var_undefined</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;find_first_unused_var l (lits_of_l Ms) = Some a &#10233; undefined_lit Ms a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>find_first_unused_var_Some</span><span class="delimiter">[</span><span>of</span><span> </span><span>l</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lits_of_l Ms&quot;</span></span></span><span> </span><span>a</span><span class="delimiter">]</span><span> </span><span>Decided_Propagated_in_iff_in_lits_of_l</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;CDCL specific functions&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Level&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>maximum_level_code</span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a literal list &#8658; (&#39;a, &#39;b) ann_lits &#8658; nat&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;maximum_level_code [] _ = 0&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;maximum_level_code (L # Ls) M = max (get_level M L) (maximum_level_code Ls M)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>maximum_level_code_eq_get_maximum_level</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;maximum_level_code D M = get_maximum_level M (mset D)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>D</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>get_maximum_level_add_mset</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>code</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>M</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a, &#39;b) ann_lits&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;get_maximum_level M (mset D) = maximum_level_code D M&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsubsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Backjumping&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>find_level_decomp</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;find_level_decomp M [] D k = None&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;find_level_decomp M (L # Ls) D k =
+  (case (get_level M L, maximum_level_code (D @ Ls) M) of
+    (i, j) &#8658; if i = k &#8743; j &lt; i then Some (L, j) else find_level_decomp M Ls (L#D) k
+  )&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>find_level_decomp_some</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find_level_decomp M Ls D k = Some (L, j)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;L &#8712; set Ls &#8743; get_maximum_level M (mset (remove1 L (Ls @ D))) = j &#8743; get_level M L = k&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>Ls</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>D</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>Nil</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Cons</span><span> </span><span>L&#39;</span><span> </span><span>Ls</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>IH</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>H</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* heavily modified sledgehammer proof *)</span></span></span></span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">define</span></span><span> </span><span>find</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find &#8801; (if get_level M L&#39; &#8800; k &#8744; &#172; get_maximum_level M (mset D + mset Ls) &lt; get_level M L&#39;
+    then find_level_decomp M Ls (L&#39; # D) k
+    else Some (L&#39;, get_maximum_level M (mset D + mset Ls)))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>a1</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;D. find_level_decomp M Ls D k = Some (L, j) &#10233;
+     L &#8712; set Ls &#8743; get_maximum_level M (mset Ls + mset D - {#L#}) = j &#8743; get_level M L = k&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>IH</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>a2</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find = Some (L, j)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>H</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>find_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split_asm</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Some (L&#39;, get_maximum_level M (mset D + mset Ls)) &#8800; find&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>f3</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;L &#8712; set Ls&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;get_maximum_level M (mset Ls + mset (L&#39; # D) - {#L#}) = j&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>a1</span><span> </span><span>IH</span><span> </span><span>a2</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>find_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>meson</span><span class="delimiter">+</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mset Ls + mset D - {#L#} + {#L&#39;#} = {#L&#39;#} + mset D + (mset Ls - {#L#})&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ac_simps</span><span> </span><span>multiset_eq_iff</span><span> </span><span>Suc_leI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>f4</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;get_maximum_level M (mset Ls + mset D - {#L#} + {#L&#39;#}) = j&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">}</span></span><span> </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>f4</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;{#L&#39;#} + (mset Ls + mset D) = mset Ls + (mset D + {#L&#39;#})&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ac_simps</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;L = L&#39; &#10230; get_maximum_level M (mset Ls + mset D) = j &#8743; get_level M L&#39; = k&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span class="string"><span class="delete"><span class="delete">&quot;L &#8800; L&#39; &#10230; L &#8712; set Ls &#8743; get_maximum_level M (mset Ls + mset D - {#L#} + {#L&#39;#}) = j &#8743;
+      get_level M L = k&quot;</span></span></span><span>
+</span><span>     </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>a2</span><span> </span><span>a1</span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;L&#39; # D&quot;</span></span></span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>find_def</span><span>
+</span><span>     </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>add.commute</span><span> </span><span>add_diff_cancel_left&#39;</span><span> </span><span>add_mset_add_single</span><span> </span><span>mset.simps</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span>
+</span><span>         </span><span>option.inject</span><span> </span><span>prod.inject</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>f4</span><span> </span><span>a2</span><span> </span><span>a1</span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;L&#39; # D&quot;</span></span></span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>find_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>option.inject</span><span> </span><span>prod.inject</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>find_level_decomp_none</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;find_level_decomp M Ls E k = None&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mset (L#D) = mset (Ls @ E)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172;(L &#8712; set Ls &#8743; get_maximum_level M (mset D) &lt; k &#8743; k = get_level M L)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>Ls</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>E</span><span> </span><span>L</span><span> </span><span>D</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>Nil</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Cons</span><span> </span><span>L&#39;</span><span> </span><span>Ls</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">note</span></span><span> </span><span>IH</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>find_none</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span class="delimiter">(</span><span>2</span><span class="delimiter">)</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>LD</span><span> </span><span class="delimiter">=</span><span> </span><span>this</span><span class="delimiter">(</span><span>3</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;mset D + {#L&#39;#} = mset E + (mset Ls + {#L&#39;#})  &#10233; mset D = mset E + mset Ls&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>add_right_imp_eq</span><span> </span><span>union_assoc</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>find_none</span><span> </span><span>IH</span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;L&#39; # E&quot;</span></span></span><span> </span><span>L</span><span> </span><span>D</span><span class="delimiter">]</span><span> </span><span>LD</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>ac_simps</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split_asm</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>bt_cut</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;bt_cut i (Propagated _ _ # Ls) = bt_cut i Ls&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;bt_cut i (Decided K # Ls) = (if count_decided Ls = i then Some (Decided K # Ls) else bt_cut i Ls)&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;bt_cut i [] = None&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bt_cut_some_decomp</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;no_dup M&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bt_cut i M = Some M&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;K M2 M1. M = M2 @ M&#39; &#8743; M&#39; = Decided K # M1 &#8743; get_level M K = (i+1)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>i</span><span> </span><span>M</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>bt_cut.induct</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>no_dup_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_split_asm</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bt_cut_not_none</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;no_dup M&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;M = M2 @ Decided K # M&#39;&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;get_level M K = (i+1)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bt_cut i M &#8800; None&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>M2</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>M</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>ann_lit_list_induct</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>no_dup_def</span><span> </span><span>atm_lit_of_set_lits_of_l</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>get_all_ann_decomposition_ex</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;N. (Decided K # M&#39;, N) &#8712; set (get_all_ann_decomposition (M2@Decided K # M&#39;))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>M2</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>ann_lit_list_induct</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span class="delimiter">[</span><span>2</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rename_tac</span><span> </span><span>L</span><span> </span><span>m</span><span> </span><span>xs</span><span class="delimiter">,</span><span>  </span><span>case_tac</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;get_all_ann_decomposition (xs @ Decided K # M&#39;)&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bt_cut_in_get_all_ann_decomposition</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;no_dup M&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;bt_cut i M = Some M&#39;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;M2. (M&#39;, M2) &#8712; set (get_all_ann_decomposition M)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>bt_cut_some_decomp</span><span class="delimiter">[</span><span>OF</span><span> </span><span>assms</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>get_all_ann_decomposition_ex</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>do_backtrack_step</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;do_backtrack_step (M, N, U, Some D) =
+  (case find_level_decomp M D [] (count_decided M) of
+    None &#8658; (M, N, U, Some D)
+  | Some (L, j) &#8658;
+    (case bt_cut j M of
+      Some (Decided _ # Ls) &#8658; (Propagated L D # Ls, N, D # U, None)
+    | _ &#8658; (M, N, U, Some D))
+  )&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;do_backtrack_step S = S&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+<div class=body><footer><p><table border=0  width=700> <tr><th>Isabelle version:</th><th>AFP version:</th><th>IsaFoL version:</th><th>Last compilation:</th></tr>
+
+<tr><td align="center">Isabelle2020 </td><td align="center">6b713b029127 </td><td align="center">6e93a5c7 </td><td align="center">Sat 25 Apr 2020 09:25:56 AM CEST </td></tr></table></p><a href="https://imprint.mpi-klsb.mpg.de/mpi/mfleury">Imprint</a> / <a href="https://data-protection.mpi-klsb.mpg.de/mpi/mfleury">Data Protection</a></footer></div>
+
+</html>
+
+
