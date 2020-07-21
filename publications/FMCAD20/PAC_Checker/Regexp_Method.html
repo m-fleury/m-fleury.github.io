@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Regexp_Method (repository version)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Regexp_Method</h1>
+
+<span class="command">theory</span> <span class="name">Regexp_Method</span><br/>
+<span class="keyword">imports</span> <a href="Equivalence_Checking.html"><span class="name">Equivalence_Checking</span></a> <a href="Relation_Interpretation.html"><span class="name">Relation_Interpretation</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Proving Relation (In)equalities via Regular Expressions&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Regexp_Method</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Equivalence_Checking</span><span> </span><span>Relation_Interpretation</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">primrec</span></span><span> </span><span>rel_of_regexp</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a * &#39;a) set list &#8658; nat rexp &#8658; (&#39;a * &#39;a) set&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;rel_of_regexp vs Zero  = {}&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;rel_of_regexp vs One  = Id&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;rel_of_regexp vs (Atom i)  = vs ! i&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;rel_of_regexp vs (Plus r s)  = rel_of_regexp vs r  &#8746; rel_of_regexp vs s &quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;rel_of_regexp vs (Times r s)  = rel_of_regexp vs r O rel_of_regexp vs s&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;rel_of_regexp vs (Star r)  = (rel_of_regexp vs r)^*&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rel_of_regexp_rel</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rel_of_regexp vs r = rel (&#955;i. vs ! i) r&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>r</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">primrec</span></span><span> </span><span>rel_eq</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="string"><span class="delete"><span class="delete">&quot;rel_eq (r, s) vs = (rel_of_regexp vs r = rel_of_regexp vs s)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rel_eqI</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;check_eqv r s &#10233; rel_eq (r, s) vs&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>rel_eq.simps</span><span> </span><span>rel_of_regexp_rel</span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>Relation_Interpretation.soundness</span><span class="delimiter">)</span><span>
+</span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>Equivalence_Checking.soundness</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>regexp_reify</span><span> </span><span class="delimiter">=</span><span> </span><span>rel_of_regexp.simps</span><span> </span><span>rel_eq.simps</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>regexp_unfold</span><span> </span><span class="delimiter">=</span><span> </span><span>trancl_unfold_left</span><span> </span><span>subset_Un_eq</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">ML</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+local
+
+fun check_eqv (ct, b) = Thm.mk_binop @{cterm &quot;Pure.eq :: bool &#8658; bool &#8658; prop&quot;}
+  ct (if b then @{cterm True} else @{cterm False});
+
+val (_, check_eqv_oracle) = Context.&gt;&gt;&gt; (Context.map_theory_result
+  (Thm.add_oracle (@{binding check_eqv}, check_eqv)));
+
+in
+
+val regexp_conv =
+  @{computation_conv bool terms: check_eqv datatypes: &quot;nat rexp&quot;}
+  (fn _ =&gt; fn b =&gt; fn ct =&gt; check_eqv_oracle (ct, b))
+
+end
+&#8250;</span></span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">method_setup</span></span><span> </span><span>regexp</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Scan.succeed (fn ctxt =&gt;
+    SIMPLE_METHOD&#39; (
+      (TRY o eresolve_tac ctxt @{thms rev_subsetD})
+      THEN&#39; (Subgoal.FOCUS_PARAMS (fn {context = ctxt&#39;, ...} =&gt;
+        TRY (Local_Defs.unfold_tac ctxt&#39; @{thms regexp_unfold})
+        THEN Reification.tac ctxt&#39; @{thms regexp_reify} NONE 1
+        THEN resolve_tac ctxt&#39; @{thms rel_eqI} 1
+        THEN CONVERSION (HOLogic.Trueprop_conv (regexp_conv ctxt&#39;)) 1
+        THEN resolve_tac ctxt&#39; [TrueI] 1) ctxt)))
+&#8250;</span></span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;decide relation equalities via regular expressions&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">hide_const</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">open</span></span><span class="delimiter">)</span><span> </span><span>le_rexp</span><span> </span><span>nPlus</span><span> </span><span>nTimes</span><span> </span><span>norm</span><span> </span><span>nullable</span><span> </span><span>bisimilar</span><span> </span><span>is_bisimulation</span><span> </span><span>closure</span><span>
+</span><span>  </span><span>pre_bisim</span><span> </span><span>add_atoms</span><span> </span><span>check_eqv</span><span> </span><span>rel</span><span> </span><span>word_rel</span><span> </span><span>rel_eq</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Example:&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(r &#8746; s^+)^* = (r &#8746; s)^*&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>regexp</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+</html>

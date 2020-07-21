@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory More_Loops (repository version)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory More_Loops</h1>
+
+<span class="command">theory</span> <span class="name">More_Loops</span><br/>
+<span class="keyword">imports</span> <a href="../../AFP/Refine_Monadic/Refine_Foreach.html"><span class="name">Refine_Foreach</span></a> <a href="../../AFP/Sepref_Basic/Rewrite.html"><span class="name">Rewrite</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>More_Loops</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Refine_Monadic.Refine_While&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;Refine_Monadic.Refine_Foreach&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;HOL-Library.Rewrite&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;More Theorem about Loops&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Most theorem below have a counterpart in the Refinement Framework that is weaker (by missing
+  assertions for example that are critical for code generation).
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>Down_id_eq</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#8659;Id x = x&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>while_upt_while_direct1</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;b &#8805; a &#10233;
+  do {
+    (_,&#963;) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub> (FOREACH_cond c) (&#955;x. do {ASSERT (FOREACH_cond c x); FOREACH_body f x})
+      ([a..&lt;b],&#963;);
+    RETURN &#963;
+  } &#8804; do {
+    (_,&#963;) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub> (&#955;(i, x). i &lt; b &#8743; c x) (&#955;(i, x). do {ASSERT (i &lt; b);  &#963;&#39;&#8592;f i x; RETURN (i+1,&#963;&#39;)
+}) (a,&#963;);
+    RETURN &#963;
+  }&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8804; &#8977;&#8250;</span></span></span><span> </span><span>Down_id_eq</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>WHILET_refine</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>R</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;{((l, x&#39;), (i::nat, x::&#39;a)). x= x&#39; &#8743; i &#8804; b &#8743; i &#8805; a &#8743;
+     l = drop (i-a) [a..&lt;b]}&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>FOREACH_cond_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>FOREACH_body_def</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>bind_refine</span><span class="delimiter">[</span><span>OF</span><span> </span><span>Id_refine</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>while_upt_while_direct2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;b &#8805; a &#10233;
+  do {
+    (_,&#963;) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub> (FOREACH_cond c) (&#955;x. do {ASSERT (FOREACH_cond c x); FOREACH_body f x})
+      ([a..&lt;b],&#963;);
+    RETURN &#963;
+  } &#8805; do {
+    (_,&#963;) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub> (&#955;(i, x). i &lt; b &#8743; c x) (&#955;(i, x). do {ASSERT (i &lt; b);  &#963;&#39;&#8592;f i x; RETURN (i+1,&#963;&#39;)
+}) (a,&#963;);
+    RETURN &#963;
+  }&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8804; &#8977;&#8250;</span></span></span><span> </span><span>Down_id_eq</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>refine_vcg</span><span> </span><span>WHILET_refine</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>R</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;{((i::nat, x::&#39;a), (l, x&#39;)). x= x&#39; &#8743; i &#8804; b &#8743; i &#8805; a &#8743;
+    l = drop (i-a) [a..&lt;b]}&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>FOREACH_cond_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>FOREACH_body_def</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>bind_refine</span><span class="delimiter">[</span><span>OF</span><span> </span><span>Id_refine</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>FOREACH_body_def</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>bind_refine</span><span class="delimiter">[</span><span>OF</span><span> </span><span>Id_refine</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>while_upt_while_direct</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;b &#8805; a &#10233;
+  do {
+    (_,&#963;) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub> (FOREACH_cond c) (&#955;x. do {ASSERT (FOREACH_cond c x); FOREACH_body f x})
+      ([a..&lt;b],&#963;);
+    RETURN &#963;
+  } = do {
+    (_,&#963;) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub> (&#955;(i, x). i &lt; b &#8743; c x) (&#955;(i, x). do {ASSERT (i &lt; b);  &#963;&#39;&#8592;f i x; RETURN (i+1,&#963;&#39;)
+}) (a,&#963;);
+    RETURN &#963;
+  }&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>while_upt_while_direct1</span><span class="delimiter">[</span><span>of</span><span> </span><span>a</span><span> </span><span>b</span><span class="delimiter">]</span><span> </span><span>while_upt_while_direct2</span><span class="delimiter">[</span><span>of</span><span> </span><span>a</span><span> </span><span>b</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>order_class.eq_iff</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fast</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>while_nfoldli</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;do {
+    (_,&#963;) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub> (FOREACH_cond c) (&#955;x. do {ASSERT (FOREACH_cond c x); FOREACH_body f x}) (l,&#963;);
+    RETURN &#963;
+  } &#8804; nfoldli l c f &#963;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>l</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>&#963;</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>WHILET_unfold</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>FOREACH_cond_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>WHILET_unfold</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span>
+</span><span>    </span><span>simp</span><span class="delimiter">:</span><span> </span><span>FOREACH_cond_def</span><span> </span><span>FOREACH_body_def</span><span>
+</span><span>    </span><span>intro</span><span class="delimiter">:</span><span> </span><span>bind_mono</span><span> </span><span>Refine_Basic.bind_mono</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span> </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>nfoldli_while</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nfoldli l c f &#963;
+          &#8804;
+         (WHILE<span class="hidden">&#8681;</span><sub>T</sub><span class="hidden">&#8663;</span><sup>I<span class="hidden">&#8662;</span></sup>
+           (FOREACH_cond c) (&#955;x. do {ASSERT (FOREACH_cond c x); FOREACH_body f x}) (l, &#963;) &#10524;
+          (&#955;(_, &#963;). RETURN &#963;))&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>l</span><span> </span><span>arbitrary</span><span class="delimiter">:</span><span> </span><span>&#963;</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>Nil</span><span> </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>WHILEIT_unfold</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>FOREACH_cond_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Cons</span><span> </span><span>x</span><span> </span><span>ls</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;c &#963;&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>False</span><span> </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>WHILEIT_unfold</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>FOREACH_cond_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span>True</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>Cons</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>WHILEIT_unfold</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>FOREACH_cond_def</span><span> </span><span>FOREACH_body_def</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>clarsimp</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>Refine_Basic.bind_mono</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp_all</span><span>
+</span><span>      </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>while_eq_nfoldli</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;do {
+    (_,&#963;) &#8592; WHILE<span class="hidden">&#8681;</span><sub>T</sub> (FOREACH_cond c) (&#955;x. do {ASSERT (FOREACH_cond c x); FOREACH_body f x}) (l,&#963;);
+    RETURN &#963;
+  } = nfoldli l c f &#963;&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>antisym</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>while_nfoldli</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>order_trans</span><span class="delimiter">[</span><span>OF</span><span> </span><span>nfoldli_while</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>I</span><span class="delimiter">=</span><span class="string"><span class="delete"><span class="delete">&quot;&#955;_. True&quot;</span></span></span><span class="delimiter">]</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>WHILET_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span></pre>
+
+</div>
+</body>
+</html>

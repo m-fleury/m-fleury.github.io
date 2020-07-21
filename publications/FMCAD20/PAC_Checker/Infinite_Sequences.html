@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Infinite_Sequences (repository version)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Infinite_Sequences</h1>
+
+<span class="command">theory</span> <span class="name">Infinite_Sequences</span><br/>
+<span class="keyword">imports</span> <a href="../../HOL/HOL/Main.html"><span class="name">Main</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*  Title:      Well-Quasi-Orders
+    Author:     Christian Sternagel &lt;c.sternagel@gmail.com&gt;
+    Maintainer: Christian Sternagel
+    License:    LGPL
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Infinite Sequences&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Some useful constructions on and facts about infinite sequences.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Infinite_Sequences</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The set of all infinite sequences over elements from @{term A}.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;SEQ A = {f::nat &#8658; &#39;a. &#8704;i. f i &#8712; A}&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>SEQ_iff</span><span> </span><span class="delimiter">[</span><span>iff</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8712; SEQ A &#10231; (&#8704;i. f i &#8712; A)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>SEQ_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The &#8249;i&#8250;-th &quot;column&quot; of a set &#8249;B&#8250; of infinite sequences.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ith B i = {f i | f. f &#8712; B}&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ithI</span><span> </span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8712; B &#10233; f i = x &#10233; x &#8712; ith B i&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ith_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ithE</span><span> </span><span class="delimiter">[</span><span>elim</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;x &#8712; ith B i; &#8896;f. &#10214;f &#8712; B; f i = x&#10215; &#10233; Q&#10215; &#10233; Q&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ith_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ith_conv</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8712; ith B i &#10231; (&#8707;f &#8712; B. x = f i)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  The restriction of a set &#8249;B&#8250; of sequences to sequences that are equal to a given sequence
+  &#8249;f&#8250; up to position &#8249;i&#8250;.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>eq_upto</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(nat &#8658; &#39;a) set &#8658; (nat &#8658; &#39;a) &#8658; nat &#8658; (nat &#8658; &#39;a) set&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;eq_upto B f i = {g &#8712; B. &#8704;j &lt; i. f j = g j}&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>eq_uptoI</span><span> </span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;g &#8712; B; &#8896;j. j &lt; i &#10233; f j = g j&#10215; &#10233; g &#8712; eq_upto B f i&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>eq_upto_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>eq_uptoE</span><span> </span><span class="delimiter">[</span><span>elim</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;g &#8712; eq_upto B f i; &#10214;g &#8712; B; &#8896;j. j &lt; i &#10233; f j = g j&#10215; &#10233; Q&#10215; &#10233; Q&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>eq_upto_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>eq_upto_Suc</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;g &#8712; eq_upto B f i; g i = f i&#10215; &#10233; g &#8712; eq_upto B f (Suc i)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>eq_upto_def</span><span> </span><span>less_Suc_eq</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>eq_upto_0</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;eq_upto B f 0 = B&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>eq_upto_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>eq_upto_cong</span><span> </span><span class="delimiter">[</span><span>fundef_cong</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;j. j &lt; i &#10233; f j = g j&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;B = C&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;eq_upto B f i = eq_upto C g i&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>eq_upto_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Lexicographic Order on Infinite Sequences&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;LEX P f g &#10231; (&#8707;i::nat. P (f i) (g i) &#8743; (&#8704;j&lt;i. f j = g j))&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;LEXEQ P &#8801; (LEX P)<span class="hidden">&#8679;</span><sup>=</sup><span class="hidden">&#8679;</span><sup>=</sup>&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>LEX_imp_not_LEX</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;LEX P f g&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x y z. P x y &#10233; P y z &#10233; P x z&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;x. &#172; P x x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172; LEX P g f&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>i</span><span> </span><span>j</span><span> </span><span class="delimiter">::</span><span> </span><span>nat</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P (f i) (g i)&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;k&lt;i. f k = g k&quot;</span></span></span><span>
+</span><span>      </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P (g j) (f j)&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;k&lt;j. g k = f k&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>False</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i &lt; j&quot;</span></span></span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>not_less</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>le_imp_less_or_eq</span><span class="delimiter">)</span><span> </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#172; LEX P g f&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;LEX P f g&#8250;</span></span></span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>LEX_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>LEX_cases</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;LEX P f g&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">obtains</span></span><span> </span><span class="delimiter">(</span><span>eq</span><span class="delimiter">)</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f = g&quot;</span></span></span><span> </span><span class="delimiter">|</span><span> </span><span class="delimiter">(</span><span>neq</span><span class="delimiter">)</span><span> </span><span>k</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;i&lt;k. f i = g i&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P (f k) (g k)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>LEX_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>LEX_imp_less</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;x&#8712;A. &#172; P x x&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8712; SEQ A &#8744; g &#8712; SEQ A&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;LEX P f g&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;i&lt;k. f i = g i&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f k &#8800; g k&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P (f k) (g k)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>elim</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>LEX_cases</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>linorder_neqE_nat</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+</html>

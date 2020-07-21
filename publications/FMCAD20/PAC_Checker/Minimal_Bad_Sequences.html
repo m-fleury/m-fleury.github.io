@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Minimal_Bad_Sequences (repository version)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Minimal_Bad_Sequences</h1>
+
+<span class="command">theory</span> <span class="name">Minimal_Bad_Sequences</span><br/>
+<span class="keyword">imports</span> <a href="Almost_Full.html"><span class="name">Almost_Full</span></a> <a href="Minimal_Elements.html"><span class="name">Minimal_Elements</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*  Title:      Well-Quasi-Orders
+    Author:     Christian Sternagel &lt;c.sternagel@gmail.com&gt;
+    Maintainer: Christian Sternagel
+    License:    LGPL
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Constructing Minimal Bad Sequences&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Minimal_Bad_Sequences</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span>
+</span><span>  </span><span>Almost_Full</span><span>
+</span><span>  </span><span>Minimal_Elements</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  A locale capturing the construction of minimal bad sequences over values from @{term &quot;A&quot;}. Where
+  minimality is to be understood w.r.t.\ @{term size} of an element.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>mbs</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>A</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a :: size) set&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Since the @{term size} is a well-founded measure, whenever some element satisfies a property
+  @{term P}, then there is a size-minimal such element.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>minimal</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8712; A&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P x&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;y &#8712; A. size y &#8804; size x &#8743; P y &#8743; (&#8704;z &#8712; A. size z &lt; size y &#10230; &#172; P z)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>x</span><span> </span><span>taking</span><span class="delimiter">:</span><span> </span><span>size</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>measure_induct</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>1</span><span> </span><span>x</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;y &#8712; A. size y &lt; size x &#10230; &#172; P y&quot;</span></span></span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>True</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">with</span></span><span> </span><span>1</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>    </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>False</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>y</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;y &#8712; A&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;size y &lt; size x&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P y&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">with</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;1.IH&quot;</span></span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>fastforce</span><span> </span><span>elim</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>order_trans</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>less_not_eq</span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8712; A &#10233; size x &lt; size y &#10233; x = y &#10233; False&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  The set of all bad sequences over @{term A}.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;BAD P = {f &#8712; SEQ A. bad P f}&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>BAD_iff</span><span> </span><span class="delimiter">[</span><span>iff</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8712; BAD P &#10231; (&#8704;i. f i &#8712; A) &#8743; bad P f&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>BAD_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  A partial order on infinite bad sequences.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>geseq</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;((nat &#8658; &#39;a) &#215; (nat &#8658; &#39;a)) set&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;geseq =
+    {(f, g). f &#8712; SEQ A &#8743; g &#8712; SEQ A &#8743; (f = g &#8744; (&#8707;i. size (g i) &lt; size (f i) &#8743; (&#8704;j &lt; i. f j = g j)))}&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  The strict part of the above order.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>gseq</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;((nat &#8658; &#39;a) &#215; (nat &#8658; &#39;a)) set&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;gseq = {(f, g). f &#8712; SEQ A &#8743; g &#8712; SEQ A &#8743; (&#8707;i. size (g i) &lt; size (f i) &#8743; (&#8704;j &lt; i. f j = g j))}&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>geseq_iff</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(f, g) &#8712; geseq &#10231;
+    f &#8712; SEQ A &#8743; g &#8712; SEQ A &#8743; (f = g &#8744; (&#8707;i. size (g i) &lt; size (f i) &#8743; (&#8704;j &lt; i. f j = g j)))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>geseq_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>gseq_iff</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(f, g) &#8712; gseq &#10231; f &#8712; SEQ A &#8743; g &#8712; SEQ A &#8743; (&#8707;i. size (g i) &lt; size (f i) &#8743; (&#8704;j &lt; i. f j = g j))&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>gseq_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>geseqE</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(f, g) &#8712; geseq&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;&#8704;i. f i &#8712; A; &#8704;i. g i &#8712; A; f = g&#10215; &#10233; Q&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;i. &#10214;&#8704;i. f i &#8712; A; &#8704;i. g i &#8712; A; size (g i) &lt; size (f i); &#8704;j &lt; i. f j = g j&#10215; &#10233; Q&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Q&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>geseq_iff</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>gseqE</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(f, g) &#8712; gseq&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;i. &#10214;&#8704;i. f i &#8712; A; &#8704;i. g i &#8712; A; size (g i) &lt; size (f i); &#8704;j &lt; i. f j = g j&#10215; &#10233; Q&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;Q&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>gseq_iff</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sublocale</span></span><span> </span><span>min_elt_size</span><span class="delimiter">?</span><span class="delimiter">:</span><span> </span><span>minimal_element</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;measure_on size UNIV&quot;</span></span></span><span> </span><span>A</span><span>
+</span><span class="keyword2"><span class="keyword">rewrites</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;measure_on size UNIV &#8801; &#955;x y. size x &lt; size y&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>unfold_locales</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>po_on_def</span><span> </span><span>irreflp_on_def</span><span> </span><span>transp_on_def</span><span> </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>wfp_on_UNIV</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>wfp_on_subset</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>measure_on_def</span><span> </span><span>inv_image_betw_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>P</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a &#8658; &#39;a &#8658; bool&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  A lower bound to all sequences in a set of sequences @{term B}.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lb &#8801; lexmin (BAD P)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>eq_upto_BAD_mem</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f &#8712; eq_upto (BAD P) g i&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;f j &#8712; A&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Assume that there is some infinite bad sequence @{term h}.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>h</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat &#8658; &#39;a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>BAD_ex</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;h &#8712; BAD P&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  When there is a bad sequence, then filtering @{term &quot;BAD P&quot;} w.r.t.~positions in @{term lb} never
+  yields an empty set of sequences.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>eq_upto_BAD_non_empty</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;eq_upto (BAD P) lb i &#8800; {}&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">using</span></span><span> </span><span>eq_upto_lexmin_non_empty</span><span> </span><span class="delimiter">[</span><span>of</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;BAD P&quot;</span></span></span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>BAD_ex</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>non_empty_ith</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ith (eq_upto (BAD P) lb i) i &#8838; A&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;ith (eq_upto (BAD P) lb i) i &#8800; {}&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>eq_upto_BAD_non_empty</span><span> </span><span class="delimiter">[</span><span>of</span><span> </span><span>i</span><span class="delimiter">]</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span>
+</span><span>  </span><span>lb_minimal</span><span> </span><span class="delimiter">=</span><span> </span><span>min_elt_minimal</span><span> </span><span class="delimiter">[</span><span>OF</span><span> </span><span>non_empty_ith</span><span class="delimiter">,</span><span> </span><span>folded</span><span> </span><span>lexmin</span><span class="delimiter">]</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>lb_mem</span><span> </span><span class="delimiter">=</span><span> </span><span>min_elt_mem</span><span> </span><span class="delimiter">[</span><span>OF</span><span> </span><span>non_empty_ith</span><span class="delimiter">,</span><span> </span><span>folded</span><span> </span><span>lexmin</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  @{term &quot;lb&quot;} is a infinite bad sequence.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lb_BAD</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;lb &#8712; BAD P&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>*</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8896;j. lb j &#8712; ith (eq_upto (BAD P) lb j) j&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>lb_mem</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;i. lb i &#8712; A&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>ith_conv</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>eq_upto_BAD_mem</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;good P lb&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>i</span><span> </span><span>j</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;i &lt; j&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P (lb i) (lb j)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>good_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">from</span></span><span> </span><span>*</span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lb j &#8712; ith (eq_upto (BAD P) lb j) j&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>g</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;g &#8712; eq_upto (BAD P) lb j&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;g j = lb j&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>force</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;k &#8804; j. g k = lb k&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>order_le_less</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">with</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &lt; j&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;P (lb i) (lb j)&#8250;</span></span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P (g i) (g j)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">with</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;i &lt; j&#8250;</span></span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;good P g&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>good_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">with</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;g &#8712; eq_upto (BAD P) lb j&#8250;</span></span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>False</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span> </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  There is no infinite bad sequence that is strictly smaller than @{term lb}.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lb_lower_bound</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;g. (lb, g) &#8712; gseq &#10230; g &#8713; BAD P&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>allI</span><span> </span><span>impI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>g</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">assume</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(lb, g) &#8712; gseq&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword3"><span class="command">obtain</span></span><span> </span><span>i</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;g i &#8712; A&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;size (g i) &lt; size (lb i)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;j &lt; i. lb j = g j&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>gseq_iff</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">with</span></span><span> </span><span>lb_minimal</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;g i &#8713; ith (eq_upto (BAD P) lb i) i&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;g &#8713; BAD P&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  If there is at least one bad sequence, then there is also a minimal one.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lower_bound_ex</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;f &#8712; BAD P. &#8704;g. (f, g) &#8712; gseq &#10230; g &#8713; BAD P&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>lb_BAD</span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>lb_lower_bound</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>gseq_conv</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(f, g) &#8712; gseq &#10231; f &#8800; g &#8743; (f, g) &#8712; geseq&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>gseq_def</span><span> </span><span>geseq_def</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>less_not_eq</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;There is a minimal bad sequence.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mbs</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;f &#8712; BAD P. &#8704;g. (f, g) &#8712; gseq &#10230; good P g&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>lower_bound_ex</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>gseq_conv</span><span> </span><span>geseq_iff</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+</html>

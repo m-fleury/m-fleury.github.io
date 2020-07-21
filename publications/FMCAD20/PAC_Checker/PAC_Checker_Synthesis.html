@@ -1,0 +1,957 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory PAC_Checker_Synthesis (repository version)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory PAC_Checker_Synthesis</h1>
+
+<span class="command">theory</span> <span class="name">PAC_Checker_Synthesis</span><br/>
+<span class="keyword">imports</span> <a href="PAC_Checker_Init.html"><span class="name">PAC_Checker_Init</span></a> <a href="More_Loops.html"><span class="name">More_Loops</span></a> <a href="PAC_Version.html"><span class="name">PAC_Version</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>PAC_Checker_Synthesis</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>PAC_Checker</span><span> </span><span>WB_Sort</span><span> </span><span>PAC_Checker_Relation</span><span>
+</span><span>    </span><span>PAC_Checker_Init</span><span> </span><span>More_Loops</span><span> </span><span>PAC_Version</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Code Synthesis of the Complete Checker&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We here combine refine the full checker, using the initialisation provided in another file.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>vars_assn</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;vars_assn &#8801; hs.assn string_assn&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>vars_of_monom_in</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;vars_of_monom_in [] _ = True&#8250;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;vars_of_monom_in (x # xs) &#119985; &#10231; x &#8712; &#119985; &#8743; vars_of_monom_in xs &#119985;&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>vars_of_poly_in</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;vars_of_poly_in [] _ = True&#8250;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;vars_of_poly_in ((x, _) # xs) &#119985; &#10231; vars_of_monom_in x &#119985; &#8743; vars_of_poly_in xs &#119985;&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>vars_of_monom_in_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;vars_of_monom_in xs &#119985; &#10231; set xs &#8838; &#119985;&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>xs</span><span class="delimiter">)</span><span>
+</span><span>   </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>vars_llist_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;vars_llist xs &#8838; &#119985; &#10231; vars_of_poly_in xs &#119985;&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>xs</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>vars_llist_def</span><span> </span><span>vars_of_monom_in_alt_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>vars_of_monom_in_alt_def2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;vars_of_monom_in xs &#119985; &#10231; fold (&#955;x b. b &#8743; x &#8712; &#119985;) xs True&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>foldr_fold</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>xs</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>vars_of_monom_in_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo vars_of_monom_in)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(list_assn string_assn)<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> vars_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vars_of_monom_in_alt_def2</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>vars_of_monom_in_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>vars_of_poly_in_alt_def2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;vars_of_poly_in xs &#119985; &#10231; fold (&#955;(x, _) b. b &#8743; vars_of_monom_in x &#119985;) xs True&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>foldr_fold</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>xs</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>vars_of_poly_in_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo vars_of_poly_in)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(poly_assn)<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> vars_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>vars_of_poly_in_alt_def2</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>vars_of_poly_in_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>union_vars_monom</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;string list &#8658; string set &#8658; string set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;union_vars_monom xs &#119985; = fold insert xs &#119985;&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>union_vars_poly</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;llist_polynom &#8658; string set &#8658; string set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;union_vars_poly xs &#119985; = fold (&#955;(xs, _) &#119985;. union_vars_monom xs &#119985;) xs &#119985;&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>union_vars_monom_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;union_vars_monom xs &#119985; = &#119985; &#8746; set xs&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>union_vars_monom_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>foldr_fold</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>x</span><span class="delimiter">;</span><span> </span><span>cases</span><span> </span><span>y</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>xs</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>union_vars_poly_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;union_vars_poly xs &#119985; = &#119985; &#8746; vars_llist xs&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>union_vars_poly_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>foldr_fold</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>y</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>x</span><span class="delimiter">;</span><span> </span><span>cases</span><span> </span><span>y</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>union_vars_monom_alt_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>xs</span><span class="delimiter">)</span><span>
+</span><span>     </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>vars_llist_def</span><span> </span><span>union_vars_monom_alt_def</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>union_vars_monom_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo union_vars_monom)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;monom_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> vars_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> vars_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>union_vars_monom_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>union_vars_monom_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>union_vars_poly_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo union_vars_poly)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> vars_assn<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> vars_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>union_vars_poly_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>union_vars_poly_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">hide_const</span></span><span> </span><span class="delimiter">(</span><span class="keyword2"><span class="keyword">open</span></span><span class="delimiter">)</span><span> </span><span>Autoref_Fix_Rel.CONSTRAINT</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>status_assn</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;status_assn _ CSUCCESS CSUCCESS = emp&#8250;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;status_assn _ CFOUND CFOUND = emp&#8250;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;status_assn R (CFAILED a) (CFAILED b) = R a b&#8250;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;status_assn _ _ _ = false&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>SUCCESS_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry0 (return CSUCCESS), uncurry0 (RETURN CSUCCESS)) &#8712; unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> status_assn R&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sepref_to_hoare</span><span class="delimiter">)</span><span>
+</span><span>    </span><span>sep_auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>FOUND_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry0 (return CFOUND), uncurry0 (RETURN CFOUND)) &#8712; unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> status_assn R&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sepref_to_hoare</span><span class="delimiter">)</span><span>
+</span><span>    </span><span>sep_auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_success_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;CONSTRAINT is_pure R &#10233;
+  ((return o is_cfound), (RETURN o is_cfound)) &#8712; (status_assn R)<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>sepref_to_hoare</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rename_tac</span><span> </span><span>xi</span><span> </span><span>x</span><span class="delimiter">;</span><span> </span><span>case_tac</span><span> </span><span>xi</span><span class="delimiter">;</span><span> </span><span>case_tac</span><span> </span><span>x</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sep_auto</span><span class="delimiter">+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_cfailed_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;CONSTRAINT is_pure R &#10233;
+  ((return o is_cfailed), (RETURN o is_cfailed)) &#8712; (status_assn R)<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>sepref_to_hoare</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rename_tac</span><span> </span><span>xi</span><span> </span><span>x</span><span class="delimiter">;</span><span> </span><span>case_tac</span><span> </span><span>xi</span><span class="delimiter">;</span><span> </span><span>case_tac</span><span> </span><span>x</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span>  </span><span>sep_auto</span><span class="delimiter">+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>merge_cstatus_hnr</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;CONSTRAINT is_pure R &#10233;
+  (uncurry (return oo merge_cstatus), uncurry (RETURN oo merge_cstatus)) &#8712;
+    (status_assn R)<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub>  (status_assn R)<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> status_assn R&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>sepref_to_hoare</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span>b</span><span class="delimiter">;</span><span> </span><span>case_tac</span><span> </span><span>bi</span><span class="delimiter">;</span><span> </span><span>case_tac</span><span> </span><span>a</span><span class="delimiter">;</span><span> </span><span>case_tac</span><span> </span><span>ai</span><span class="delimiter">;</span><span> </span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>is_pure_conv</span><span> </span><span>pure_app_eq</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>add_poly_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;add_poly_l&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(poly_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> poly_assn)<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> poly_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>add_poly_l_def</span><span>
+</span><span>    </span><span>HOL_list.fold_custom_empty</span><span>
+</span><span>    </span><span>term_order_rel&#39;_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>term_order_rel&#39;_alt_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>add_poly_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>mult_monomials</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>mult_monoms_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(RETURN oo mult_monoms) x y = REC<span class="hidden">&#8681;</span><sub>T</sub>
+    (&#955;f (p, q).
+      case (p, q) of
+        ([], _) &#8658; RETURN q
+       | (_, []) &#8658; RETURN p
+       | (x # p, y # q) &#8658;
+        (if x = y then do {
+          pq &#8592; f (p, q);
+           RETURN (x # pq)}
+        else if (x, y) &#8712; var_order_rel
+        then do {
+          pq &#8592; f (p, y # q);
+          RETURN (x # pq)}
+        else do {
+          pq &#8592;  f (x # p, q);
+          RETURN (y # pq)}))
+     (x, y)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>eq_commute</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>x</span><span> </span><span>y</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>mult_monoms.induct</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>p</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>RECT_unfold</span><span class="delimiter">,</span><span> </span><span>refine_mono</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.splits</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>p</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>RECT_unfold</span><span class="delimiter">,</span><span> </span><span>refine_mono</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.splits</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>x</span><span> </span><span>p</span><span> </span><span>y</span><span> </span><span>q</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>RECT_unfold</span><span class="delimiter">,</span><span> </span><span>refine_mono</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>list.splits</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>let_to_bind_conv</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>mult_monoms_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo mult_monoms)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(monom_assn)<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (monom_assn)<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> (monom_assn)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mult_poly_raw_def</span><span>
+</span><span>    </span><span>HOL_list.fold_custom_empty</span><span>
+</span><span>    </span><span>var_order&#39;_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>term_order_rel&#39;_alt_def</span><span>
+</span><span>    </span><span>mult_monoms_alt_def</span><span>
+</span><span>    </span><span>var_order_rel_var_order</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>mult_monoms_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>mult_monomials_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo mult_monomials)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(monomial_assn)<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (monomial_assn)<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> (monomial_assn)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mult_monomials_def</span><span>
+</span><span>    </span><span>HOL_list.fold_custom_empty</span><span>
+</span><span>    </span><span>term_order_rel&#39;_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>term_order_rel&#39;_alt_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>map_append_alt_def2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(RETURN o (map_append f b)) xs = REC<span class="hidden">&#8681;</span><sub>T</sub>
+    (&#955;g xs. case xs of [] &#8658; RETURN b
+      | x # xs &#8658; do {
+           y &#8592; g xs;
+           RETURN (f x # y)
+     }) xs&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>eq_commute</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>f</span><span> </span><span>b</span><span> </span><span>xs</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>map_append.induct</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>RECT_unfold</span><span class="delimiter">,</span><span> </span><span>refine_mono</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>RECT_unfold</span><span class="delimiter">,</span><span> </span><span>refine_mono</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>map_append_poly_mult</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;map_append_poly_mult x = map_append (mult_monomials x)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>mult_monomials_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>map_append_poly_mult_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry2 (RETURN ooo map_append_poly_mult)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;monomial_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> poly_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>map_append_poly_mult_def</span><span>
+</span><span>    </span><span>map_append_alt_def2</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>map_append_poly_mult_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;TODO @{thm map_by_foldl} is the worst possible implementation of map!&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>mult_poly_raw_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry (RETURN oo mult_poly_raw)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> poly_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>eta_contract</span><span> </span><span class="delimiter">=</span><span> </span><span>false</span><span class="delimiter">,</span><span> </span><span>show_abbrevs</span><span class="delimiter">=</span><span>false</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mult_poly_raw_def</span><span>
+</span><span>    </span><span>HOL_list.fold_custom_empty</span><span>
+</span><span>    </span><span>term_order_rel&#39;_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>term_order_rel&#39;_alt_def</span><span>
+</span><span>    </span><span>foldl_conv_fold</span><span>
+</span><span>    </span><span>fold_eq_nfoldli</span><span>
+</span><span>    </span><span>map_append_poly_mult_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>map_append_alt_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>mult_poly_raw_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>mult_poly_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry mult_poly_full&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> poly_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mult_poly_full_def</span><span>
+</span><span>    </span><span>HOL_list.fold_custom_empty</span><span>
+</span><span>    </span><span>term_order_rel&#39;_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>term_order_rel&#39;_alt_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>mult_poly_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>inverse_monomial</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;monom_rel&#175; &#215;<span class="hidden">&#8681;</span><sub>r</sub> int_rel = (monom_rel &#215;<span class="hidden">&#8681;</span><sub>r</sub> int_rel)&#175;&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>eq_poly_rel_eq</span><span class="delimiter">[</span><span>sepref_import_param</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((=), (=)) &#8712; poly_rel &#8594; poly_rel &#8594; bool_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>list_rel_sv</span><span class="delimiter">[</span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;monomial_rel&#8250;</span></span></span><span class="delimiter">,</span><span> </span><span>OF</span><span> </span><span>single_valued_monomial_rel</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>list_rel_sv</span><span class="delimiter">[</span><span>OF</span><span> </span><span>single_valued_monomial_rel&#39;</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>IS_LEFT_UNIQUE_def</span><span> </span><span>inv_list_rel_eq</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>inv_list_rel_eq</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>frefI</span><span> </span><span>simp</span><span class="delimiter">:</span><span>
+</span><span>      </span><span>rel2p_def</span><span> </span><span>single_valued_def</span><span> </span><span>p2rel_def</span><span>
+</span><span>    </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>inv_list_rel_eq</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>weak_equality_l_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry weak_equality_l&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>weak_equality_l_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>weak_equality_l_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>add_poly_l</span><span> </span><span>mult_poly_full</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>raw_string_assn</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;string &#8658; string &#8658; assn&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;raw_string_assn &#8801; list_assn id_assn&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>show_nat</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat &#8658; string&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;show_nat i = show i&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>sepref_import_param</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(show_nat, show_nat) &#8712; nat_rel &#8594; &#10216;Id&#10217;list_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>fun_relI</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>status_assn_pure_conv</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;status_assn (id_assn) a b = id_assn a b&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>a</span><span class="delimiter">;</span><span> </span><span>cases</span><span> </span><span>b</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>pure_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry3 (&#955;x y. return oo (error_msg_not_equal_dom x y)), uncurry3 check_not_equal_dom_err) &#8712;
+  poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> raw_string_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>show_nat_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>list_assn_pure_conv</span><span>
+</span><span>    </span><span>prod_assn_pure_conv</span><span> </span><span>check_not_equal_dom_err_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sepref_to_hoare</span><span class="delimiter">;</span><span> </span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>error_msg_not_equal_dom_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(return o (error_msg_notin_dom o nat_of_uint64), RETURN o error_msg_notin_dom)
+   &#8712; uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> raw_string_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(return o (error_msg_reused_dom o nat_of_uint64), RETURN o error_msg_reused_dom)
+    &#8712; uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> raw_string_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry (return oo (&#955;i. error_msg (nat_of_uint64 i))), uncurry (RETURN oo error_msg))
+    &#8712; uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> raw_string_assn<span class="hidden">&#8679;</span><sup>k</sup>  &#8594;<span class="hidden">&#8681;</span><sub>a</sub> status_assn raw_string_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry (return oo  error_msg), uncurry (RETURN oo error_msg))
+   &#8712; nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> raw_string_assn<span class="hidden">&#8679;</span><sup>k</sup>  &#8594;<span class="hidden">&#8681;</span><sub>a</sub> status_assn raw_string_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>error_msg_notin_dom_def</span><span> </span><span>list_assn_pure_conv</span><span> </span><span>list_rel_id_simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>status_assn_pure_conv</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>show_nat_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sepref_to_hoare</span><span class="delimiter">;</span><span> </span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>uint64_nat_rel_def</span><span> </span><span>br_def</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>check_addition_l_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry6 check_addition_l&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> polys_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> vars_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub>
+        uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup>  &#8594;<span class="hidden">&#8681;</span><sub>a</sub> status_assn raw_string_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>mult_poly_full_def</span><span>
+</span><span>    </span><span>HOL_list.fold_custom_empty</span><span>
+</span><span>    </span><span>term_order_rel&#39;_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>term_order_rel&#39;_alt_def</span><span>
+</span><span>    </span><span>check_addition_l_def</span><span>
+</span><span>    </span><span>in_dom_m_lookup_iff</span><span>
+</span><span>    </span><span>fmlookup&#39;_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>vars_llist_alt_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>check_addition_l_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>check_mult_l_dom_err</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>check_mult_l_dom_err_impl</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;check_mult_l_dom_err_impl pd p ia i =
+    (if pd then &#39;&#39;The polynom with id &#39;&#39; @ show (nat_of_uint64 p) @ &#39;&#39; was not found&#39;&#39; else &#39;&#39;&#39;&#39;) @
+    (if ia then &#39;&#39;The id of the resulting id &#39;&#39; @ show (nat_of_uint64 i) @ &#39;&#39; was already given&#39;&#39; else &#39;&#39;&#39;&#39;)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>check_mult_l_mult_err_impl</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;check_mult_l_mult_err_impl p q pq r =
+    &#39;&#39;Multiplying &#39;&#39; @ show p @ &#39;&#39; by &#39;&#39; @ show q @ &#39;&#39; gives &#39;&#39; @ show pq @ &#39;&#39; and not &#39;&#39; @ show r&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry3 ((&#955;x y. return oo (check_mult_l_dom_err_impl x y))),
+   uncurry3 (check_mult_l_dom_err)) &#8712; bool_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> bool_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> raw_string_assn&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>check_mult_l_dom_err_def</span><span> </span><span>check_mult_l_dom_err_impl_def</span><span> </span><span>list_assn_pure_conv</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sep_auto</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry3 ((&#955;x y. return oo (check_mult_l_mult_err_impl x y))),
+   uncurry3 (check_mult_l_mult_err)) &#8712; poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> raw_string_assn&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>check_mult_l_mult_err_def</span><span> </span><span>check_mult_l_mult_err_impl_def</span><span> </span><span>list_assn_pure_conv</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sep_auto</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>check_mult_l_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry6 check_mult_l&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> polys_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> vars_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup>  &#8594;<span class="hidden">&#8681;</span><sub>a</sub> status_assn raw_string_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>check_mult_l_def</span><span>
+</span><span>    </span><span>HOL_list.fold_custom_empty</span><span>
+</span><span>    </span><span>term_order_rel&#39;_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>term_order_rel&#39;_alt_def</span><span>
+</span><span>    </span><span>in_dom_m_lookup_iff</span><span>
+</span><span>    </span><span>fmlookup&#39;_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>vars_llist_alt_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>check_mult_l_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>check_ext_l_dom_err_impl</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uint64 &#8658; _&#8250;</span></span></span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;check_ext_l_dom_err_impl p =
+    &#39;&#39;There is already a polynom with index &#39;&#39; @ show (nat_of_uint64 p)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(((return o (check_ext_l_dom_err_impl))),
+    (check_extension_l_dom_err)) &#8712; uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> raw_string_assn&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>check_extension_l_dom_err_def</span><span> </span><span>check_ext_l_dom_err_impl_def</span><span> </span><span>list_assn_pure_conv</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sep_auto</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>check_extension_l_no_new_var_err_impl</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8658; _&#8250;</span></span></span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;check_extension_l_no_new_var_err_impl p =
+    &#39;&#39;No new variable could be found in polynom &#39;&#39; @ show p&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(((return o (check_extension_l_no_new_var_err_impl))),
+    (check_extension_l_no_new_var_err)) &#8712; poly_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> raw_string_assn&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>check_extension_l_no_new_var_err_impl_def</span><span> </span><span>check_extension_l_no_new_var_err_def</span><span>
+</span><span>     </span><span>list_assn_pure_conv</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sep_auto</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>check_extension_l_side_cond_err_impl</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8658; _&#8250;</span></span></span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;check_extension_l_side_cond_err_impl v p r s =
+    &#39;&#39;Error while checking side conditions of extensions polynow, var is &#39;&#39; @ show v @
+    &#39;&#39; polynom is &#39;&#39; @ show p @ &#39;&#39;side condition p*p - p = &#39;&#39; @ show s @ &#39;&#39; and should be 0&#39;&#39;&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((uncurry3 (&#955;x y. return oo (check_extension_l_side_cond_err_impl x y))),
+    uncurry3 (check_extension_l_side_cond_err)) &#8712; string_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> raw_string_assn&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>check_extension_l_side_cond_err_impl_def</span><span> </span><span>check_extension_l_side_cond_err_def</span><span>
+</span><span>     </span><span>list_assn_pure_conv</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sep_auto</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>check_extension_l_new_var_multiple_err_impl</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8658; _&#8250;</span></span></span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;check_extension_l_new_var_multiple_err_impl v p =
+    &#39;&#39;Error while checking side conditions of extensions polynow, var is &#39;&#39; @ show v @
+    &#39;&#39; but it either appears at least once in the polynom or another new variable is created &#39;&#39; @
+    show p @ &#39;&#39; but should not.&#39;&#39;&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((uncurry (return oo (check_extension_l_new_var_multiple_err_impl))),
+    uncurry (check_extension_l_new_var_multiple_err)) &#8712; string_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> raw_string_assn&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>check_extension_l_new_var_multiple_err_impl_def</span><span>
+</span><span>     </span><span>check_extension_l_new_var_multiple_err_def</span><span>
+</span><span>     </span><span>list_assn_pure_conv</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>sep_auto</span><span>
+</span><span>   </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>check_extension_l_dom_err</span><span> </span><span>fmlookup&#39;</span><span>
+</span><span>  </span><span>check_extension_l_side_cond_err</span><span> </span><span>check_extension_l_no_new_var_err</span><span>
+</span><span>  </span><span>check_extension_l_new_var_multiple_err</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>uminus_poly</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;llist_polynom &#8658; llist_polynom&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uminus_poly p&#39; = map (&#955;(a, b). (a, - b)) p&#39;&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>uminus_poly</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>sepref_import_param</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(map (&#955;(a, b). (a, - b)), uminus_poly) &#8712; poly_rel &#8594; poly_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>uminus_poly_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>fun_relI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">subgoal</span></span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>p</span><span> </span><span>p&#39;</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>p</span><span> </span><span>p&#39;</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>list_rel_induct</span><span class="delimiter">)</span><span>
+</span><span>     </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>vars_of_poly_in</span><span>
+</span><span>  </span><span>weak_equality_l</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>safe_constraint_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Sepref_Constraints.CONSTRAINT single_valued (the_pure monomial_assn)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>single_valued_the_monomial_assn</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;single_valued (the_pure monomial_assn)&#8250;</span></span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;single_valued ((the_pure monomial_assn)&#175;)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>IS_LEFT_UNIQUE_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>step_rewrite_pure</span><span> </span><span>single_valued_monomial_rel</span><span> </span><span>single_valued_monomial_rel&#39;</span><span> </span><span>Sepref_Constraints.CONSTRAINT_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>check_extension_l_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry5 check_extension_l&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> polys_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> vars_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> string_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub>
+     status_assn raw_string_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span>option.splits</span><span class="delimiter">[</span><span>split</span><span class="delimiter">]</span><span> </span><span>single_valued_the_monomial_assn</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span>
+</span><span>    </span><span>HOL_list.fold_custom_empty</span><span>
+</span><span>    </span><span>term_order_rel&#39;_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>term_order_rel&#39;_alt_def</span><span>
+</span><span>    </span><span>in_dom_m_lookup_iff</span><span>
+</span><span>    </span><span>fmlookup&#39;_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>vars_llist_alt_def</span><span>
+</span><span>    </span><span>check_extension_l_def</span><span>
+</span><span>    </span><span>not_not</span><span>
+</span><span>    </span><span>option.case_eq_if</span><span>
+</span><span>    </span><span>uminus_poly_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>HOL_list.fold_custom_empty</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>check_extension_l_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>check_del_l_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry2 check_del_l&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> polys_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> uint64_nat_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> status_assn raw_string_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>check_del_l_def</span><span>
+</span><span>    </span><span>in_dom_m_lookup_iff</span><span>
+</span><span>    </span><span>fmlookup&#39;_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span> </span><span>check_del_l_impl.refine</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>pac_step_rel</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;pac_step_rel &#8801; p2rel (&#10216;Id, &#10216;monomial_rel&#10217;list_rel, Id&#10217; pac_step_rel_raw)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>PAC_Polynoms_Operations.normalize_poly</span><span>
+</span><span>  </span><span>pac_src1</span><span> </span><span>pac_src2</span><span> </span><span>new_id</span><span> </span><span>pac_mult</span><span> </span><span>case_pac_step</span><span> </span><span>check_mult_l</span><span>
+</span><span>  </span><span>check_addition_l</span><span> </span><span>check_del_l</span><span> </span><span>check_extension_l</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pac_step_rel_assn_alt_def2</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;hn_ctxt (pac_step_rel_assn nat_assn poly_assn id_assn) b bi =
+       hn_val
+        (p2rel
+          (&#10216;nat_rel, poly_rel, Id :: (string &#215; _) set&#10217;pac_step_rel_raw)) b bi&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>poly_assn_list</span><span> </span><span>hn_ctxt_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>nat_assn</span><span> </span><span>poly_assn</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;id_assn :: string &#8658; _&#8250;</span></span></span><span> </span><span>b</span><span> </span><span>bi</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>pac_step_rel_assn.induct</span><span class="delimiter">)</span><span>
+</span><span>   </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>p2rel_def</span><span> </span><span>hn_val_unfold</span><span> </span><span>pac_step_rel_raw.simps</span><span> </span><span>relAPP_def</span><span>
+</span><span>    </span><span>pure_app_eq</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_AddD_import</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;CONSTRAINT is_pure K&#8250;</span></span></span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;CONSTRAINT is_pure V&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(return o pac_res, RETURN o pac_res) &#8712; [&#955;x. is_Add x &#8744; is_Mult x &#8744; is_Extension x]<span class="hidden">&#8681;</span><sub>a</sub>
+       (pac_step_rel_assn K V R)<span class="hidden">&#8679;</span><sup>k</sup> &#8594; V&#8250;</span></span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(return o pac_src1, RETURN o pac_src1) &#8712; [&#955;x. is_Add x &#8744; is_Mult x &#8744; is_Del x]<span class="hidden">&#8681;</span><sub>a</sub> (pac_step_rel_assn K V R)<span class="hidden">&#8679;</span><sup>k</sup> &#8594; K&#8250;</span></span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(return o new_id, RETURN o new_id) &#8712; [&#955;x. is_Add x &#8744; is_Mult x &#8744; is_Extension x]<span class="hidden">&#8681;</span><sub>a</sub> (pac_step_rel_assn K V R)<span class="hidden">&#8679;</span><sup>k</sup> &#8594; K&#8250;</span></span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(return o is_Add, RETURN o is_Add) &#8712;  (pac_step_rel_assn K V R)<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool_assn&#8250;</span></span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(return o is_Mult, RETURN o is_Mult) &#8712; (pac_step_rel_assn K V R)<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool_assn&#8250;</span></span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(return o is_Del, RETURN o is_Del) &#8712; (pac_step_rel_assn K V R)<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool_assn&#8250;</span></span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(return o is_Extension, RETURN o is_Extension) &#8712; (pac_step_rel_assn K V R)<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> bool_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>assms</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sepref_to_hoare</span><span class="delimiter">;</span><span> </span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>pac_step_rel_assn_alt_def</span><span> </span><span>is_pure_conv</span><span> </span><span>ent_true_drop</span><span> </span><span>pure_app_eq</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>pac_step.splits</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;CONSTRAINT is_pure K &#10233;
+  (return o pac_src2, RETURN o pac_src2) &#8712; [&#955;x. is_Add x]<span class="hidden">&#8681;</span><sub>a</sub> (pac_step_rel_assn K V R)<span class="hidden">&#8679;</span><sup>k</sup> &#8594; K&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;CONSTRAINT is_pure V &#10233;
+  (return o pac_mult, RETURN o pac_mult) &#8712; [&#955;x. is_Mult x]<span class="hidden">&#8681;</span><sub>a</sub> (pac_step_rel_assn K V R)<span class="hidden">&#8679;</span><sup>k</sup> &#8594; V&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;CONSTRAINT is_pure R &#10233;
+  (return o new_var, RETURN o new_var) &#8712; [&#955;x. is_Extension x]<span class="hidden">&#8681;</span><sub>a</sub> (pac_step_rel_assn K V R)<span class="hidden">&#8679;</span><sup>k</sup> &#8594; R&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>sepref_to_hoare</span><span class="delimiter">;</span><span> </span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>pac_step_rel_assn_alt_def</span><span> </span><span>is_pure_conv</span><span> </span><span>ent_true_drop</span><span> </span><span>pure_app_eq</span><span>
+</span><span>      </span><span>split</span><span class="delimiter">:</span><span> </span><span>pac_step.splits</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>is_Mult_lastI</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#172; is_Add b &#10233; &#172;is_Mult b &#10233; &#172;is_Extension b &#10233; is_Del b&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>b</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>is_cfailed</span><span> </span><span>is_Del</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>PAC_checker_l_step&#39;</span><span> </span><span class="delimiter">::</span><span>  </span><span>_</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;PAC_checker_l_step&#39; a b c d = PAC_checker_l_step a (b, c, d)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>PAC_checker_l_step_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;PAC_checker_l_step a bcd e = (let (b,c,d) = bcd in PAC_checker_l_step&#39; a b c d e)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>PAC_checker_l_step&#39;_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_decl_intf</span></span><span> </span><span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">)</span><span> </span><span>acode_status</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;k) code_status&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">sepref_decl_intf</span></span><span> </span><span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span> </span><span class="tfree">&#39;b</span><span class="delimiter">,</span><span> </span><span class="tfree">&#39;lbl</span><span class="delimiter">)</span><span> </span><span>apac_step</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;k, &#39;b, &#39;lbl) pac_step&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>merge_cstatus</span><span> </span><span>full_normalize_poly</span><span> </span><span>new_var</span><span> </span><span>is_Add</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>poly_rel_the_pure</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;poly_rel = the_pure poly_assn&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>nat_rel_the_pure</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat_rel = the_pure nat_assn&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span> </span><span>WTF_RF</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;pure (the_pure nat_assn) = nat_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>poly_assn_list</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>safe_constraint_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;CONSTRAINT IS_LEFT_UNIQUE uint64_nat_rel&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>single_valued_uint64_nat_rel</span><span class="delimiter">[</span><span>safe_constraint_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;CONSTRAINT single_valued uint64_nat_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>IS_LEFT_UNIQUE_def</span><span> </span><span>single_valued_def</span><span> </span><span>uint64_nat_rel_def</span><span> </span><span>br_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>check_step_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry4 PAC_checker_l_step&#39;&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (status_assn raw_string_assn)<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> vars_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> polys_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (pac_step_rel_assn (uint64_nat_assn) poly_assn (string_assn :: string &#8658; _))<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub>
+    status_assn raw_string_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> vars_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> polys_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>is_Mult_lastI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span> </span><span>single_valued_uint64_nat_rel</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>PAC_checker_l_step_def</span><span> </span><span>PAC_checker_l_step&#39;_def</span><span>
+</span><span>    </span><span>pac_step.case_eq_if</span><span> </span><span>Let_def</span><span>
+</span><span>     </span><span>is_success_alt_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>uminus_poly_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>HOL_list.fold_custom_empty</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>check_step_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>PAC_checker_l_step</span><span> </span><span>PAC_checker_l_step&#39;</span><span> </span><span>fully_normalize_poly_impl</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>PAC_checker_l&#39;</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;PAC_checker_l&#39; p &#119985; A status steps = PAC_checker_l p (&#119985;, A) status steps&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>PAC_checker_l_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;PAC_checker_l p &#119985;A status steps =
+    (let (&#119985;, A) = &#119985;A in PAC_checker_l&#39; p &#119985; A status steps)&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>PAC_checker_l&#39;_def</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>PAC_checker_l_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry4 PAC_checker_l&#39;&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> vars_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> polys_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (status_assn raw_string_assn)<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub>
+       (list_assn (pac_step_rel_assn (uint64_nat_assn) poly_assn string_assn))<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub>
+     status_assn raw_string_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> vars_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> polys_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>is_Mult_lastI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>PAC_checker_l_def</span><span> </span><span>is_success_alt_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>PAC_checker_l_step_alt_def</span><span>
+</span><span>    </span><span>nres_bind_let_law</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>PAC_checker_l&#39;_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>nres_bind_let_law</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">declare</span></span><span> </span><span>PAC_checker_l_impl.refine</span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>polys_assn_input</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;polys_assn_input &#8801; iam_fmap_assn nat_assn poly_assn&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>remap_polys_l_dom_err_impl</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_&#8250;</span></span></span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;remap_polys_l_dom_err_impl =
+    &#39;&#39;Error during initialisation. Too many polynoms where provided. If this happens,&#39;&#39; @
+    &#39;&#39;please report the example to the authors, because something went wrong during &#39;&#39; @
+    &#39;&#39;code generation (code generation to arrays is likely to be broken).&#39;&#39;&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((uncurry0 (return (remap_polys_l_dom_err_impl))),
+    uncurry0 (remap_polys_l_dom_err)) &#8712; unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> raw_string_assn&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>remap_polys_l_dom_err_def</span><span>
+</span><span>     </span><span>remap_polys_l_dom_err_def</span><span>
+</span><span>     </span><span>list_assn_pure_conv</span><span>
+</span><span>   </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref_to_hoare</span><span> </span><span>sep_auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;MLton is not able to optimise the calls to pow.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pow_2_64</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(2::nat) ^ 64 = 18446744073709551616&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>upper_bound_on_dom</span><span> </span><span>op_fmap_empty</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>remap_polys_l_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry2 remap_polys_l2&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> vars_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> polys_assn_input<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub>
+    status_assn raw_string_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> vars_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> polys_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>is_Mult_lastI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span> </span><span>indom_mI</span><span class="delimiter">[</span><span>dest</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>remap_polys_l2_def</span><span> </span><span>op_fmap_empty_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>while_eq_nfoldli</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>while_upt_while_direct</span><span> </span><span>pow_2_64</span><span>
+</span><span>    </span><span>in_dom_m_lookup_iff</span><span>
+</span><span>    </span><span>fmlookup&#39;_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>union_vars_poly_alt_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fmupd &#8977;&#8250;</span></span></span><span> </span><span>uint64_of_nat_conv_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>while_upt_while_direct</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rewrite</span><span> </span><span>at</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;op_fmap_empty&#8250;</span></span></span><span> </span><span>annotate_assn</span><span class="delimiter">[</span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span>A</span><span class="delimiter">=</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;polys_assn&#8250;</span></span></span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>remap_polys_l2_remap_polys_l</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry2 remap_polys_l2, uncurry2 remap_polys_l) &#8712; (Id &#215;<span class="hidden">&#8681;</span><sub>r</sub> &#10216;Id&#10217;set_rel) &#215;<span class="hidden">&#8681;</span><sub>r</sub> Id &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;Id&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>frefI</span><span> </span><span>fun_relI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>remap_polys_l2_remap_polys_l</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry2 remap_polys_l_impl,
+     uncurry2 remap_polys_l) &#8712; poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> vars_assn<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> polys_assn_input<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub>
+       status_assn raw_string_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> vars_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> polys_assn&#8250;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>hfcomp_tcomp_pre</span><span class="delimiter">[</span><span>OF</span><span> </span><span>remap_polys_l2_remap_polys_l</span><span> </span><span>remap_polys_l_impl.refine</span><span class="delimiter">]</span><span>
+</span><span>   </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>hrp_comp_def</span><span> </span><span>hfprod_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_register</span></span><span> </span><span>remap_polys_l</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>full_checker_l_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry2 full_checker_l&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> polys_assn_input<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (list_assn (pac_step_rel_assn (uint64_nat_assn) poly_assn string_assn))<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub>
+    status_assn raw_string_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> vars_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> polys_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">supply</span></span></span></span><span> </span><span class="delimiter">[</span><span class="delimiter">[</span><span>goals_limit</span><span class="delimiter">=</span><span>1</span><span class="delimiter">]</span><span class="delimiter">]</span><span> </span><span>is_Mult_lastI</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>full_checker_l_def</span><span> </span><span>hs.fold_custom_empty</span><span>
+</span><span>    </span><span>union_vars_poly_alt_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>PAC_checker_l_alt_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>PAC_update_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry2 (RETURN ooo fmupd)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> poly_assn<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (polys_assn_input)<span class="hidden">&#8679;</span><sup>d</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> polys_assn_input&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>comp_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>PAC_empty_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry0 (RETURN fmempty)&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> polys_assn_input&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>op_iam_fmap_empty_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>pat_fmap_empty</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_definition</span></span><span> </span><span>empty_vars_impl</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uncurry0 (RETURN {})&#8250;</span></span></span><span>
+</span><span>  </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unit_assn<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> vars_assn&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>hs.fold_custom_empty</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;This is a hack for performance. There is no need to recheck that that a char is valid when
+  working on chars coming from strings... It is not that important in most cases, but in our case
+  the preformance difference is really large.&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>unsafe_asciis_of_literal</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unsafe_asciis_of_literal xs = String.asciis_of_literal xs&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>unsafe_asciis_of_literal&#39;</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">,</span><span> </span><span>symmetric</span><span class="delimiter">,</span><span> </span><span>code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unsafe_asciis_of_literal&#39; = unsafe_asciis_of_literal&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">code_printing</span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">constant</span></span><span> </span><span>unsafe_asciis_of_literal&#39;</span><span> </span><span class="delimiter">&#8640;</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>SML</span><span class="delimiter">)</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;!(List.map (fn c =&gt; let val k = Char.ord c in IntInf.fromInt k end) /o String.explode)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Now comes the big and ugly and unsafe hack.
+
+  Basically, we try to avoid the conversion to IntInf when calculating the hash. The performance
+  gain is roughly 40\%, which is a LOT and definitively something we need to do. We are aware that the
+  SML semantic encourages compilers to optimise conversions, but this does not happen here,
+  corroborating our early observation on the verified SAT solver IsaSAT.x
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>raw_explode</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;raw_explode = String.explode&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">code_printing</span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">constant</span></span><span> </span><span>raw_explode</span><span> </span><span class="delimiter">&#8640;</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>SML</span><span class="delimiter">)</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;String.explode&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;hashcode_literal&#39; s &#8801;
+    foldl (&#955;h x. h * 33 + uint32_of_int (of_char x)) 5381
+     (raw_explode s)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>code</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span>hashcode_literal_def</span><span class="delimiter">[</span><span>unfolded</span><span> </span><span>String.explode_code</span><span>
+</span><span>    </span><span>unsafe_asciis_of_literal_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>uint32_of_char</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">,</span><span> </span><span>code_unfold</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;uint32_of_char x = uint32_of_int (int_of_char x)&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">code_printing</span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">constant</span></span><span> </span><span>uint32_of_char</span><span> </span><span class="delimiter">&#8640;</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>SML</span><span class="delimiter">)</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;!(Word32.fromInt /o (Char.ord))&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>code</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;hashcode s = hashcode_literal&#39; s&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>hashcode_literal_def</span><span> </span><span>hashcode_list_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>unsafe_asciis_of_literal_def</span><span> </span><span>hashcode_list_def</span><span>
+</span><span>     </span><span>String.asciis_of_literal_def</span><span> </span><span>hashcode_literal_def</span><span> </span><span>hashcode_literal&#39;_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We do not include&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">export_code</span></span><span> </span><span>PAC_checker_l_impl</span><span> </span><span>PAC_update_impl</span><span> </span><span>PAC_empty_impl</span><span> </span><span>the_error</span><span> </span><span>is_cfailed</span><span> </span><span>is_cfound</span><span>
+</span><span>  </span><span>int_of_integer</span><span> </span><span>Del</span><span> </span><span>Add</span><span> </span><span>Mult</span><span> </span><span>nat_of_integer</span><span> </span><span>String.implode</span><span> </span><span>remap_polys_l_impl</span><span>
+</span><span>  </span><span>fully_normalize_poly_impl</span><span> </span><span>union_vars_poly_impl</span><span> </span><span>empty_vars_impl</span><span>
+</span><span>  </span><span>full_checker_l_impl</span><span> </span><span>check_step_impl</span><span> </span><span>CSUCCESS</span><span>
+</span><span>  </span><span>Extension</span><span> </span><span>hashcode_literal&#39;</span><span> </span><span>version</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span>SML_imp</span><span> </span><span class="keyword2"><span class="keyword">module_name</span></span><span> </span><span>PAC_Checker</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">file_prefix</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;checker&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">compile_generated_files</span></span><span> </span><span>_</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">external_files</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;code/parser.sml&#8250;</span></span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;code/pasteque.sml&#8250;</span></span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;code/pasteque.mlb&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fn dir =&gt;
+    let
+      val exec = Generated_Files.execute (Path.append dir (Path.basic &quot;code&quot;));
+      val _ = exec &#8249;rename file&#8250; &quot;mv checker.ML checker.sml&quot;
+      val _ =
+        exec &#8249;Compilation&#8250;
+          (File.bash_path \&lt;^path&gt;&#8249;$ISABELLE_MLTON&#8250; ^ &quot; &quot; ^
+            &quot;-const &#39;MLton.safe false&#39; -verbose 1 -default-type int64 -output pasteque &quot; ^
+            &quot;-codegen native -inline 700 -cc-opt -O3 pasteque.mlb&quot;);
+    in () end&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Correctness theorem&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">context</span></span><span> </span><span>poly_embed</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>full_poly_assn</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;full_poly_assn = hr_comp poly_assn (fully_unsorted_poly_rel O mset_poly_rel)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>full_poly_input_assn</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;full_poly_input_assn = hr_comp
+        (hr_comp polys_assn_input
+          (&#10216;nat_rel, fully_unsorted_poly_rel O mset_poly_rel&#10217;fmap_rel))
+        polys_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fully_pac_assn</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fully_pac_assn = (list_assn
+        (hr_comp (pac_step_rel_assn uint64_nat_assn poly_assn string_assn)
+          (p2rel
+            (&#10216;nat_rel,
+             fully_unsorted_poly_rel O
+             mset_poly_rel, var_rel&#10217;pac_step_rel_raw))))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>code_status_assn</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;code_status_assn = hr_comp (status_assn raw_string_assn)
+                            code_status_status_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>full_vars_assn</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;full_vars_assn = hr_comp (hs.assn string_assn)
+                              (&#10216;var_rel&#10217;set_rel)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>polys_rel_full_polys_rel</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;polys_rel_full = Id &#215;<span class="hidden">&#8681;</span><sub>r</sub> polys_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>polys_rel_full_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>full_polys_assn</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;full_polys_assn = hr_comp (hr_comp polys_assn
+                              (&#10216;nat_rel,
+                               sorted_poly_rel O mset_poly_rel&#10217;fmap_rel))
+                            polys_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+
+Below is the full correctness theorems. It basically states that:
+
+  &#9656; assuming that the input polynomials have no duplicate variables
+
+
+Then:
+
+&#9656; if the checker returns \&lt;^term&gt;&#8249;CFOUND&#8250;, the spec is in the ideal
+  and the PAC file is correct
+
+&#9656; if the checker returns \&lt;^term&gt;&#8249;CSUCCESS&#8250;, the PAC file is correct (but
+there is no information on the spec, aka checking failed)
+
+&#9656; if the checker return \&lt;^term&gt;&#8249;CFAILED err&#8250;, then checking failed (and
+\&lt;^term&gt;&#8249;err&#8250; &#8727;&#8249;might&#8250; give you an indication of the error, but the correctness
+theorem does not say anything about that).
+
+
+The input parameters are:
+
+&#9656; the specification polynom represented as a list
+
+&#9656; the input polynoms as hash map (as an array of option polynom)
+
+&#9656; a represention of the PAC proofs.
+
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>PAC_full_correctness</span><span class="delimiter">:</span><span> </span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(* \htmllink{PAC-full-correctness} *)</span></span></span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry2 full_checker_l_impl,
+     uncurry2 (&#955;spec A _. PAC_checker_specification spec A))
+    &#8712; (full_poly_assn)<span class="hidden">&#8679;</span><sup>k</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (full_poly_input_assn)<span class="hidden">&#8679;</span><sup>d</sup> *<span class="hidden">&#8681;</span><sub>a</sub> (fully_pac_assn)<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> hr_comp
+      (code_status_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> full_vars_assn &#215;<span class="hidden">&#8681;</span><sub>a</sub> hr_comp polys_assn
+                              (&#10216;nat_rel, sorted_poly_rel O mset_poly_rel&#10217;fmap_rel))
+                            {((st, G), st&#39;, G&#39;).
+                             st = st&#39; &#8743; (st &#8800; FAILED &#10230; (G, G&#39;) &#8712; Id &#215;<span class="hidden">&#8681;</span><sub>r</sub> polys_rel)}&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span>
+</span><span>    </span><span>full_checker_l_impl.refine</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>full_checker_l_full_checker&#39;</span><span class="delimiter">,</span><span>
+</span><span>      </span><span>FCOMP</span><span> </span><span>full_checker_spec&#39;</span><span class="delimiter">,</span><span>
+</span><span>      </span><span>unfolded</span><span> </span><span>full_poly_assn_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>full_poly_input_assn_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>fully_pac_assn_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>code_status_assn_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>full_vars_assn_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>        </span><span>polys_rel_full_polys_rel</span><span>
+</span><span>        </span><span>hr_comp_prod_conv</span><span>
+</span><span>        </span><span>full_polys_assn_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>      </span><span>hr_comp_Id2</span><span>
+</span><span>   </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+
+It would be more efficient to move the parsing to Isabelle, as this
+would be more memory efficient (and also reduce the TCB). But now
+comes the fun part: It cannot work. A stream (of a file) is consumed
+by side effects. Assume that this would work. The code could look like:
+
+\&lt;^term&gt;&#8249;
+  let next_token = read_file file
+  in f (next_token)
+&#8250;
+
+This code is equal to (in the HOL sense of equality):
+\&lt;^term&gt;&#8249;
+  let _ = read_file file;
+      next_token = read_file file
+  in f (next_token)
+&#8250;
+
+However, as an hypothetical \&lt;^term&gt;&#8249;read_file&#8250; changes the underlying stream, we would get the next
+token. Remark that this is already a weird point of ML compilers. Anyway, I see currently two
+solutions to this problem:
+
+&#9656; The meta-argument: use it only in the Refinement Framework in a setup where copies are
+disallowed. Basically, this works because we can express the non-duplication constraints on the type
+level. However, we cannot forbid people from expressing things directly at the HOL level.
+
+&#9656; On the target language side, model the stream as the stream and the position. Reading takes two
+arguments. First, the position to read. Second, the stream (and the current position) to read. If
+the position to read does not match the current position, return an error. This would fit the
+correctness theorem of the code generation (roughly ``if it terminates without exception, the answer
+is the same&#39;&#39;), but it is still unsatisfactory.
+&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>&#966;</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;string &#8658; nat&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#966; = (SOME &#966;. bij &#966;)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>bij_&#966;</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;bij &#966;&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>someI</span><span class="delimiter">[</span><span>of</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249; &#955;&#966; :: string &#8658; nat. bij &#966;&#8250;</span></span></span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>&#966;_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>poly_embed_EX</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">global_interpretation</span></span><span> </span><span>PAC</span><span class="delimiter">:</span><span> </span><span>poly_embed</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span>&#966;</span><span> </span><span class="delimiter">=</span><span> </span><span>&#966;</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>standard</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>use</span><span> </span><span>bij_&#966;</span><span> </span><span class="keyword2"><span class="keyword">in</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;auto simp: bij_def&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;The full correctness theorem is @{thm PAC.PAC_full_correctness}.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+</html>

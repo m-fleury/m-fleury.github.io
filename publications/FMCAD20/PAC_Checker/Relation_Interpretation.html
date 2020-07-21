@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Relation_Interpretation (repository version)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Relation_Interpretation</h1>
+
+<span class="command">theory</span> <span class="name">Relation_Interpretation</span><br/>
+<span class="keyword">imports</span> <a href="Regular_Exp.html"><span class="name">Regular_Exp</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Regular Expressions as Homogeneous Binary Relations&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Relation_Interpretation</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Regular_Exp</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">primrec</span></span><span> </span><span>rel</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a &#8658; (&#39;b * &#39;b) set) &#8658; &#39;a rexp &#8658; (&#39;b * &#39;b) set&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rel v Zero = {}&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rel v One = Id&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rel v (Atom a) = v a&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rel v (Plus r s) = rel v r &#8746; rel v s&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rel v (Times r s) = rel v r O rel v s&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;rel v (Star r) = (rel v r)^*&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">primrec</span></span><span> </span><span>word_rel</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;a &#8658; (&#39;b * &#39;b) set) &#8658; &#39;a list &#8658; (&#39;b * &#39;b) set&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;word_rel v [] = Id&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;word_rel v (a#as) = v a O word_rel v as&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>word_rel_append</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;word_rel v w O word_rel v w&#39; = word_rel v (w @ w&#39;)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>sym</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>w</span><span class="delimiter">,</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>rel_word_rel</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;rel v r = (&#8899;w&#8712;lang r. word_rel v w)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>r</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>Times</span><span> </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?case</span><span> 
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>rel_def</span><span> </span><span>word_rel_append</span><span> </span><span>conc_def</span><span> </span><span>relcomp_UNION_distrib</span><span> </span><span>relcomp_UNION_distrib2</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Star</span><span> </span><span>r</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">{</span></span><span> </span><span class="keyword3"><span class="command">fix</span></span><span> </span><span>n</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(rel v r) ^^ n = (&#8899;w &#8712; lang r ^^ n. word_rel v w)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>n</span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>0</span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>      </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Suc</span><span> </span><span>n</span><span class="delimiter">)</span><span> </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?case</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>relpow.simps</span><span> </span><span>relpow_commute</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>        </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>Star</span><span> </span><span>conc_def</span><span> </span><span>word_rel_append</span><span>
+</span><span>          </span><span>relcomp_UNION_distrib</span><span> </span><span>relcomp_UNION_distrib2</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">qed</span></span><span> </span><span class="keyword1"><span class="command">}</span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">thus</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>rel.simps</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>force</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>rtrancl_power</span><span> </span><span>star_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Soundness:&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>soundness</span><span class="delimiter">:</span><span>
+</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lang r = lang s &#10233; rel v r = rel v s&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>rel_word_rel</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+</html>

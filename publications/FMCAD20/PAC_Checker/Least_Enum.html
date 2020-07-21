@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Least_Enum (repository version)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Least_Enum</h1>
+
+<span class="command">theory</span> <span class="name">Least_Enum</span><br/>
+<span class="keyword">imports</span> <a href="../../HOL/HOL/Main.html"><span class="name">Main</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*  Title:      Well-Quasi-Orders
+    Author:     Christian Sternagel &lt;c.sternagel@gmail.com&gt;
+    Maintainer: Christian Sternagel
+    License:    LGPL
+*)</span></span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Enumerations of Well-Ordered Sets in Increasing Order&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>Least_Enum</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>Main</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>  
+</span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>infinitely_many1</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>P</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a :: wellorder &#8658; bool&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>infm</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;i. &#8707;j&gt;i. P j&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Enumerate the elements of a well-ordered infinite set in increasing order.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>enum</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat &#8658; &#39;a&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;enum 0 = (LEAST n. P n)&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;enum (Suc i) = (LEAST n. n &gt; enum i &#8743; P n)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>enum_mono</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;enum i &lt; enum (Suc i)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>infm</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>i</span><span class="delimiter">,</span><span> </span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>lifting</span><span class="delimiter">)</span><span> </span><span>LeastI</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>enum_less</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;i &lt; j &#10233; enum i &lt; enum j&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>enum_mono</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>lift_Suc_mono_less</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>enum_P</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P (enum i)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>infm</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>i</span><span class="delimiter">,</span><span> </span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>lifting</span><span class="delimiter">)</span><span> </span><span>LeastI</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">locale</span></span><span> </span><span>infinitely_many2</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>P</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a :: wellorder &#8658; &#39;a &#8658; bool&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>N</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">assumes</span></span><span> </span><span>infm</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8704;i&#8805;N. &#8707;j&gt;i. P i j&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+  Enumerate the elements of a well-ordered infinite set that form a chain w.r.t.\ a given predicate
+  @{term P} starting from a given index @{term N} in increasing order.
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>enumchain</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nat &#8658; &#39;a&quot;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;enumchain 0 = N&quot;</span></span></span><span> </span><span class="delimiter">|</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;enumchain (Suc n) = (LEAST m. m &gt; enumchain n &#8743; P (enumchain n) m)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>enumchain_mono</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;N &#8804; enumchain i &#8743; enumchain i &lt; enumchain (Suc i)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>i</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>0</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;enumchain 0 &#8805; N&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;m&gt;enumchain 0. P (enumchain 0) m&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>infm</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>lifting</span><span class="delimiter">)</span><span> </span><span>LeastI</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Suc</span><span> </span><span>i</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;N &#8804; enumchain (Suc i)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;m&gt;enumchain (Suc i). P (enumchain (Suc i)) m&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>infm</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>blast</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?case</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>lifting</span><span class="delimiter">)</span><span> </span><span>LeastI</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>enumchain_chain</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;P (enumchain i) (enumchain (Suc i))&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>i</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span>0</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;m&gt;enumchain 0. P (enumchain 0) m&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>infm</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>lifting</span><span class="delimiter">)</span><span> </span><span>LeastI</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">next</span></span><span>
+</span><span>  </span><span class="keyword3"><span class="command">case</span></span><span> </span><span class="delimiter">(</span><span>Suc</span><span> </span><span>i</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;enumchain (Suc i) &gt; N&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>enumchain_mono</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>le_less_trans</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">moreover</span></span><span> </span><span class="keyword1"><span class="command">then</span></span><span> </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#8707;m&gt;enumchain (Suc i). P (enumchain (Suc i)) m&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>infm</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">ultimately</span></span><span> </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>lifting</span><span class="delimiter">)</span><span> </span><span>LeastI</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span><span>
+</span></pre>
+
+</div>
+</body>
+</html>

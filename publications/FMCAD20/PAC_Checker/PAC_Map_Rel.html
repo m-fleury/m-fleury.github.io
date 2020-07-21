@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory PAC_Map_Rel (repository version)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory PAC_Map_Rel</h1>
+
+<span class="command">theory</span> <span class="name">PAC_Map_Rel</span><br/>
+<span class="keyword">imports</span> <a href="../../AFP/Sepref_IICF/IICF.html"><span class="name">IICF</span></a> <a href="Finite_Map_Multiset.html"><span class="name">Finite_Map_Multiset</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>PAC_Map_Rel</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span>
+</span><span>    </span><span>Refine_Imperative_HOL.IICF</span><span> </span><span>Finite_Map_Multiset</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Hash-Map for finite mappings&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;
+
+This function declares hash-maps for \&lt;^typ&gt;&#8249;(&#39;a, &#39;b)fmap&#8250;, that are nicer
+to use especially here where everything is finite.
+
+&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fmap_rel</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="delimiter">[</span><span>to_relAPP</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;fmap_rel K V &#8801; {(m1, m2).
+     (&#8704;i j. i |&#8712;| fmdom m2 &#10230; (j, i) &#8712; K &#10230; (the (fmlookup m1 j), the (fmlookup m2 i)) &#8712; V) &#8743;
+     fset (fmdom m1) &#8838; Domain K &#8743; fset (fmdom m2) &#8838; Range K &#8743;
+     (&#8704;i j. (i, j) &#8712; K &#10230; j |&#8712;| fmdom m2 &#10231; i |&#8712;| fmdom m1)}&quot;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fmap_rel_alt_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#10216;K, V&#10217;fmap_rel &#8801;
+     {(m1, m2).
+      (&#8704;i j. i &#8712;# dom_m m2 &#10230;
+             (j, i) &#8712; K &#10230; (the (fmlookup m1 j), the (fmlookup m2 i)) &#8712; V) &#8743;
+      fset (fmdom m1) &#8838; Domain K &#8743;
+      fset (fmdom m2) &#8838; Range K &#8743;
+      (&#8704;i j. (i, j) &#8712; K &#10230; (j &#8712;# dom_m m2) = (i &#8712;# dom_m m1))}
+&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fmap_rel_def</span><span> </span><span>dom_m_def</span><span> </span><span>fmember.rep_eq</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fmap_rel_empty1_simp</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(fmempty,m)&#8712;&#10216;K,V&#10217;fmap_rel &#10231; m=fmempty&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fmdom m = {||}&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fmap_rel_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>fmrestrict_fset_dom</span><span> </span><span>fmrestrict_fset_null</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>meson</span><span> </span><span>RangeE</span><span> </span><span>notin_fset</span><span> </span><span>subsetD</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fmap_rel_empty2_simp</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(m,fmempty)&#8712;&#10216;K,V&#10217;fmap_rel &#10231; m=fmempty&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fmdom m = {||}&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fmap_rel_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>fmrestrict_fset_dom</span><span> </span><span>fmrestrict_fset_null</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>meson</span><span> </span><span>DomainE</span><span> </span><span>notin_fset</span><span> </span><span>subset_iff</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">sepref_decl_intf</span></span><span> </span><span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">)</span><span> </span><span>f_map</span><span> </span><span class="keyword2"><span class="keyword">is</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(&#39;k, &#39;v) fmap&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>synth_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10214;INTF_OF_REL K TYPE(&#39;k); INTF_OF_REL V TYPE(&#39;v)&#10215;
+  &#10233; INTF_OF_REL (&#10216;K,V&#10217;fmap_rel) TYPE((&#39;k,&#39;v) f_map)&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Operations&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_op</span></span><span> </span><span>fmap_empty</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fmempty&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10216;K,V&#10217;fmap_rel&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">.</span></span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_op</span></span><span> </span><span>fmap_is_empty</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;(=) fmempty&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10216;K,V&#10217;fmap_rel &#8594; bool_rel&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>fref_ncI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>parametricity</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>fun_relI</span><span class="delimiter">;</span><span> </span><span>auto</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fmap_rel_fmupd_fmap_rel</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(A, B) &#8712; &#10216;K, R&#10217;fmap_rel &#10233; (p, p&#39;) &#8712; K &#10233; (q, q&#39;) &#8712; R &#10233;
+   (fmupd p q A, fmupd p&#39; q&#39; B) &#8712; &#10216;K, R&#10217;fmap_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">if</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;single_valued K&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;single_valued (K&#175;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>that</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fmap_rel_alt_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>case_tac</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;p&#39; &#8712;# dom_m B&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>all_conj_distrib</span><span> </span><span>IS_RIGHT_UNIQUED</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>multi_member_split</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_op</span></span><span> </span><span>fmap_update</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fmupd&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;K &#8594; V &#8594; &#10216;K,V&#10217;fmap_rel &#8594; &#10216;K,V&#10217;fmap_rel&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;single_valued K&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;single_valued (K&#175;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>fref_ncI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>parametricity</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>fun_relI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>fmap_rel_fmupd_fmap_rel</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fmap_rel_fmdrop_fmap_rel</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(A, B) &#8712; &#10216;K, R&#10217;fmap_rel &#10233; (p, p&#39;) &#8712; K &#10233;
+   (fmdrop p A, fmdrop p&#39; B) &#8712; &#10216;K, R&#10217;fmap_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">if</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;single_valued K&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;single_valued (K&#175;)&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>that</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fmap_rel_alt_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>all_conj_distrib</span><span> </span><span>IS_RIGHT_UNIQUED</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>multi_member_split</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>dom_m_fmdrop</span><span> </span><span>fmlookup_drop</span><span> </span><span>in_dom_m_lookup_iff</span><span> </span><span>union_single_eq_member</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>dom_m_fmdrop</span><span> </span><span>fmlookup_drop</span><span> </span><span>in_dom_m_lookup_iff</span><span> </span><span>union_single_eq_member</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span>IS_RIGHT_UNIQUED</span><span> </span><span>converse.intros</span><span> </span><span>dom_m_fmdrop</span><span> </span><span>fmlookup_drop</span><span> </span><span>in_dom_m_lookup_iff</span><span> </span><span>union_single_eq_member</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_op</span></span><span> </span><span>fmap_delete</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fmdrop&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;K &#8594; &#10216;K,V&#10217;fmap_rel &#8594; &#10216;K,V&#10217;fmap_rel&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword2"><span class="keyword">where</span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;single_valued K&quot;</span></span></span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;single_valued (K&#175;)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>fref_ncI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>parametricity</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>add</span><span class="delimiter">:</span><span> </span><span>fmap_rel_fmdrop_fmap_rel</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fmap_rel_nat_the_fmlookup</span><span class="delimiter">[</span><span>intro</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(A, B) &#8712; &#10216;S, R&#10217;fmap_rel &#10233; (p, p&#39;) &#8712; S &#10233; p&#39; &#8712;# dom_m B &#10233;
+     (the (fmlookup A p), the (fmlookup B p&#39;)) &#8712; R&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fmap_rel_alt_def</span><span> </span><span>distinct_mset_dom</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fmap_rel_in_dom_iff</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(aa, a&#39;a) &#8712; &#10216;K, V&#10217;fmap_rel &#10233;
+    (a, a&#39;) &#8712; K &#10233;
+    a&#39; &#8712;# dom_m a&#39;a &#10231;
+    a &#8712;# dom_m aa&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fmap_rel_alt_def</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fmap_rel_fmlookup_rel</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(a, a&#39;) &#8712; K &#10233; (aa, a&#39;a) &#8712; &#10216;K, V&#10217;fmap_rel &#10233;
+         (fmlookup aa a, fmlookup a&#39;a a&#39;) &#8712; &#10216;V&#10217;option_rel&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>fmap_rel_nat_the_fmlookup</span><span class="delimiter">[</span><span>of</span><span> </span><span>aa</span><span> </span><span>a&#39;a</span><span> </span><span>K</span><span> </span><span>V</span><span> </span><span>a</span><span> </span><span>a&#39;</span><span class="delimiter">]</span><span>
+</span><span>      </span><span>fmap_rel_in_dom_iff</span><span class="delimiter">[</span><span>of</span><span> </span><span>aa</span><span> </span><span>a&#39;a</span><span> </span><span>K</span><span> </span><span>V</span><span> </span><span>a</span><span> </span><span>a&#39;</span><span class="delimiter">]</span><span>
+</span><span>      </span><span>in_dom_m_lookup_iff</span><span class="delimiter">[</span><span>of</span><span> </span><span>a&#39;</span><span> </span><span>a&#39;a</span><span class="delimiter">]</span><span>
+</span><span>      </span><span>in_dom_m_lookup_iff</span><span class="delimiter">[</span><span>of</span><span> </span><span>a</span><span> </span><span>aa</span><span class="delimiter">]</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;a&#39; &#8712;# dom_m a&#39;a&#8250;</span></span></span><span class="delimiter">)</span><span>
+</span><span>      </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>fmap_rel_nat_the_fmlookup</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_op</span></span><span> </span><span>fmap_lookup</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fmlookup&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#10216;K,V&#10217;fmap_rel &#8594; K &#8594;  &#10216;V&#10217;option_rel&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>fref_ncI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>parametricity</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>intro</span><span> </span><span>fun_relI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>fmap_rel_fmlookup_rel</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>in_fdom_alt</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;k&#8712;#dom_m m &#10231; &#172;is_None (fmlookup m k)&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.split</span><span> </span><span>intro</span><span class="delimiter">:</span><span> </span><span>fmdom_notI</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>dom_m_def</span><span> </span><span>fmember.rep_eq</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>meson</span><span> </span><span>fmdom_notI</span><span> </span><span>notin_fset</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>notin_fset</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>fastforce</span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">sepref_decl_op</span></span><span> </span><span>fmap_contains_key</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#955;k m. k&#8712;#dom_m m&quot;</span></span></span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;K &#8594; &#10216;K,V&#10217;fmap_rel &#8594; bool_rel&quot;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>in_fdom_alt</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>fref_ncI</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>parametricity</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>rule</span><span> </span><span>fmap_rel_fmlookup_rel</span><span class="delimiter">;</span><span> </span><span>assumption</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Patterns&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pat_fmap_empty</span><span class="delimiter">[</span><span>pat_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;fmempty &#8801; op_fmap_empty&quot;</span></span></span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>simp</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>pat_map_is_empty</span><span class="delimiter">[</span><span>pat_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(=) $m$fmempty &#8801; op_fmap_is_empty$m&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(=) $fmempty$m &#8801; op_fmap_is_empty$m&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(=) $(dom_m$m)${#} &#8801; op_fmap_is_empty$m&quot;</span></span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(=) ${#}$(dom_m$m) &#8801; op_fmap_is_empty$m&quot;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>atomize_eq</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">:</span><span> </span><span>sym</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>op_map_contains_key</span><span class="delimiter">[</span><span>pat_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;(&#8712;#) $ k $ (dom_m$m) &#8801; op_fmap_contains_key$&#39;k$&#39;m&quot;</span></span></span><span>
+</span><span>   </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>eq_reflection</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Mapping to Normal Hashmaps&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>map_of_fmap</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#39;k &#8658; &#39;v option) &#8658; (&#39;k, &#39;v) fmap&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;map_of_fmap h &#8801; Abs_fmap h&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>map_fmap_rel</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;map_fmap_rel = br map_of_fmap (&#955;a. finite (dom a))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fmdrop_set_None</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(op_map_delete, fmdrop) &#8712; Id &#8594; map_fmap_rel &#8594; map_fmap_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>map_fmap_rel_def</span><span> </span><span>br_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>fmdrop.abs_eq</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>eq_onp_def</span><span> </span><span>fmap.Abs_fmap_inject</span><span>
+</span><span>    </span><span>map_drop_def</span><span> </span><span>map_filter_finite</span><span>
+</span><span>     </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>map_filter_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>map_upd_fmupd</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(op_map_update, fmupd) &#8712; Id &#8594; Id &#8594; map_fmap_rel &#8594; map_fmap_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>map_fmap_rel_def</span><span> </span><span>br_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>fmupd.abs_eq</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>eq_onp_def</span><span> </span><span>fmap.Abs_fmap_inject</span><span>
+</span><span>    </span><span>map_drop_def</span><span> </span><span>map_filter_finite</span><span> </span><span>map_upd_def</span><span>
+</span><span>     </span><span>intro</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>ext</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Technically @{term op_map_lookup} has the arguments in the wrong direction.&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fmlookup&#39;</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fmlookup&#39; A k = fmlookup k A&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>def_pat_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((&#8712;#)$k$(dom_m$A)) &#8801; Not$(is_None$(fmlookup&#39;$k$A))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>option.split</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>dom_m_def</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>smt</span><span> </span><span>domIff</span><span> </span><span>fmdom.rep_eq</span><span> </span><span>option.disc_eq_case</span><span class="delimiter">(</span><span>1</span><span class="delimiter">)</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>op_map_lookup_fmlookup</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(op_map_lookup, fmlookup&#39;) &#8712; Id &#8594; map_fmap_rel &#8594; &#10216;Id&#10217;option_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>map_fmap_rel_def</span><span> </span><span>br_def</span><span> </span><span>fmap.Abs_fmap_inverse</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>hm_fmap_assn</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;hm_fmap_assn K V &#8801; hr_comp (hm.assn K V) map_fmap_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>fmap_delete_hnr</span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span>
+</span><span>   </span><span>hm.delete_hnr</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>fmdrop_set_None</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>fmap_update_hnr</span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span>
+</span><span>   </span><span>hm.update_hnr</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>map_upd_fmupd</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>fmap_lookup_hnr</span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span>
+</span><span>   </span><span>hm.lookup_hnr</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>op_map_lookup_fmlookup</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fmempty_empty</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry0 (RETURN op_map_empty), uncurry0 (RETURN fmempty)) &#8712; unit_rel &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;map_fmap_rel&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>map_fmap_rel_def</span><span> </span><span>br_def</span><span> </span><span>fmempty_def</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span>hm.empty_hnr</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>fmempty_empty</span><span class="delimiter">,</span><span> </span><span>unfolded</span><span> </span><span>op_fmap_empty_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>iam_fmap_assn</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;iam_fmap_assn K V &#8801; hr_comp (iam.assn K V) map_fmap_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>iam_fmap_delete_hnr</span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span>
+</span><span>   </span><span>iam.delete_hnr</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>fmdrop_set_None</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>iam_ffmap_update_hnr</span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span>
+</span><span>   </span><span>iam.update_hnr</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>map_upd_fmupd</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span>iam_ffmap_lookup_hnr</span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span>
+</span><span>   </span><span>iam.lookup_hnr</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>op_map_lookup_fmlookup</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>op_iam_fmap_empty</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;op_iam_fmap_empty = fmempty&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>iam_fmempty_empty</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry0 (RETURN op_map_empty), uncurry0 (RETURN op_iam_fmap_empty)) &#8712; unit_rel &#8594;<span class="hidden">&#8681;</span><sub>f</sub> &#10216;map_fmap_rel&#10217;nres_rel&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>map_fmap_rel_def</span><span> </span><span>br_def</span><span> </span><span>fmempty_def</span><span> </span><span>frefI</span><span> </span><span>nres_relI</span><span> </span><span>op_iam_fmap_empty_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemmas</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span> </span><span class="delimiter">=</span><span>
+</span><span>  </span><span>iam.empty_hnr</span><span class="delimiter">[</span><span>FCOMP</span><span> </span><span>fmempty_empty</span><span class="delimiter">,</span><span> </span><span>unfolded</span><span> </span><span>op_iam_fmap_empty_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">]</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>upper_bound_on_dom</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;upper_bound_on_dom A = SPEC(&#955;n. &#8704;i &#8712;#(dom_m A). i &lt; n)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span class="delimiter">[</span><span>sepref_fr_rules</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>   </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((Array.len), upper_bound_on_dom) &#8712; (iam_fmap_assn nat_assn V)<span class="hidden">&#8679;</span><sup>k</sup> &#8594;<span class="hidden">&#8681;</span><sub>a</sub> nat_assn&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">proof</span></span><span> </span><span>-</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;finite (dom b) &#10233; i &#8712; fset (fmdom (map_of_fmap b)) &#10231; i &#8712; dom b&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>i</span><span> </span><span>b</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>fmdom.abs_eq</span><span class="delimiter">)</span><span>
+</span><span>     </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>eq_onp_def</span><span> </span><span>fset.Abs_fset_inverse</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span>2</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat_rel = the_pure (nat_assn)&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>3</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;nat_assn = pure nat_rel&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;the_pure (&#955;a c :: nat. &#8593; (c = a)) = nat_rel&#8250;</span></span></span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>2</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>3</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>pure_def</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>    </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">have</span></span><span> </span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(iam_of_list l, b) &#8712; the_pure (&#955;a c :: nat. &#8593; (c = a)) &#8594; &#10216;the_pure V&#10217;option_rel &#10233;
+       b i = Some y &#10233; i &lt; length l&#8250;</span></span></span><span>  </span><span class="keyword2"><span class="keyword">for</span></span><span> </span><span>i</span><span> </span><span>b</span><span> </span><span>l</span><span> </span><span>y</span><span>
+</span><span>    </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span> </span><span>fun_relD</span><span class="delimiter">[</span><span>of</span><span> </span><span>_</span><span> </span><span>_</span><span> </span><span>_</span><span> </span><span>_</span><span> </span><span>i</span><span> </span><span>i</span><span class="delimiter">]</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>option_rel_def</span><span>
+</span><span>      </span><span>iam_of_list_def</span><span> </span><span>split</span><span class="delimiter">:</span><span> </span><span>if_splits</span><span class="delimiter">)</span><span>
+</span><span>  </span><span class="keyword3"><span class="command">show</span></span><span> </span><span class="var">?thesis</span><span>
+</span><span>   </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>sepref_to_hoare</span><span>
+</span><span>     </span><span class="delimiter">(</span><span>sep_auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>upper_bound_on_dom_def</span><span> </span><span>hr_comp_def</span><span> </span><span>iam.assn_def</span><span> </span><span>map_rel_def</span><span>
+</span><span>     </span><span>map_fmap_rel_def</span><span> </span><span>is_iam_def</span><span> </span><span>br_def</span><span> </span><span>dom_m_def</span><span class="delimiter">)</span><span>
+</span><span class="keyword1"><span class="command">qed</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fmap_rel_nat_rel_dom_m</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(A, B) &#8712; &#10216;nat_rel, R&#10217;fmap_rel &#10233; dom_m A = dom_m B&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>subst</span><span> </span><span>distinct_set_mset_eq_iff</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fmap_rel_alt_def</span><span> </span><span>distinct_mset_dom</span><span>
+</span><span>      </span><span>simp</span><span> </span><span>del</span><span class="delimiter">:</span><span> </span><span>fmap_rel_nat_the_fmlookup</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>ref_two_step&#39;</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;A &#8804; B &#10233;  &#8659; R A &#8804; &#8659; R B&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>ref_two_step</span><span> </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+</html>

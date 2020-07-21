@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory NDerivative (repository version)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory NDerivative</h1>
+
+<span class="command">theory</span> <span class="name">NDerivative</span><br/>
+<span class="keyword">imports</span> <a href="Regular_Exp.html"><span class="name">Regular_Exp</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Normalizing Derivative&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">theory</span></span><span> </span><span>NDerivative</span><span>
+</span><span class="keyword2"><span class="keyword">imports</span></span><span>
+</span><span>  </span><span>Regular_Exp</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Normalizing operations&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;associativity, commutativity, idempotence, zero&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>nPlus</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::order rexp &#8658; &#39;a rexp &#8658; &#39;a rexp&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;nPlus Zero r = r&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nPlus r Zero = r&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nPlus (Plus r s) t = nPlus r (nPlus s t)&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nPlus r (Plus s t) =
+     (if r = s then (Plus s t)
+     else if le_rexp r s then Plus r (Plus s t)
+     else Plus s (nPlus r t))&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nPlus r s =
+     (if r = s then r
+      else if le_rexp r s then Plus r s
+      else Plus s r)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lang_nPlus</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lang (nPlus r s) = lang (Plus r s)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>r</span><span> </span><span>s</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>nPlus.induct</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;associativity, zero, one&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">fun</span></span><span> </span><span>nTimes</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::order rexp &#8658; &#39;a rexp &#8658; &#39;a rexp&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;nTimes Zero _ = Zero&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nTimes _ Zero = Zero&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nTimes One r = r&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nTimes r One = r&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nTimes (Times r s) t = Times r (nTimes s t)&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nTimes r s = Times r s&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lang_nTimes</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lang (nTimes r s) = lang (Times r s)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>r</span><span> </span><span>s</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>nTimes.induct</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>conc_assoc</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">primrec</span></span><span> </span><span>norm</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::order rexp &#8658; &#39;a rexp&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;norm Zero = Zero&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;norm One = One&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;norm (Atom a) = Atom a&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;norm (Plus r s) = nPlus (norm r) (norm s)&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;norm (Times r s) = nTimes (norm r) (norm s)&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;norm (Star r) = Star (norm r)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lang_norm</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lang (norm r) = lang r&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induct</span><span> </span><span>r</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">primrec</span></span><span> </span><span>nderiv</span><span> </span><span class="delimiter">::</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;&#39;a::order &#8658; &#39;a rexp &#8658; &#39;a rexp&quot;</span></span></span><span>
+</span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;nderiv _ Zero = Zero&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nderiv _ One = Zero&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nderiv a (Atom b) = (if a = b then One else Zero)&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nderiv a (Plus r s) = nPlus (nderiv a r) (nderiv a s)&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nderiv a (Times r s) =
+    (let r&#39;s = nTimes (nderiv a r) s
+     in if nullable r then nPlus r&#39;s (nderiv a s) else r&#39;s)&quot;</span></span></span><span>
+</span><span class="delimiter">|</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;nderiv a (Star r) = nTimes (nderiv a r) (Star r)&quot;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>lang_nderiv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;lang (nderiv a r) = Deriv a (lang r)&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>r</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>Let_def</span><span> </span><span>nullable_iff</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>deriv_no_occurrence</span><span class="delimiter">:</span><span> 
+</span><span>  </span><span class="string"><span class="delete"><span class="delete">&quot;x &#8713; atoms r &#10233; nderiv x r = Zero&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>r</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atoms_nPlus</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atoms (nPlus r s) = atoms r &#8746; atoms s&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>r</span><span> </span><span>s</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>nPlus.induct</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atoms_nTimes</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atoms (nTimes r s) &#8838; atoms r &#8746; atoms s&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>r</span><span> </span><span>s</span><span> </span><span>rule</span><span class="delimiter">:</span><span> </span><span>nTimes.induct</span><span class="delimiter">)</span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atoms_norm</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atoms (norm r) &#8838; atoms r&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>r</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span>subsetD</span><span class="delimiter">[</span><span>OF</span><span> </span><span>atoms_nTimes</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>atoms_nderiv</span><span class="delimiter">:</span><span> </span><span class="string"><span class="delete"><span class="delete">&quot;atoms (nderiv a r) &#8838; atoms r&quot;</span></span></span><span>
+</span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>induction</span><span> </span><span>r</span><span class="delimiter">)</span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>Let_def</span><span> </span><span>dest</span><span class="delimiter">!</span><span class="delimiter">:</span><span>subsetD</span><span class="delimiter">[</span><span>OF</span><span> </span><span>atoms_nTimes</span><span class="delimiter">]</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+</html>
