@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory PAC_Polynomials_Term (repository version)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory PAC_Polynomials_Term</h1>
+
+<span class="command">theory</span> <span class="name">PAC_Polynomials_Term</span><br/>
+<span class="keyword">imports</span> <a href="PAC_Polynomials.html"><span class="name">PAC_Polynomials</span></a> <a href="../../AFP/Sepref_IICF/IICF.html"><span class="name">IICF</span></a><br/>
+
+</div>
+<div class="source">
+<pre class="source"><span class="keyword1"><span class="command">theory</span></span><span> </span><span>PAC_Polynomials_Term</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">imports</span></span><span> </span><span>PAC_Polynomials</span><span>
+</span><span>    </span><span>Refine_Imperative_HOL.IICF</span><span>
+</span><span class="keyword2"><span class="keyword">begin</span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">section</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Terms&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We define some helper functions.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Ordering&#8250;</span></span></span><span>
+</span><span>
+</span><span class="comment"><span class="delete"><span class="delete"><span class="delete"><span class="delete">(*Taken from WB_More_Refinement*)</span></span></span></span></span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fref_to_Down_curry_left</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>f</span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#39;a &#8658; &#39;b &#8658; &#39;c nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>A</span><span class="delimiter">::</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;((&#39;a &#215; &#39;b) &#215; &#39;d) set&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(uncurry f, g) &#8712; [P]<span class="hidden">&#8681;</span><sub>f</sub> A &#8594; &#10216;B&#10217;nres_rel &#10233;
+      (&#8896;a b x&#39;. P x&#39; &#10233; ((a, b), x&#39;) &#8712; A &#10233; f a b &#8804; &#8659; B (g x&#39;))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fref_def</span><span> </span><span>uncurry_def</span><span> </span><span>nres_rel_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fref_to_Down_curry_right</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">fixes</span></span><span> </span><span>g</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#39;a &#8658; &#39;b &#8658; &#39;c nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span> </span><span>f</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;&#39;d &#8658; _ nres&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>    </span><span>A</span><span class="delimiter">::</span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#39;d &#215; (&#39;a &#215; &#39;b)) set&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword2"><span class="keyword">shows</span></span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(f, uncurry g) &#8712; [P]<span class="hidden">&#8681;</span><sub>f</sub> A &#8594; &#10216;B&#10217;nres_rel &#10233;
+      (&#8896;a b x&#39;. P (a,b) &#10233; (x&#39;, (a, b)) &#8712; A &#10233; f x&#39; &#8804; &#8659; B (g a b))&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>fref_def</span><span> </span><span>uncurry_def</span><span> </span><span>nres_rel_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span>auto</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>term_poly_list</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;string list&#8250;</span></span></span><span>
+</span><span class="keyword1"><span class="command">type_synonym</span></span><span> </span><span>llist_polynom</span><span> </span><span class="delimiter">=</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(term_poly_list &#215; int) list&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">text</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;We instantiate the characters with typeclass linorder to be able to talk abourt sorted and
+  so on.&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>less_eq_char</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;char &#8658; char &#8658; bool&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;less_eq_char c d = (((of_char c) :: nat) &#8804; of_char d)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>less_char</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;char &#8658; char &#8658; bool&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;less_char c d = (((of_char c) :: nat) &lt; of_char d)&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">global_interpretation</span></span><span> </span><span>char</span><span class="delimiter">:</span><span> </span><span>linorder</span><span> </span><span>less_eq_char</span><span> </span><span>less_char</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">using</span></span><span> </span><span>linorder_char</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">unfolding</span></span><span> </span><span>linorder_class_def</span><span> </span><span>class.linorder_def</span><span>
+</span><span>    </span><span>less_eq_char_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span> </span><span>less_char_def</span><span class="delimiter">[</span><span>symmetric</span><span class="delimiter">]</span><span>
+</span><span>    </span><span>class.order_def</span><span> </span><span>order_class_def</span><span>
+</span><span>    </span><span>class.preorder_def</span><span> </span><span>preorder_class_def</span><span>
+</span><span>    </span><span>ord_class_def</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span>auto</span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">done</span></span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>less_than_char</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(char &#215; char) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;less_than_char &#8801; p2rel less_char&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>less_than_char_def</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(x,y) &#8712; less_than_char &#10231; less_char x y&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>p2rel_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>trans_less_than_char</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;trans less_than_char&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>irrefl_less_than_char</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;irrefl less_than_char&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">and</span></span><span>
+</span><span>  </span><span>antisym_less_than_char</span><span class="delimiter">:</span><span>
+</span><span>    </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;antisym less_than_char&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>less_than_char_def</span><span> </span><span>trans_def</span><span> </span><span>irrefl_def</span><span> </span><span>antisym_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">subsection</span></span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;Polynomials&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>var_order_rel</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(string &#215; string) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;var_order_rel &#8801; lexord less_than_char&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>var_order</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;string &#8658; string &#8658; bool&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;var_order &#8801; rel2p var_order_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>term_order_rel</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(term_poly_list &#215; term_poly_list) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;term_order_rel &#8801; lexord var_order_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>term_order</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;term_poly_list &#8658; term_poly_list &#8658; bool&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;term_order &#8801; rel2p term_order_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>term_poly_list_rel</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(term_poly_list &#215; term_poly) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;term_poly_list_rel = {(xs, ys).
+     ys = mset xs &#8743;
+     distinct xs &#8743;
+     sorted_wrt (rel2p var_order_rel) xs}&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>unsorted_term_poly_list_rel</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(term_poly_list &#215; term_poly) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unsorted_term_poly_list_rel = {(xs, ys).
+     ys = mset xs &#8743; distinct xs}&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>poly_list_rel</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8658; ((&#39;a &#215; int) list &#215; mset_polynom) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;poly_list_rel R = {(xs, ys).
+     (xs, ys) &#8712; &#10216;R &#215;<span class="hidden">&#8681;</span><sub>r</sub> int_rel&#10217;list_rel O list_mset_rel &#8743;
+     0 &#8713;# snd `# ys}&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>sorted_poly_list_rel_wrt</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#39;a &#8658; &#39;a &#8658; bool)
+     &#8658; (&#39;a &#215; string multiset) set &#8658; ((&#39;a &#215; int) list &#215; mset_polynom) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;sorted_poly_list_rel_wrt S R = {(xs, ys).
+     (xs, ys) &#8712; &#10216;R &#215;<span class="hidden">&#8681;</span><sub>r</sub> int_rel&#10217;list_rel O list_mset_rel &#8743;
+     sorted_wrt S (map fst xs) &#8743;
+     distinct (map fst xs) &#8743;
+     0 &#8713;# snd `# ys}&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>sorted_poly_list_rel</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;sorted_poly_list_rel R &#8801; sorted_poly_list_rel_wrt R term_poly_list_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>sorted_poly_rel</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;sorted_poly_rel &#8801; sorted_poly_list_rel term_order&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>sorted_repeat_poly_list_rel_wrt</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#39;a &#8658; &#39;a &#8658; bool)
+     &#8658; (&#39;a &#215; string multiset) set &#8658; ((&#39;a &#215; int) list &#215; mset_polynom) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;sorted_repeat_poly_list_rel_wrt S R = {(xs, ys).
+     (xs, ys) &#8712; &#10216;R &#215;<span class="hidden">&#8681;</span><sub>r</sub> int_rel&#10217;list_rel O list_mset_rel &#8743;
+     sorted_wrt S (map fst xs) &#8743;
+     0 &#8713;# snd `# ys}&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>sorted_repeat_poly_list_rel</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;sorted_repeat_poly_list_rel R &#8801; sorted_repeat_poly_list_rel_wrt R term_poly_list_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>sorted_repeat_poly_rel</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;sorted_repeat_poly_rel &#8801; sorted_repeat_poly_list_rel (rel2p (Id &#8746; lexord var_order_rel))&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>unsorted_poly_rel</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unsorted_poly_rel &#8801; poly_list_rel term_poly_list_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>sorted_poly_list_rel_empty_l</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;([], s&#39;) &#8712; sorted_poly_list_rel_wrt S T &#10231; s&#39; = {#}&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>cases</span><span> </span><span>s&#39;</span><span class="delimiter">)</span><span>
+</span><span>    </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>sorted_poly_list_rel_wrt_def</span><span> </span><span>list_mset_rel_def</span><span> </span><span>br_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>fully_unsorted_poly_list_rel</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8658; ((&#39;a &#215; int) list &#215; mset_polynom) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fully_unsorted_poly_list_rel R = {(xs, ys).
+     (xs, ys) &#8712; &#10216;R &#215;<span class="hidden">&#8681;</span><sub>r</sub> int_rel&#10217;list_rel O list_mset_rel}&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>fully_unsorted_poly_rel</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;fully_unsorted_poly_rel &#8801; fully_unsorted_poly_list_rel unsorted_term_poly_list_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>fully_unsorted_poly_list_rel_empty_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(p, {#}) &#8712; fully_unsorted_poly_list_rel R &#10231; p = []&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;([], p&#39;) &#8712; fully_unsorted_poly_list_rel R &#10231; p&#39; = {#}&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>fully_unsorted_poly_list_rel_def</span><span> </span><span>list_mset_rel_def</span><span> </span><span>br_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>poly_list_rel_with0</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;_ &#8658; ((&#39;a &#215; int) list &#215; mset_polynom) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;poly_list_rel_with0 R = {(xs, ys).
+     (xs, ys) &#8712; &#10216;R &#215;<span class="hidden">&#8681;</span><sub>r</sub> int_rel&#10217;list_rel O list_mset_rel}&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>unsorted_poly_rel_with0</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;unsorted_poly_rel_with0 &#8801; fully_unsorted_poly_list_rel term_poly_list_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>poly_list_rel_with0_empty_iff</span><span class="delimiter">[</span><span>simp</span><span class="delimiter">]</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(p, {#}) &#8712; poly_list_rel_with0 R &#10231; p = []&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;([], p&#39;) &#8712; poly_list_rel_with0 R &#10231; p&#39; = {#}&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>poly_list_rel_with0_def</span><span> </span><span>list_mset_rel_def</span><span> </span><span>br_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">definition</span></span><span> </span><span>sorted_repeat_poly_list_rel_with0_wrt</span><span> </span><span class="delimiter">::</span><span> </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(&#39;a &#8658; &#39;a &#8658; bool)
+     &#8658; (&#39;a &#215; string multiset) set &#8658; ((&#39;a &#215; int) list &#215; mset_polynom) set&#8250;</span></span></span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;sorted_repeat_poly_list_rel_with0_wrt S R = {(xs, ys).
+     (xs, ys) &#8712; &#10216;R &#215;<span class="hidden">&#8681;</span><sub>r</sub> int_rel&#10217;list_rel O list_mset_rel &#8743;
+     sorted_wrt S (map fst xs)}&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>sorted_repeat_poly_list_rel_with0</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;sorted_repeat_poly_list_rel_with0 R &#8801; sorted_repeat_poly_list_rel_with0_wrt R term_poly_list_rel&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">abbreviation</span></span><span> </span><span>sorted_repeat_poly_rel_with0</span><span> </span><span class="keyword2"><span class="keyword">where</span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;sorted_repeat_poly_rel_with0 &#8801; sorted_repeat_poly_list_rel_with0 (rel2p (Id &#8746; lexord var_order_rel))&#8250;</span></span></span><span>
+</span><span>
+</span><span class="keyword1"><span class="command">lemma</span></span><span> </span><span>term_poly_list_relD</span><span class="delimiter">:</span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(xs, ys) &#8712; term_poly_list_rel &#10233; distinct xs&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(xs, ys) &#8712; term_poly_list_rel &#10233; ys = mset xs&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(xs, ys) &#8712; term_poly_list_rel &#10233; sorted_wrt (rel2p var_order_rel) xs&#8250;</span></span></span><span>
+</span><span>  </span><span class="cartouche"><span class="delete"><span class="delete">&#8249;(xs, ys) &#8712; term_poly_list_rel &#10233; sorted_wrt (rel2p (Id &#8746; var_order_rel)) xs&#8250;</span></span></span><span>
+</span><span>  </span><span class="keyword1"><span class="command"><span class="improper"><span class="command">apply</span></span></span></span><span> </span><span class="delimiter">(</span><span>auto</span><span> </span><span>simp</span><span class="delimiter">:</span><span> </span><span>term_poly_list_rel_def</span><span class="delimiter">;</span><span> </span><span>fail</span><span class="delimiter">)</span><span class="delimiter">+</span><span>
+</span><span>  </span><span class="keyword1"><span class="command">by</span></span><span> </span><span class="delimiter">(</span><span>metis</span><span> </span><span class="delimiter">(</span><span>mono_tags</span><span class="delimiter">,</span><span> </span><span>lifting</span><span class="delimiter">)</span><span> </span><span>CollectD</span><span> </span><span>UnI2</span><span> </span><span>rel2p_def</span><span> </span><span>sorted_wrt_mono_rel</span><span> </span><span>split_conv</span><span>
+</span><span>    </span><span>term_poly_list_rel_def</span><span class="delimiter">)</span><span>
+</span><span>
+</span><span class="keyword2"><span class="keyword">end</span></span><span>
+</span></pre>
+
+</div>
+</body>
+</html>
