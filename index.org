@@ -16,7 +16,7 @@ As part of my PhD thesis, I developed a framework to formalize SAT solving. The
 general organization is given by the following graph:
 [[file:figures/sat/sat_framework.png]]
 
-Thep PCDCL (standing for pragmatic CDCL) and IsaSAT/LLVM have not yet been
+The PCDCL (standing for pragmatic CDCL) and IsaSAT/LLVM have not yet been
 described in a publications, but have already been included in the Isabelle
 formalization (and currently no inprocessing is done).
 
@@ -31,18 +31,32 @@ you cannot allocate enough memory:
     memory (more than 2^{63} bits), the answer could become "UNKNOWN" (but
     no overflow will lead to a wrong error!)
 ** SAT Solving
-TODO
+I work with Armin Biere on SAT solving. One (rather obvious, but never written
+down before) result is that the standard minimization algorithm is complete in
+the sense that it remove all redundant literals (see more details in our SAT'21
+paper). The result comes from a completeness theorem on Horn clauses.
+
+Other interests include:
+   + parallel cube-and-conguer SAT solving with the SAT solver [[https://github.com/maximaximal/Paracooba][Paracooba]].
+   + normal CDCL with our technique coined *shrinking* that reduces the size of
+     learned clauses without increasing their glue. The technique is orthogonal
+     to minimization. Shrinking shares the cache used for minimization. 
+
 ** Proof Reconstruction
 One very useful tool of the interactive theorem prover Isabelle is the
 interaction with automatic theorem provers living outside. These tools come in two flavours:
   + Sledgehammer: what facts do I need to prove this goal?
-  + smt-tactic: let Isabelle check the proof you found for this goal!
+  + The =smt=-tactic: let Isabelle check the proof you found for this goal!
 
-I worked on integrated veriT into Sledgehammer during my master thesis, but I am
+I worked on integrated [[https://verit.loria.fr/][veriT]] into Sledgehammer during my master thesis, but I am
 now mostly focusing on the second approach. I have extended the tactic to
 include the SMT solver veriT and I am now working on integrating the SMT solver
-cvc5 -- and unlike the work to integrate the Z3 in Isabelle, the authors of cvc5
-and veriT are helping me to make the proofs nicer and my work easier!
+cvc5 -- and unlike the work to integrate the Z3 in Isabelle by [[https://www21.in.tum.de/~boehmes/][Böhme]], the
+authors of cvc5 (especially [[https://homepages.dcc.ufmg.br/~hbarbosa/][Barbosa]] and Lachnitt) and veriT (especially [[https://schurr.io/about.html][Schurr]])
+are helping me to make the proofs nicer and the reconstruction work easier!
+
+In this direction, several people (including me) are attempting to define a
+proof format tentatively called Alethe that makes reconstruction easy enough.
 
 * PhD Thesis
 My thesis comes with some fancy Isabelle documentation
@@ -51,13 +65,8 @@ links to get lost. The documentation refers to the =fleury-thesis= branch of Isa
 [[https://bitbucket.org/isafol/isafol/wiki/Home]]
 
 * External links
-My current webpage can be found at [[http://fmv.jku.at/fleury/index.html]]
-* Other Projects
-I work in my free time on Isabelle-emacs available at
-https://github.com/m-fleury/isabelle-emacs/. It slightly extends Isabelle's LSP
-server (no change is done to Isabelle's kernel nor to Isabelle/jEdit) and make
-Isabelle usable for Emacs. If you don't like Isabelle/jEdit or find it unstable
-and unusable, this provides an alternative.
+My current webpage can be found at [[http://fmv.jku.at/fleury/index.html]]. This
+page might or might not be more up-to-date than this one.
 * Academic Duties
 ** 2021
 + Co-chair of [[http://pxtp.gitlab.io/2021/][PxTP 2021, Seventh Workshop on Proof eXchange for Theorem Proving]]
@@ -69,3 +78,9 @@ and unusable, this provides an alternative.
 + PC of [[https://popl20.sigplan.org/committee/VMCAI-2020-papers-artifact-evaluation-committee][VMCAI-20 - Artefact Evaluation, 21st International Conference on Verification, Model Checking, and Abstract Interpretation]]
 ** 2019
 + PC of [[http://pxtp.gforge.inria.fr/2019/][PxTP 2019, Seventh Workshop on Proof eXchange for Theorem Proving]]
+* Other Projects
+I work in my free time on Isabelle-emacs available at
+https://github.com/m-fleury/isabelle-emacs/. It slightly extends Isabelle's LSP
+server (no change is done to Isabelle's kernel nor to Isabelle/jEdit) and make
+Isabelle usable for Emacs. If you don't like Isabelle/jEdit or find it unstable
+and unusable, this provides an alternative.
