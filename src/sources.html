@@ -6,7 +6,7 @@
 <!-- 2021-06-21 lun. 08:26 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Mathias Fleury's web page</title>
+<title>Mathias Fleury's Programs</title>
 <meta name="generator" content="Org mode" />
 <meta name="author" content="Mathias Fleury" />
 <style type="text/css">
@@ -225,201 +225,53 @@
 </head>
 <body>
 <div id="content">
-<h1 class="title">Mathias Fleury's web page</h1>
+<h1 class="title">Mathias Fleury's Programs</h1>
 <div id="table-of-contents">
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org290450d">1. Research</a>
+<li><a href="#orgf8090a8">1. IsaSAT</a>
 <ul>
-<li><a href="#orgdaf5518">1.1. SAT Solver Framework</a></li>
-<li><a href="#org27e8198">1.2. SAT Solving</a></li>
-<li><a href="#orgc092cb4">1.3. Proof Reconstruction</a></li>
+<li><a href="#org9aa4108">1.1. 2021: EDA Challenge</a></li>
 </ul>
 </li>
-<li><a href="#org38743b8">2. Software&#xa0;&#xa0;&#xa0;<span class="tag"><span class="software">software</span></span></a></li>
-<li><a href="#orgaa1ad0c">3. PhD Thesis</a></li>
-<li><a href="#org2471d87">4. External links</a></li>
-<li><a href="#org2059725">5. Academic Duties</a>
-<ul>
-<li><a href="#orgf9abe18">5.1. 2021</a></li>
-<li><a href="#org2b5ef79">5.2. 2020</a></li>
-<li><a href="#org26643c4">5.3. 2019</a></li>
-</ul>
-</li>
-<li><a href="#orgd7f0953">6. Other Projects</a></li>
+<li><a href="#org2c13b0d">2. IsaSAT in Standard ML</a></li>
 </ul>
 </div>
 </div>
 <p>
-This webpage will contain documents that I generated, like the
-Isabelle documentation from my PhD thesis. This is the only way to
-have links which survives changes in my affiliation.
+Here the release of my projects that I manage myself (so unlike my changes to, e.g., CaDiCaL).
 </p>
 
-
-<p>
-More to come soon.
-</p>
-
-<div id="outline-container-org290450d" class="outline-2">
-<h2 id="org290450d"><span class="section-number-2">1</span> Research</h2>
+<div id="outline-container-orgf8090a8" class="outline-2">
+<h2 id="orgf8090a8"><span class="section-number-2">1</span> IsaSAT</h2>
 <div class="outline-text-2" id="text-1">
 </div>
-<div id="outline-container-orgdaf5518" class="outline-3">
-<h3 id="orgdaf5518"><span class="section-number-3">1.1</span> SAT Solver Framework</h3>
+<div id="outline-container-org9aa4108" class="outline-3">
+<h3 id="org9aa4108"><span class="section-number-3">1.1</span> 2021: EDA Challenge</h3>
 <div class="outline-text-3" id="text-1-1">
 <p>
-As part of my PhD thesis, I developed a framework to formalize SAT solving. The
-general organization is given by the following graph:
-<img src="figures/sat/sat_framework.png" alt="sat_framework.png" />
+This the first official release of the IsaSAT in LLVM IR. See the
+<a href="./isasat/isasat-eda2021-edcd29d.tar.xz">sources</a> and the system description submitted at the EDA Challenge for
+a list of changes compared to IsaSAT in Standard ML.
 </p>
 
 <p>
-The PCDCL (standing for pragmatic CDCL) and IsaSAT/LLVM have not yet been
-described in a publications, but have already been included in the Isabelle
-formalization (and currently no inprocessing is done).
-</p>
-
-<p>
-In essence, the completeness mentioned in the graph, means completeness unless
-you cannot allocate enough memory:
-</p>
-<ul class="org-ul">
-<li>In the Standard ML modelisation of Isabelle, arrays can be accessed by
-arbitrary sized integers. However, compilers do not have to support that.
-Therefore, in practice, the memory is limited to around 2<sup>61</sup> bits to represent the
-clauses and their headers. Such machines currently do not exist (and filling
-so much memory takes a very long time too).</li>
-<li>In LLVM, we are restricted to a certain number of clauses. With infinite
-memory (more than 2<sup>63</sup> bits), the answer could become "UNKNOWN" (but
-no overflow will lead to a wrong error!)</li>
-</ul>
-</div>
-</div>
-<div id="outline-container-org27e8198" class="outline-3">
-<h3 id="org27e8198"><span class="section-number-3">1.2</span> SAT Solving</h3>
-<div class="outline-text-3" id="text-1-2">
-<p>
-I work with Armin Biere on SAT solving. One (rather obvious, but never written
-down before) result is that the standard minimization algorithm is complete in
-the sense that it remove all redundant literals (see more details in our SAT'21
-paper). The result comes from a completeness theorem on Horn clauses.
-</p>
-
-<p>
-Other interests include:
-</p>
-<ul class="org-ul">
-<li>parallel cube-and-conquer SAT solving with the SAT solver <a href="https://github.com/maximaximal/Paracooba">Paracooba</a>.</li>
-<li>normal CDCL with our technique coined <b>shrinking</b> that reduces the size of
-learned clauses without increasing their glue. The technique is orthogonal
-to minimization. Shrinking shares the cache used for minimization.</li>
-</ul>
-</div>
-</div>
-
-<div id="outline-container-orgc092cb4" class="outline-3">
-<h3 id="orgc092cb4"><span class="section-number-3">1.3</span> Proof Reconstruction</h3>
-<div class="outline-text-3" id="text-1-3">
-<p>
-One very useful tool of the interactive theorem prover Isabelle is the
-interaction with automatic theorem provers living outside. These tools come in two flavours:
-</p>
-<ul class="org-ul">
-<li>Sledgehammer: what facts do I need to prove this goal?</li>
-<li>The <code>smt</code>-tactic: let Isabelle check the proof you found for this goal!</li>
-</ul>
-
-<p>
-I worked on integrated <a href="https://verit.loria.fr/">veriT</a> into Sledgehammer during my master thesis, but I am
-now mostly focusing on the second approach. I have extended the tactic to
-include the SMT solver veriT and I am now working on integrating the SMT solver
-cvc5 &#x2013; and unlike the work to integrate the Z3 in Isabelle by <a href="https://www21.in.tum.de/~boehmes/">Böhme</a>, the
-authors of cvc5 (especially <a href="https://homepages.dcc.ufmg.br/~hbarbosa/">Barbosa</a> and Lachnitt) and veriT (especially <a href="https://schurr.io/about.html">Schurr</a>)
-are helping me to make the proofs nicer and the reconstruction work easier!
-</p>
-
-<p>
-In this direction, several people (including me) are attempting to define a
-proof format tentatively called Alethe that makes reconstruction easy enough.
+The main difference compared to the Standard ML version developped in
+my PhD is that the Isabelle theorem is now incomplete (this was
+implicit earlie) and that the new version is much faster.
 </p>
 </div>
 </div>
 </div>
 
-<div id="outline-container-org38743b8" class="outline-2">
-<h2 id="org38743b8"><span class="section-number-2">2</span> Software&#xa0;&#xa0;&#xa0;<span class="tag"><span class="software">software</span></span></h2>
+<div id="outline-container-org2c13b0d" class="outline-2">
+<h2 id="org2c13b0d"><span class="section-number-2">2</span> IsaSAT in Standard ML</h2>
 <div class="outline-text-2" id="text-2">
 <p>
-See <a href="./src/sources.html">./src/sources.html</a>.
-</p>
-</div>
-</div>
-<div id="outline-container-orgaa1ad0c" class="outline-2">
-<h2 id="orgaa1ad0c"><span class="section-number-2">3</span> PhD Thesis</h2>
-<div class="outline-text-2" id="text-3">
-<p>
-My thesis comes with some fancy Isabelle documentation
-<a href="https://m-fleury.github.io/thesis/doc/Weidenbach_Book/index.html">available here</a> and it would be too bad for the
-links to get lost. The documentation refers to the <code>fleury-thesis</code> branch of IsaFoL available at
-<a href="https://bitbucket.org/isafol/isafol/wiki/Home">https://bitbucket.org/isafol/isafol/wiki/Home</a>
-</p>
-</div>
-</div>
-
-<div id="outline-container-org2471d87" class="outline-2">
-<h2 id="org2471d87"><span class="section-number-2">4</span> External links</h2>
-<div class="outline-text-2" id="text-4">
-<p>
-My current webpage can be found at <a href="http://fmv.jku.at/fleury/index.html">http://fmv.jku.at/fleury/index.html</a>. This
-page might or might not be more up-to-date than this one.
-</p>
-</div>
-</div>
-<div id="outline-container-org2059725" class="outline-2">
-<h2 id="org2059725"><span class="section-number-2">5</span> Academic Duties</h2>
-<div class="outline-text-2" id="text-5">
-</div>
-<div id="outline-container-orgf9abe18" class="outline-3">
-<h3 id="orgf9abe18"><span class="section-number-3">5.1</span> 2021</h3>
-<div class="outline-text-3" id="text-5-1">
-<ul class="org-ul">
-<li>Co-chair of <a href="http://pxtp.gitlab.io/2021/">PxTP 2021, Seventh Workshop on Proof eXchange for Theorem Proving</a></li>
-<li>PC of <a href="https://pdar-workshop.github.io/workshop/">PDAR-21, Parallel and Distributed Automated Reasoning 2021</a></li>
-<li>PC of <a href="http://i-cav.org/2021/organization/">CAV 2021-Artifact Evaluation, 33rd International Conference on Computer-Aided Verification</a></li>
-<li>PC of <a href="https://etaps.org/2021/tacas"> Artefact Evaluation, 27th International Conference on Tools and Algorithms for the Construction and Analysis of Systems</a></li>
-</ul>
-</div>
-</div>
-<div id="outline-container-org2b5ef79" class="outline-3">
-<h3 id="org2b5ef79"><span class="section-number-3">5.2</span> 2020</h3>
-<div class="outline-text-3" id="text-5-2">
-<ul class="org-ul">
-<li>PC of <a href="https://tap.sosy-lab.org/2020/">TAP 20- Artefact Evaluation, 14th International Conference on Tests and Proofs 20</a></li>
-<li>PC of <a href="https://popl20.sigplan.org/committee/VMCAI-2020-papers-artifact-evaluation-committee">VMCAI-20 - Artefact Evaluation, 21st International Conference on Verification, Model Checking, and Abstract Interpretation</a></li>
-</ul>
-</div>
-</div>
-<div id="outline-container-org26643c4" class="outline-3">
-<h3 id="org26643c4"><span class="section-number-3">5.3</span> 2019</h3>
-<div class="outline-text-3" id="text-5-3">
-<ul class="org-ul">
-<li>PC of <a href="http://pxtp.gforge.inria.fr/2019/">PxTP 2019, Seventh Workshop on Proof eXchange for Theorem Proving</a></li>
-</ul>
-</div>
-</div>
-</div>
-<div id="outline-container-orgd7f0953" class="outline-2">
-<h2 id="orgd7f0953"><span class="section-number-2">6</span> Other Projects</h2>
-<div class="outline-text-2" id="text-6">
-<p>
-I work in my free time on Isabelle-emacs available at
-<a href="https://github.com/m-fleury/isabelle-emacs/">https://github.com/m-fleury/isabelle-emacs/</a>. It slightly extends Isabelle's LSP
-server (no change is done to Isabelle's kernel nor to Isabelle/jEdit) and make
-Isabelle usable for Emacs. If you don't like Isabelle/jEdit or find it unstable
-and unusable, this provides an alternative.
-</p>
+This is the last version of our IsaSAT sources in Standard ML:
+<a href="./isasat-ML/isasat-ml-last.tar.xz">Sources</a>. The compiler MLton is the only compiler we tried that offers
+reasonnable performance.</p>
 </div>
 </div>
 </div>
