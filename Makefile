@@ -5,9 +5,10 @@ EMACS_OPTS = --batch -f org-html-export-to-html --kill
 all: org
 
 #: export org files to HTML
-org: index.org src/sources.org
+org: index.org src/sources.org isasat/isasat.org
 	${EMACS} index.org ${EMACS_OPTS}
 	cd src && ${EMACS} sources.org ${EMACS_OPTS}
+	cd isasat && ${EMACS} isasat.org ${EMACS_OPTS}
 
 clean:
 	rm -rf ${ORG}
