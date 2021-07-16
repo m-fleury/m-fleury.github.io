@@ -70,21 +70,53 @@ the completeness guarantees were similar.
 :END:
 In essence, the completeness mentioned in the graph, means completeness unless
 you cannot allocate enough memory:
-  + In the Standard ML modelisation of Isabelle, arrays can be accessed by
-    arbitrary sized integers. However, compilers do not have to support that.
-    Therefore, in practice, the memory is limited to around 2^{61} bits to represent the
-    clauses and their headers. Such machines currently do not exist (and filling
-    so much memory takes a very long time too).
-  + In LLVM, we are restricted to a certain number of clauses. With infinite
-    memory (more than 2^{63} bits), the answer colude become "UNKNOWN" (but
-    no overflow will lead to a wrong error!)
+  + In the Standard ML modelisation of Isabelle, arrays can be
+    accessed by arbitrary sized integers. However, compilers do not
+    have to support that.  Therefore, in practice, the memory is
+    limited to around 2^{61} bits (for MLton) to represent the clauses
+    and their headers. Such machines currently do not exist (and
+    filling so much memory takes a very long time too).
+  + In LLVM, we are restricted to a certain number of clauses (it must
+    fit in a 64-bit integer!) and all clauses have fit in array (like
+    in standard ML with the limit of 2^{63} bits). With enough memory
+    (more than 2^{63} bits) and enough time, the answer could become
+    "UNKNOWN" (but no overflow will lead to a wrong error!)
 
 * Release
 :PROPERTIES:
 :CUSTOM_ID: h:release
 :END:
 ** EDA-Challenge 2021
-The first official release is [[../src/isasat/isasat-eda2021-edcd29d.tar.xz]]. It is
-the version submitted to the [[https://www.eda-ai.org/][EDA-Challenge 2021]]. To the surprise of everyone
-(including the author!), it actually won the challenge. The system description
+:PROPERTIES:
+:CUSTOM_ID: h:2021-eda-challenge
+:END:
+The first official release is [[../src/isasat/isasat-eda2021-edcd29d.tar.xz][available]]. It is the version submitted
+to the [[https://www.eda-ai.org/][EDA-Challenge 2021]]. To the surprise of everyone (including the
+author!), it actually won the challenge. The system description
 submitted to the EDA Challenge is [[http://fmv.jku.at/papers/Fleury-EDA-Challenge-2021.pdf][available]].
+
+How good is the solver really? Another better comparison is
+considering the SAT Competition that features hard instances with long
+running time. The comparison is unfair towards my SAT solver (because
+you need inprocessing nowadays to even have a chance for most
+instances), but the SAT Competition is the standard way to compare
+solvers.
+
+Here is a CDF with kissat (who finished second) and the solver who
+finished last during the SAT Competition 2021 (higher is better!):
+
+[[file:../figures/sat/sc2021-isasat-kissat-cleanmaple.png]]
+
+(Better [[file:../figures/sat/sc2021-isasat-kissat-cleanmaple.pdf][PDF]] version). The conclusion is that IsaSAT would not have been the
+slowest solver submitted at the SAT Competition 2021 (if I had been
+able to make IsaSAT work on Starexec). It is not a great result, but
+gives an idea how far you can get without any inprocessing with a
+verified SAT solver.
+
+
+|                          |           | Solved |       |         |
+| Solver                   | SAT+UNSAT |    SAT | UNSAT |   PAR-2 |
+|--------------------------+-----------+--------+-------+---------|
+| Kissat                   |       283 |    137 |   146 | 1377523 |
+| IsaSAT                   |       137 |     69 |    68 | 2795128 |
+| CleanMaple\under{}PriPro |       136 |     71 |    65 | 2868588 |
