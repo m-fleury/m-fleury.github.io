@@ -9,6 +9,7 @@ org: index.org src/sources.org isasat/isasat.org
 	${EMACS} index.org ${EMACS_OPTS}
 	cd src && ${EMACS} sources.org ${EMACS_OPTS}
 	cd isasat && ${EMACS} isasat.org ${EMACS_OPTS}
+	cd pasteque && ${EMACS} pasteque.org ${EMACS_OPTS}
 
 clean:
 	rm -rf ${ORG}
