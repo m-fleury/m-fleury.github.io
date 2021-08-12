@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <html>
-	<head>
+	<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
 		
 
-		<title>IsaSAT Project</title>
+		<title>IsaSAT Presentation</title>
 
 		
-		<link rel="stylesheet" href="https://m-fleury.github.io/css/colors-dark.min.04ff1d6d2078fa65747fb72cef57eee0015c1b56e56c24eed85082032b2182f4.css">
+		<link rel="stylesheet" href="http://localhost:1313/css/colors-dark.min.04ff1d6d2078fa65747fb72cef57eee0015c1b56e56c24eed85082032b2182f4.css">
 
 		
 	</head>
 	<body>
 		<header id="header">
-			<h1><a href="https://m-fleury.github.io/">Webpage of Mathias Fleury</a></h1>
+			<h1><a href="http://localhost:1313/">Webpage of Mathias Fleury</a></h1>
 			<p></p>
 		</header>
 
@@ -26,9 +26,11 @@
 			
 				<li><a href="/isasat/used-flag/"><span>How the used flag was wrong (DRAFT)</span></a></li>
 			
-				<li><a href="/isasat/"><span>IsaSAT Presentation</span></a></li>
+				<li><a href="/isasat/isasat-presentation/"><span>IsaSAT Presentation</span></a></li>
 			
 				<li><a href="/isasat/"><span>IsaSAT Project</span></a></li>
+			
+				<li><a href="/isasat/isasat-release/"><span>Release</span></a></li>
 			
 		</ul>
 	
@@ -47,7 +49,7 @@
 			<div id="content">
 				
 	<article class="post">
-		<h1><a href="https://m-fleury.github.io/isasat/isasat/">IsaSAT Project</a> </h1>
+		<h1><a href="http://localhost:1313/isasat/isasat/">IsaSAT Presentation</a> </h1>
 
 		<div class="post-content"><p>As part of my PhD thesis, I developed a framework to formalize SAT solving. I still continue
 to expand it. The
@@ -59,129 +61,6 @@ and correctness. CDCL is specified as an abstract transition system. I
 have developped two variants: one based on Nieuwenhuis et al. and a
 more concrete one based on Weidenbach&rsquo;s version of CDCL. I show that
 the latter version refines (specializes) the former.</p>
-<h2 id="h:pcdcl">Pragmatic CDCL</h2>
-<p>The PCDCL (standing for pragmatic CDCL) and IsaSAT/LLVM have not yet
-been described in a publications, but have already been included in
-the Isabelle formalization. It is currently used for very simple
-simplifications, namely removing true clauses and (unconditionally)
-false literals from clauses. This is very important to do (in
-particular because in some problems from the SAT Competition several
-thousands units are generated per minute), but this is already beyond
-the CDCL framework from my thesis.</p>
-<h2 id="h:watched-literals">Watched Literals</h2>
-<p>First I developed a transition that includes the watched listeral
-(with blocking clauses) optimization to efficiently find propagations and conflicts.</p>
-<p>From there one, I enter the <strong>nondeterminism refinement monad</strong>. It is a
-way to write nondeterministic programs (like the transition systems),
-while still getting closer to programs (e.g., invariants and loops).</p>
-<h2 id="h:heuristics">Heuristics and Executable Code</h2>
-<p>Now comes the level where the nondeterminstic operations are replaced
-by deterministic heuristics. This level is not so important from the
-Isabelle point-of-view, but is absolutely critical for performance. It
-is very easy to destroy performance by restarting too often (or not
-often enough).</p>
-<p>Finally I use <a href="https://www21.in.tum.de/~lammich/isabelle%5Fllvm/">Peter Lammich&rsquo;s Isabelle-LLVM</a> to generate code in LLVM&rsquo;s
-intermediate language. The code can be compiled with <code>clang</code>. Combined
-with a hand-written parser and printer of the output, the code can be
-fed with a DIMACS like any other SAT solver.</p>
-<p>During my PhD thesis I used the (older) Refinement Framework to generate
-Standard ML. This allowed me to prove completeness (for a
-powerful-enough compiler and machine), but the code was twice as slow
-as the LLVM-generated version (same Isabelle code!) &ndash; and in the end
-the completeness guarantees were similar.</p>
-<h2 id="h:correctness">Correctness</h2>
-<p>In essence, the completeness mentioned in the graph above, means completeness unless
-you cannot allocate enough memory:</p>
-<ul>
-<li>In the Standard ML modelisation of Isabelle, arrays can be
-accessed by arbitrary sized integers. However, compilers do not
-have to support that.  Therefore, in practice, the memory is
-limited to around 2<!-- raw HTML omitted -->61<!-- raw HTML omitted --> bits (for MLton) to represent the clauses
-and their headers. Such machines currently do not exist (and
-filling so much memory takes a very long time too).</li>
-<li>In LLVM, we are restricted to a certain number of clauses (it must
-fit in a 64-bit integer!) and all clauses have fit in array (like
-in standard ML with the limit of 2<!-- raw HTML omitted -->63<!-- raw HTML omitted --> bits). With enough memory
-(more than 2<!-- raw HTML omitted -->63<!-- raw HTML omitted --> bits) and enough time, the answer could become
-&ldquo;UNKNOWN&rdquo; (but no overflow will lead to a wrong error!)</li>
-</ul>
-<h2 id="h:release">Release</h2>
-<h3 id="h:2021-eda-challenge">EDA-Challenge 2021</h3>
-<p>The first official release is <a href="../src/isasat/isasat-eda2021-edcd29d.tar.xz">available</a>. It is the version submitted
-to the <a href="https://www.eda-ai.org/">EDA-Challenge 2021</a>. To the surprise of everyone (including the
-author!), it actually won the challenge. The system description
-submitted to the EDA Challenge is <a href="http://fmv.jku.at/papers/Fleury-EDA-Challenge-2021.pdf">available</a>.</p>
-<p>How good is the solver really? Another comparison is
-the well-known <a href="https://satcompetition.github.io/">SAT Competition</a> that features hard instances with long
-running time. The comparison is unfair towards my SAT solver (because
-you need inprocessing nowadays to even have a chance for most
-instances), but the SAT Competition is the standard way to compare
-solvers.</p>
-<p>Here is a CDF with kissat (who finished second) and the solver who
-finished last during the SAT Competition 2021 (in the plot, higher is better!):</p>
-<figure><img src="/ox-hugo/sc2021-isasat-kissat-cleanmaple.png"/>
-</figure>
-
-<p>(Better <a href="/ox-hugo/sc2021-isasat-kissat-cleanmaple.pdf">PDF</a> version). The conclusion is that IsaSAT would clearly not
-have won the SAT Competition 2021, but also would probably not have
-been the slowest solver (if I had been able to make IsaSAT work on
-Starexec). It is not a great result, but it is an indication how
-far you can go without inprocessing.</p>
-<table>
-<thead>
-<tr>
-<th></th>
-<th></th>
-<th>Solved</th>
-<th></th>
-<th></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Solver</td>
-<td>SAT+UNSAT</td>
-<td>SAT</td>
-<td>UNSAT</td>
-<td>PAR-2</td>
-</tr>
-<tr>
-<td>Kissat</td>
-<td>283</td>
-<td>137</td>
-<td>146</td>
-<td>1377523</td>
-</tr>
-<tr>
-<td>IsaSAT</td>
-<td>137</td>
-<td>69</td>
-<td>68</td>
-<td>2795128</td>
-</tr>
-<tr>
-<td>CleanMaple_PriPro</td>
-<td>136</td>
-<td>71</td>
-<td>65</td>
-<td>2868588</td>
-</tr>
-</tbody>
-</table>
-<p>The conclusion is three-fold. First, it is possible to verify
-efficient code in a proof assistant. Second, there is no reason to
-believe that verified code is slower than hand-written
-one<sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup> &ndash; even if it takes much more time to prove
-correctness. Third, the perfect SAT solver depends on the benchmarks
-you have.</p>
-<section class="footnotes" role="doc-endnotes">
-<hr>
-<ol>
-<li id="fn:1" role="doc-endnote">
-<p>I don&rsquo;t believe that for verified code targetting Standard ML, however. Even if MLton is a very impressive compiler for Standard ML code.&#160;<a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
-</li>
-</ol>
-</section>
 </div>
 
 		<p class="meta">Posted on <span class="postdate">01. August 2021</span></p>
