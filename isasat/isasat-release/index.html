@@ -53,7 +53,64 @@
 	<article class="post">
 		<h1><a href="https://m-fleury.github.io/isasat/isasat-release/">IsaSAT Release</a> </h1>
 
-		<div class="post-content"><h2 id="h:2021-eda-challenge">EDA-Challenge 2021</h2>
+		<div class="post-content"><h2 id="h:2022-sc2022">SAT Competition 2022 and v2022-01</h2>
+<p>The second release is now <a href="../../src/isasat/isasat-sc2022-663798f.tar.xz">available</a>. It is the version submitted to
+the SAT Competition 2022. This year I managed to make IsaSAT work on
+StarExec.</p>
+<p>Compared to the version form the EDA Challenge:</p>
+<ul>
+<li>
+<p>It can now produces DRAT proofs. There are absolutely no
+guarantees on the correctness of those proofs&hellip; And in
+particular, I have managed to produce wrong proofs when I forgot
+to log unit clauses. This does not matter because the entire
+solver is verified, but it is mandatory to take part in the Main
+track.</p>
+</li>
+<li>
+<p>I have implemented pure literal deletion. IsaSAT search for
+literals that do not appear or appear in only one polarity and
+sets them to true. It is the first transformation performed by
+IsaSAT that does not preserve models.</p>
+</li>
+</ul>
+<p>Shortly after the SAT Competition deadline, while drinking tea and
+looking at the <a href="https://people.mpi-inf.mpg.de/~mfleury/IsaFoL/current/Weidenbach_Book/IsaSAT/">HTML generated documentation</a>, I found two heuristics bugs,
+which are solved in the <a href="../../src/isasat/isasat-v2022_01-30966c1.tar.xz">release v2022-01</a>. According to my benchmarks it solves
+23 more problems on the benchmarks from the SAT Competition 2021:</p>
+<p>&lt;/ox-hugo/sc2021-isasat-schedule-fix.pdf&gt;</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>solved</th>
+<th>sat</th>
+<th>uns</th>
+<th>par2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>with-proper-scheduling</td>
+<td>198</td>
+<td>87</td>
+<td>111</td>
+<td>2273168</td>
+</tr>
+<tr>
+<td>sc2022</td>
+<td>176</td>
+<td>85</td>
+<td>91</td>
+<td>2457296</td>
+</tr>
+</tbody>
+</table>
+<p>So, clearly a good fix. I will probably try to describe to the bug in
+more details, but in short: I was restarting way too little and
+reducing way too much. And I did not realise that because I swapped
+it when I printed it during the statistics.</p>
+<h2 id="h:2021-eda-challenge">EDA-Challenge 2021</h2>
 <p>The first official release is <a href="../../src/isasat/isasat-eda2021-edcd29d.tar.xz">available</a>. It is the version submitted
 to the <a href="https://www.eda-ai.org/">EDA-Challenge 2021</a>. To the surprise of everyone (including the
 author!), it actually won the challenge. The system description
@@ -121,16 +178,16 @@ believe that verified code is slower than hand-written
 one<sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup> &ndash; even if it takes much more time to prove
 correctness. Third, the perfect SAT solver depends on the benchmarks
 you have.</p>
-<section class="footnotes" role="doc-endnotes">
+<div class="footnotes" role="doc-endnotes">
 <hr>
 <ol>
-<li id="fn:1" role="doc-endnote">
+<li id="fn:1">
 <p>I don&rsquo;t believe that for verified code targetting
 Standard ML, however. Even if MLton is a very impressive compiler for
 Standard ML code.&#160;<a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
 </li>
 </ol>
-</section>
+</div>
 </div>
 
 		<p class="meta">Posted on <span class="postdate">01. August 2021</span></p>
