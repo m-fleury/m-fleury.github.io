@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+<meta charset="utf-8">
+<meta name="keywords" content="floating, GRS, double, float, bfloat8, bfloat16">
+<meta name="author" content="John Doe">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css" />
+<title>Floating-point arithmetic</title>
+<link rel="icon" type="image/x-icon" href="images/favicon.ico">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <!-- LOGO -->
+        <div class="logo">Floating-point arithmetic</div>
+        <!-- NAVIGATION MENU -->
+        <ul class="nav-links">
+          <!-- NAVIGATION MENUS -->
+          <div class="menu">
+            <li><a href="home.html">Home</a></li>  
+            <li><a href="bfloat.html">Floating-point</a></li>            
+            <li><a href="grs.html">GRS</a></li>
+            <li><a href="rechner.html">Rechner</a></li>
+          </div>
+        </ul>
+    </nav>
+<br>
+<br>
+<p>
+  <h2>Gleitkommazahlen/ floating-point</h2>
+  <br>
+  Eine Gleitkommazahl oder auch Fließkommazahl (engl. floating point number) ist eine 
+  angenäherte Darstellung einer reellen Zahl. In der Informatik werden Gleitkommazahlen 
+  durch zwei fixed-point Zahlen (Mantisse, Exponent) dargestellt. Die  Genauigkeit wird von der Mantisse bestimmt.
+  Je größer die Mantisse, desto genauer ist die Zahl hinter dem Komma. 
+  Der Exponent bestimmt die Größe des Wertebereichs der Zahl.
+  Das Sign-Bit ist der dritte Bestandteil einer Gleitkommazahl und gibt an,
+  ob die Zahl positiv (0) oder negativ (1) ist. <br>
+  <br>
+  <b>Sign (V) * Mantissa (M) * Basis (B) hoch Exponent (E)</b>
+  <br>
+  <br>
+</p>
+<br>
+<br>
+<h2>Verschiedene Typen</h2>
+<br>
+<p>
+  Es gibt für jede Architektur verschiedene Typen von Gleitkommazahlen. Sie unterscheiden sich durch 
+  ihre Anzahl an Bits, die für den Exponenten und die Mantisse verwendet werden.
+  Im Rechner gibt es diese vier Typen:
+  <br>
+  <table id="typeeen">
+    <tr>
+      <th>Bits</th>
+      <th>Sign</th>
+      <th>Exponent</th>
+      <th>Mantissa</th>
+      <th>Bias</th>
+      <th>Name</th>
+    </tr>
+    <tr>
+      <th>8</th>
+      <th>1</th>
+      <th>4</th>
+      <th>3</th>
+      <th>7</th>
+      <th>Bfloat8</th>
+    </tr>
+    <tr>
+      <th>16</th>
+      <th>1</th>
+      <th>8</th>
+      <th>7</th>
+      <th>127</th>
+      <th>Bfloat16</th>
+    </tr>
+    <tr>
+      <th>32</th>
+      <th>1</th>
+      <th>8</th>
+      <th>32</th>
+      <th>127</th>
+      <th>single-precision</th>
+    </tr>
+    <tr>
+      <th>64</th>
+      <th>1</th>
+      <th>11</th>
+      <th>52</th>
+      <th>1023</th>
+      <th>double-precision</th>
+    </tr>
+  </table>
+  <br>
+  <br>
+  Die Norm für 32 und 64 Bit Architekturen liefert IEEE 754. "IEEE 754 single precision" 
+  benötigt 32 Bit an Speicherplatz. In der Programmiersprache C/ C++ ist dieser
+  Typ unter dem Namen "float" zu finden.
+  <br>
+  "IEEE 754 double precision" benötigt 
+  64 Bit Speicher und ist in C/ C++ unter dem Typ "double" zu finden.
+  <br>
+  Des Weiteren werden im Rechner die Varianten "Bfloat16" und "Bfloat8" behandelt. 
+  Sie benötigen 16 bzw. 8 Bit an Speicherplatz.
+  <br>
+</p>
+<br>
+<br>
+<h2>Umrechnen von Binär zu Dezimal</h2>
+<br>
+<p>
+  Um eine Gleitkommazahl von binäre zu einer Dezimalzahl umzuwandeln, müssen
+  die folgenden Schritte durchgeführt und beachtet werden.
+  <br>
+  <table id="examplebfloat8">
+    <tr>
+      <td>Sign</td>
+      <td>Exponent</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>Mantissa</td>
+      <td></td>
+      <td></td> 
+      <td></td>           
+    </tr>
+    <tr>
+      <th class ="mant" > 0 </th>
+      <th class ="expo" > 1 </th>
+      <th class ="expo" > 0 </th>
+      <th class ="expo" > 1 </th>
+      <th class ="expo" > 1 </th>
+      <th class ="fract" > 1 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 1 </th>
+    </tr>
+    <tr>
+      <td>0</td>
+      <td>1</td>
+      <td>2</td>
+      <td>3</td>
+      <td>4</td>
+      <td>5</td>
+      <td>6</td>
+      <td>7</td>
+    </tr>
+  </table> 
+  Hier ist exemplarisch eine "Bfloat8" Zahl dargestellt. 
+  <br>
+  Zuerst wird der Wert des Exponenten berechnet. Dafür werden die vier Bits,
+  die der Darstellung des Exponenten zur Verfügung stehen, als normale binäre Zahl gesehen
+  und umgerechnet. 
+  <br>
+  <br>
+  1011<sub>2</sub> = 2<sup>3</sup> + 0 + 2<sup>1</sup> + 2<sup>0</sup> = 11<sub>2</sub>
+  <br>
+  <br>
+  Nun muss der Exponenten-Bias abgezogen werden, der verwendet wird, um negative 
+  Exponenten zu ermöglichen. Bei "Bfloat8" beträgt dieser Wert 7.
+  <br>
+  <br>
+  11 - 7 = 4
+  <br>
+  <br>
+  Damit ist der Exponent 4.
+  <br>
+  Die Mantisse wird wie Nachkommastellen in der binären SChreibweise berechnet 
+  (Summe von 1/2<sup>x</sup>).
+  <br>
+  <br>
+  101<sub>2</sub> = 1/2 + 0 + 1/8 = 0,625
+  <br>
+  <br>
+  Bei Gleitkommazahlen, in diesem Fall bei "Bfloat8", werden nur 3 Bits für die Mantisse
+  abgespeichert. Trotzdem ist eine Genauigkeit von 4 Bits gegeben. Ein Bit, das "hidden bit",
+  mit dem Wert eins, ist immer gesetzt.
+  Die eigentliche Darstellung der Mantisse ist also nicht .101<sub>2</sub> sondern 1.101<sub>2</sub>.
+  <br>
+  <br>
+  1.101<sub>2</sub> = 1 + 1/2 + 0 + 1/8 = 1,625
+  <br>
+  <br>
+  Damit lässt sich der Wert der Zahl wie folgt berechnen.
+  <br>
+  <br>
+  1,625 * 2<sup>4</sup> = 26
+  <br>
+  <br>
+  Zum Schluss wird das Vorzeichen bestimmt. Das Bit ganz links ist null und somit ist die Zahl positiv.
+  <br>
+  <br>
+  01011101<sub>2</sub> = 26<sub>10</sub>
+  <br>
+</p>
+<br>
+<br>
+<h2>Besondere Zahlen</h2>
+<br>
+<p>
+  <h3>Die Null</h3>
+  <br>
+  Im Standard der IEEE 754 ist die Zahl Null vorzeichenbehaftet, das bedeutet es gibt eine "positive Null"
+  und eine "negative Null". Die Null sieht wie folgt aus:
+  <table id="examplebfloat82">
+    <tr>
+      <td>Sign</td>
+      <td>Exponent</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>Mantissa</td>
+      <td></td>
+      <td></td> 
+      <td></td>           
+    </tr>
+    <tr>
+      <th class ="mant" > 0 </th>
+      <th class ="expo" > 0 </th>
+      <th class ="expo" > 0 </th>
+      <th class ="expo" > 0 </th>
+      <th class ="expo" > 0 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 0 </th>
+      <th></th>
+      <th>0</th>
+    </tr>
+    <tr>
+      <th class ="mant" > 1 </th>
+      <th class ="expo" > 0 </th>
+      <th class ="expo" > 0 </th>
+      <th class ="expo" > 0 </th>
+      <th class ="expo" > 0 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 0 </th>
+      <th></th>
+      <th>-0</th>
+    </tr>
+    <tr>
+      <td>0</td>
+      <td>1</td>
+      <td>2</td>
+      <td>3</td>
+      <td>4</td>
+      <td>5</td>
+      <td>6</td>
+      <td>7</td>
+    </tr>
+  </table> 
+  <br>
+  <br>
+  <h3>Infinity</h3>
+  <br>
+  Um den Zahlenwert Unendlich (Inf) zu beschreiben, werden 
+  alle Bits für den Exponenten auf 1 (11111....) und für die Mantisse auf 0 (00000...)
+  gesetzt.
+  Es gibt ein positives Unendlich und ein negatives Unendlich.
+  <table id="examplebfloat83">
+    <tr>
+      <td>Sign</td>
+      <td>Exponent</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>Mantissa</td>
+      <td></td>
+      <td></td> 
+      <td></td>           
+    </tr>
+    <tr>
+      <th class ="mant" > 0 </th>
+      <th class ="expo" > 1 </th>
+      <th class ="expo" > 1 </th>
+      <th class ="expo" > 1 </th>
+      <th class ="expo" > 1 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 0 </th>
+      <th></th>
+      <th>+Inf</th>
+    </tr>
+    <tr>
+      <th class ="mant" > 1 </th>
+      <th class ="expo" > 1 </th>
+      <th class ="expo" > 1 </th>
+      <th class ="expo" > 1 </th>
+      <th class ="expo" > 1 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 0 </th>
+      <th></th>
+      <th>-Inf</th>
+    </tr>
+    <tr>
+      <td>0</td>
+      <td>1</td>
+      <td>2</td>
+      <td>3</td>
+      <td>4</td>
+      <td>5</td>
+      <td>6</td>
+      <td>7</td>
+    </tr>
+  </table>
+  <br>
+  <br>
+  <h3>NaNs</h3>
+  <br>
+  "Not a Number" wird als Rückgabewert bei verboten Rechnungen, wie die Wurzel aus -1, 
+  zurückgegeben. Um NaN darzustellen sind alle Bits für den Exponenten 1 (11111....) 
+  und in der Mantisse mindestens eine 1 vorhanden (01000...).
+  Eine mögliche Darstellung für NaN sieht wie folgt aus:
+  <table id="examplebfloat83">
+    <tr>
+      <td>Sign</td>
+      <td>Exponent</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>Mantissa</td>
+      <td></td>
+      <td></td> 
+      <td></td>           
+    </tr>
+    <tr>
+      <th class ="mant" > 0 </th>
+      <th class ="expo" > 1 </th>
+      <th class ="expo" > 1 </th>
+      <th class ="expo" > 1 </th>
+      <th class ="expo" > 1 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 1 </th>
+      <th class ="fract" > 0 </th>
+      <th></th>
+      <th>NaN</th>
+    </tr>
+    <tr>
+      <td>0</td>
+      <td>1</td>
+      <td>2</td>
+      <td>3</td>
+      <td>4</td>
+      <td>5</td>
+      <td>6</td>
+      <td>7</td>
+    </tr>
+  </table>
+  <br>
+  <br>
+  <h3>Denormalisierte Zahlen</h3>
+  <br>
+  Bei normalisierten Zahlen gibt es ein extra Bit in der Mantissa, dass immer den Wert eins
+  besitzt. Diese Eins gibt es nicht bei den denormalisierten Zahlen. Denormalisierte Zahlen
+  werden verwendet um Werte die nah an der Null liegen genauer darzustellen. Sie
+  werden durch nur Nullen (00000...) im Exponenten dargestellt.
+  Eine weitere Besonderheit ist die Berechnung des Exponenten. Obwohl der Exponent
+  eigentlich 0 - Exponentenbias = -Exponentenbias sein müsste, ist er jedoch nur 
+  -(Exponentenbias - 1). Am Beispiel von Bfloat8 ist der Exponent demnach -6 und nicht
+  -7. Eine denormalisierte Zahl sieht wie folgt aus:
+  <table id="examplebfloat88">
+    <tr>
+      <td>Sign</td>
+      <td>Exponent</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>Mantissa</td>
+      <td></td>
+      <td></td>           
+    </tr>
+    <tr>
+      <th class ="mant" > 0 </th>
+      <th class ="expo" > 0 </th>
+      <th class ="expo" > 0 </th>
+      <th class ="expo" > 0 </th>
+      <th class ="expo" > 0 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 1 </th>
+      <th class ="fract" > 0 </th>
+    </tr>
+    <tr>
+      <td>0</td>
+      <td>1</td>
+      <td>2</td>
+      <td>3</td>
+      <td>4</td>
+      <td>5</td>
+      <td>6</td>
+      <td>7</td>
+    </tr>
+  </table>
+</p>
+
+
+<script src="funktionen.js"></script>
+
+</body>
+</html>

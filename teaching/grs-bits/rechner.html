@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+<meta charset="utf-8">
+<meta name="keywords" content="floating, GRS, double, float, bfloat8, bfloat16">
+<meta name="author" content="John Doe">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css" />
+<title>Floating-point arithmetic</title>
+<link rel="icon" type="image/x-icon" href="images/favicon.ico">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <!-- LOGO -->
+        <div class="logo">Floating-point arithmetic</div>
+        <!-- NAVIGATION MENU -->
+        <ul class="nav-links">
+          <!-- NAVIGATION MENUS -->
+          <div class="menu">
+            <li><a href="home.html">Home</a></li>  
+            <li><a href="bfloat.html">Floating-point</a></li>             
+            <li><a href="grs.html">GRS</a></li>
+            <li><a href="rechner.html">Rechner</a></li>
+          </div>
+        </ul>
+    </nav>
+    <br>
+    <div>
+        <label for="typ">Um welchen Typ handelt es sich?</label><br>
+        <select size="1" name="typus" id="typus">
+            <option value="bfloat8">Bfloat8</option>
+            <option value="bfloat16">Bfloat16</option>
+            <option value="single">Single precision</option>
+            <option value="double">Double precision</option>
+        </select><br>
+        <label for="typ">Was wollen sie tun?</label><br>
+        <select size="1" name="arithmetik" id="arithmetik">
+            <option value="add">Addieren</option>
+            <option value="sub">Subtrahieren</option>
+        </select><br>
+        <br>
+        <label for="firstnum">Hier bitte die erste Zahl eingeben.</label><br>
+        <input type="number" id="firstnum" name="firstnum" pattern="[0-1]*" placeholder="10100011" required>
+        <br>
+        <label for="secondnum">Hier bitte die zweite Zahl eingeben.</label><br>
+        <input type="number" id="secondnum" name="secondnum" pattern="[0-1]*" placeholder="01101011" required><br>
+        <br>
+        <input type="button" onclick="check_num()" value="Berechnen"><br>
+        <input type="button" onclick="generate_num()" value="Zufälliges Beispiel generieren!"><br>
+    </div>
+    <br>
+    <br>
+    <table class = "hiddenone" id ="tabbfloat8" >
+        <tr>
+            <td></td>
+            <td>Sign</td>
+            <td>Exponent</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>Mantissa</td>
+            <td></td>
+            <td></td> 
+            <td></td>
+            <td>Wert</td>            
+        </tr>
+        <tr>
+            <th class="empty">Die erste Zahl:</th>
+            <th class ="mant" id="mant011"> xy </th>
+            <th class ="expo" id="expo011"> xy </th>
+            <th class ="expo" id="expo012"> xy </th>
+            <th class ="expo" id="expo013"> xy </th>
+            <th class ="expo" id="expo014"> xy </th>
+            <th class ="fract" id="fract011"> xy </th>
+            <th class ="fract" id="fract012"> xy </th>
+            <th class ="fract" id="fract013"> xy </th>
+            <th></th>
+            <th id="value01"></th>
+        </tr>
+       
+        <tr>
+            <th class="empty">Die zweite Zahl:</th>
+            <th class ="mant" id="mant021"> xy </th>
+            <th class ="expo" id="expo021"> xy </th>
+            <th class ="expo" id="expo022"> xy </th>
+            <th class ="expo" id="expo023"> xy </th>
+            <th class ="expo" id="expo024"> xy </th>
+            <th class ="fract" id="fract021"> xy </th>
+            <th class ="fract" id="fract022"> xy </th>
+            <th class ="fract" id="fract023"> xy </th>
+            <th></th>
+            <th id="value02"></th>
+        </tr>
+    </table >
+    <span class="hiddenone" id ="tabbfloat8extra" style="width: 90%">
+        <br>
+        <hr style="background: black; width: 100%">
+        <br>
+        Als erste müssen die beiden Zahlen auf den gleichen Exponenten gebracht werden. 
+        Dafür nimmt man den höchsten Exponenten als Richtwert. Die Zahl mit dem kleineren 
+        Exponenten bekommt den gleichen Exponeneten, wie die größere Zahl. Damit der Wert 
+        der Zahl dabei nicht verändert wird, müssen die Nachkommastellen für jeden Wert um den 
+        der Exponent erhöht wird nach Rechts verschoben werden.
+       
+        <br>
+        <br>
+        Der erste Exponent ist:<br>
+        <table class="hiddenone" id="tabbfloat8exp1" >
+            <tr>
+                <th class ="hide">Hallo ihr  </th>
+                <th></th>
+                <th class ="expo" id="exponent011"></th>
+                <th class ="expo" id="exponent012"></th>
+                <th class ="expo" id="exponent013"></th>
+                <th class ="expo" id="exponent014"></th>
+                <th></th>
+                <th></th>
+                <th id="expocalc011"></th>
+                <th>+</th>
+                <th id="expocalc012"></th>
+                <th>+</th>
+                <th id="expocalc013"></th>
+                <th>+</th>
+                <th id="expocalc014"></th>
+                <th>=</th>
+                <th id="expocalc015"></th>
+                <th>-</th>
+                <th>7</th>
+                <th>=</th>
+                <th id="expocalc016"></th>
+            </tr>
+        </table>
+        <br>
+        Der zweite Exponent ist:<br>
+        <table class="hiddenone" id="tabbfloat8exp2">
+            <tr>
+                <th class ="hide">habt mich  </th>
+                <th></th>
+                <th class ="expo" id="exponent021"></th>
+                <th class ="expo" id="exponent022"></th>
+                <th class ="expo" id="exponent023"></th>
+                <th class ="expo" id="exponent024"></th>
+                <th></th>
+                <th></th>
+                <th id="expocalc021"></th>
+                <th>+</th>
+                <th id="expocalc022"></th>
+                <th>+</th>
+                <th id="expocalc023"></th>
+                <th>+</th>
+                <th id="expocalc024"></th>
+                <th>=</th>
+                <th id="expocalc025"></th>
+                <th>-</th>
+                <th>7</th>
+                <th>=</th>
+                <th id="expocalc026"></th>
+            </tr>
+        </table>
+        Die Differenz der beiden Exponenten ist <span id="expodiff"></span>.
+        <br>
+        Nun muss die <span id="expowelche"></span> Zahl angepasst werden. Dafür werden die Nachkommastellen um 
+        <span id="expodiff2"></span>
+        nach rechts verschoben.
+        <br>
+        <span id="denormalizedtext">Wichtig ist das 
+        extra Bit nicht zu vergessen. Es ist ein Bit, das nicht direkt in der Zahl abgespeichert wird. 
+        Beim verschieben der Mantissa kann die extra Eins sichtbar werden.</span>
+        (Die Magenta farbene Zahl).
+    </span>
+    <br>
+    <span class="hiddenone" id="tabbfloat8special"></span>
+    <br>
+    <table class = "hiddenone" id ="tabbfloat8fract">    
+        <tr>
+            <th class="empty" id="firsttext">Die erste Zahl:</th>
+            <th></th>
+            <th></th>
+            <th id="calcfrac011"></th>
+            <th id="calcfrac012">.</th>
+            <th id="calcfrac013"></th>
+            <th id="calcfrac014"></th>
+            <th id="calcfrac015"></th>
+            <th id="calcfrac016"></th>
+            <th id="calcfrac017"></th>
+            <th id="calcfrac018"></th>
+            <th id="calcfrac019"></th>
+            <th id="calcfrac0110"></th>
+            <th id="calcfrac0111"></th>
+            <th id="calcfrac0112"></th>
+            <th id="calcfrac0113"></th>
+            <th id="calcfrac0114"></th>
+            <th id="calcfrac0115"></th>
+            <th id="calcfrac0116"></th>
+            <th id="calcfrac0117"></th>
+            <th id="calcfrac0118"></th>
+            <th id="calcfrac0119"></th>
+            <th id="calcfrac0120"></th>
+            <th id="calcfrac0121"></th>
+            <th id="calcfrac0122"></th>
+        </tr>
+        <tr>
+            <th class="empty" id="secondtext">Die zweite Zahl:</th>
+            <th></th>
+            <th id="vorzeichen"></th>
+            <th id="calcfrac021"></th>
+            <th id="calcfrac022">.</th>
+            <th id="calcfrac023"></th>
+            <th id="calcfrac024"></th>
+            <th id="calcfrac025"></th>
+            <th id="calcfrac026"></th>
+            <th id="calcfrac027"></th>
+            <th id="calcfrac028"></th>
+            <th id="calcfrac029"></th>
+            <th id="calcfrac0210"></th>
+            <th id="calcfrac0211"></th>
+            <th id="calcfrac0212"></th>
+            <th id="calcfrac0213"></th>
+            <th id="calcfrac0214"></th>
+            <th id="calcfrac0215"></th>
+            <th id="calcfrac0216"></th>
+            <th id="calcfrac0217"></th>
+            <th id="calcfrac0218"></th>
+            <th id="calcfrac0219"></th>
+            <th id="calcfrac0220"></th>
+            <th id="calcfrac0221"></th>
+            <th id="calcfrac0222"></th>
+        </tr>
+        <tr> 
+            <td></td>
+        </tr>
+        <tr>
+            <th class="empty">Das Ergebnis:</th>
+            <th></th>
+            <th id="calcfrac030"></th>
+            <th class ="extrafract" id="calcfrac031">1</th>
+            <th id="calcfrac032">.</th>
+            <th id="calcfrac033"></th>
+            <th id="calcfrac034"></th>
+            <th id="calcfrac035"></th>
+            <th id="calcfrac036"></th>
+            <th id="calcfrac037"></th>
+            <th id="calcfrac038"></th>
+            <th id="calcfrac039"></th>
+            <th id="calcfrac0310"></th>
+            <th id="calcfrac0311"></th>
+            <th id="calcfrac0312"></th>
+            <th id="calcfrac0313"></th>
+            <th id="calcfrac0314"></th>
+            <th id="calcfrac0315"></th>
+            <th id="calcfrac0316"></th>
+            <th id="calcfrac0317"></th>
+            <th id="calcfrac0318"></th>
+            <th id="calcfrac0319"></th>
+            <th id="calcfrac0320"></th>
+            <th id="calcfrac0321"></th>
+            <th id="calcfrac0322"></th>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td id="text010"></td>
+            <td id="text011">Extras Eins</td>
+            <td id="text012"></td>
+            <td id="text013"></td>
+            <td id="text014"></td>
+            <td id="text015"></td>
+            <td id="text016"></td>
+            <td id="text017"></td>
+            <td id="text018"></td>
+            <td id="text019"></td>
+            <td id="text0110"></td>
+            <td id="text0111"></td>
+            <td id="text0112"></td>
+            <td id="text0113"></td>
+            <td id="text0114"></td>
+            <td id="text0115"></td>
+            <td id="text0116"></td>
+            <td id="text0117"></td>
+            <td id="text0118"></td>
+            <td id="text0119"></td>
+            <td id="text0120"></td>
+            <td id="text0121"></td>
+            <td id="text0122"></td>
+        </tr>
+    </table>
+    <span class="hiddenone" id="tabbfloat8extrabot">
+        <br>
+        <span id="grstext"></span>
+        <br>
+        <span class="hiddenone" id="overflow"></span>
+        <br>
+        <hr style=" background: black;">
+        <br>
+    </span>
+    <table class = "hiddenone" id ="tabbfloat8erg">
+        <tr>
+            <th class="empty">Das Ergebnis:</th>
+            <th class ="mant" id="mant031"> xy </th>
+            <th class ="expo" id="expo031"> xy </th>
+            <th class ="expo" id="expo032"> xy </th>
+            <th class ="expo" id="expo033"> xy </th>
+            <th class ="expo" id="expo034"> xy </th>
+            <th class ="fract" id="fract031"> xy </th>
+            <th class ="fract" id="fract032"> xy </th>
+            <th class ="fract" id="fract033"> xy </th>
+            <th></th>
+            <th id="value03"></th>
+        </tr>
+        <tr>
+            <td class =" firstbot">Bit</td>
+            <td>0</td>
+            <td>1</td>
+            <td>2</td>
+            <td>3</td>
+            <td>4</td>
+            <td>5</td>
+            <td>6</td>
+            <td>7</td>
+        </tr>
+    </table>
+    <table class = "hiddenone" id ="tabbfloat16" >
+        <tr>
+            <td></td>
+            <td>Sign</td>
+            <td>Exponent</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>Mantissa</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>  
+            <td></td>
+            <td>Wert</td>          
+        </tr>
+        <tr>
+            <th class="empty">Die erste Zahl:</th>
+            <th class ="mant" id="mant101"> xy </th>
+            <th class ="expo" id="expo101"> xy </th>
+            <th class ="expo" id="expo102"> xy </th>
+            <th class ="expo" id="expo103"> xy </th>
+            <th class ="expo" id="expo104"> xy </th>
+            <th class ="expo" id="expo105"> xy </th>
+            <th class ="expo" id="expo106"> xy </th>
+            <th class ="expo" id="expo107"> xy </th>
+            <th class ="expo" id="expo108"> xy </th>
+            <th class ="fract" id="fract101"> xy </th>
+            <th class ="fract" id="fract102"> xy </th>
+            <th class ="fract" id="fract103"> xy </th>
+            <th class ="fract" id="fract104"> xy </th>
+            <th class ="fract" id="fract105"> xy </th>
+            <th class ="fract" id="fract106"> xy </th>
+            <th class ="fract" id="fract107"> xy </th>
+            <th></th>
+            <th id="value11"></th>
+        </tr>
+        <tr>
+            <th class="empty">Die zweite Zahl:</th>
+            <th class ="mant" id="mant111"> xy </th>
+            <th class ="expo" id="expo111"> xy </th>
+            <th class ="expo" id="expo112"> xy </th>
+            <th class ="expo" id="expo113"> xy </th>
+            <th class ="expo" id="expo114"> xy </th>
+            <th class ="expo" id="expo115"> xy </th>
+            <th class ="expo" id="expo116"> xy </th>
+            <th class ="expo" id="expo117"> xy </th>
+            <th class ="expo" id="expo118"> xy </th>
+            <th class ="fract" id="fract111"> xy </th>
+            <th class ="fract" id="fract112"> xy </th>
+            <th class ="fract" id="fract113"> xy </th>
+            <th class ="fract" id="fract114"> xy </th>
+            <th class ="fract" id="fract115"> xy </th>
+            <th class ="fract" id="fract116"> xy </th>
+            <th class ="fract" id="fract117"> xy </th>
+            <th></th>
+            <th id="value12"></th>
+        </tr>
+        <tr>
+        </tr>
+        <tr>
+        </tr>
+        <tr>
+            <th class="empty">Das Ergebnis:</th>
+            <th class ="mant" id="mant121"> xy </th>
+            <th class ="expo" id="expo121"> xy </th>
+            <th class ="expo" id="expo122"> xy </th>
+            <th class ="expo" id="expo123"> xy </th>
+            <th class ="expo" id="expo124"> xy </th>
+            <th class ="expo" id="expo125"> xy </th>
+            <th class ="expo" id="expo126"> xy </th>
+            <th class ="expo" id="expo127"> xy </th>
+            <th class ="expo" id="expo128"> xy </th>
+            <th class ="fract" id="fract121"> xy </th>
+            <th class ="fract" id="fract122"> xy </th>
+            <th class ="fract" id="fract123"> xy </th>
+            <th class ="fract" id="fract124"> xy </th>
+            <th class ="fract" id="fract125"> xy </th>
+            <th class ="fract" id="fract126"> xy </th>
+            <th class ="fract" id="fract127"> xy </th>
+            <th></th>
+            <th id="value13"></th>
+        </tr>
+        <tr>
+            <td class =" firstbot">Bit</td>
+            <td>0</td>
+            <td>1</td>
+            <td>2</td>
+            <td>3</td>
+            <td>4</td>
+            <td>5</td>
+            <td>6</td>
+            <td>7</td>
+            <td>8</td>
+            <td>9</td>
+            <td>10</td>
+            <td>11</td>
+            <td>12</td>
+            <td>13</td>
+            <td>14</td>
+            <td>15</td>
+        </tr>
+    </table>
+    <table class = "hiddenone" id ="tabsingle" >
+        <tr>
+            <td></td>
+            <td>Sign</td>
+            <td>Exponent</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>Mantissa</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td> 
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>        
+        </tr>
+        <tr>
+            <th class="empty"></th>
+            <th class ="mant" id="mant201"> xy </th>
+            <th class ="expo" id="expo201"> xy </th>
+            <th class ="expo" id="expo202"> xy </th>
+            <th class ="expo" id="expo203"> xy </th>
+            <th class ="expo" id="expo204"> xy </th>
+            <th class ="expo" id="expo205"> xy </th>
+            <th class ="expo" id="expo206"> xy </th>
+            <th class ="expo" id="expo207"> xy </th>
+            <th class ="expo" id="expo208"> xy </th>
+            <th class ="fract" id="fract201"> xy </th>
+            <th class ="fract" id="fract202"> xy </th>
+            <th class ="fract" id="fract203"> xy </th>
+            <th class ="fract" id="fract204"> xy </th>
+            <th class ="fract" id="fract205"> xy </th>
+            <th class ="fract" id="fract206"> xy </th>
+            <th class ="fract" id="fract207"> xy </th>
+            <th class ="fract" id="fract208"> xy </th>
+            <th class ="fract" id="fract209"> xy </th>
+            <th class ="fract" id="fract2010"> xy </th>
+            <th class ="fract" id="fract2011"> xy </th>
+            <th class ="fract" id="fract2012"> xy </th>
+            <th class ="fract" id="fract2013"> xy </th>
+            <th class ="fract" id="fract2014"> xy </th>
+            <th class ="fract" id="fract2015"> xy </th>
+            <th class ="fract" id="fract2016"> xy </th>
+            <th class ="fract" id="fract2017"> xy </th>
+            <th class ="fract" id="fract2018"> xy </th>
+            <th class ="fract" id="fract2019"> xy </th>
+            <th class ="fract" id="fract2020"> xy </th>
+            <th class ="fract" id="fract2021"> xy </th>
+            <th class ="fract" id="fract2022"> xy </th>
+            <th class ="fract" id="fract2023"> xy </th>
+            <th></th>
+            <th id="value21"></th>
+        </tr>
+        <tr>
+            <th class="empty"></th>
+            <th class ="mant" id="mant211"> xy </th>
+            <th class ="expo" id="expo211"> xy </th>
+            <th class ="expo" id="expo212"> xy </th>
+            <th class ="expo" id="expo213"> xy </th>
+            <th class ="expo" id="expo214"> xy </th>
+            <th class ="expo" id="expo215"> xy </th>
+            <th class ="expo" id="expo216"> xy </th>
+            <th class ="expo" id="expo217"> xy </th>
+            <th class ="expo" id="expo218"> xy </th>
+            <th class ="fract" id="fract211"> xy </th>
+            <th class ="fract" id="fract212"> xy </th>
+            <th class ="fract" id="fract213"> xy </th>
+            <th class ="fract" id="fract214"> xy </th>
+            <th class ="fract" id="fract215"> xy </th>
+            <th class ="fract" id="fract216"> xy </th>
+            <th class ="fract" id="fract217"> xy </th>
+            <th class ="fract" id="fract218"> xy </th>
+            <th class ="fract" id="fract219"> xy </th>
+            <th class ="fract" id="fract2110"> xy </th>
+            <th class ="fract" id="fract2111"> xy </th>
+            <th class ="fract" id="fract2112"> xy </th>
+            <th class ="fract" id="fract2113"> xy </th>
+            <th class ="fract" id="fract2114"> xy </th>
+            <th class ="fract" id="fract2115"> xy </th>
+            <th class ="fract" id="fract2116"> xy </th>
+            <th class ="fract" id="fract2117"> xy </th>
+            <th class ="fract" id="fract2118"> xy </th>
+            <th class ="fract" id="fract2119"> xy </th>
+            <th class ="fract" id="fract2120"> xy </th>
+            <th class ="fract" id="fract2121"> xy </th>
+            <th class ="fract" id="fract2122"> xy </th>
+            <th class ="fract" id="fract2123"> xy </th>
+            <th></th>
+            <th id="value22"></th>
+        </tr>
+        <tr></tr>
+        <tr></tr>
+        <tr>
+            <th class="empty"></th>
+            <th class ="mant" id="mant221"> xy </th>
+            <th class ="expo" id="expo221"> xy </th>
+            <th class ="expo" id="expo222"> xy </th>
+            <th class ="expo" id="expo223"> xy </th>
+            <th class ="expo" id="expo224"> xy </th>
+            <th class ="expo" id="expo225"> xy </th>
+            <th class ="expo" id="expo226"> xy </th>
+            <th class ="expo" id="expo227"> xy </th>
+            <th class ="expo" id="expo228"> xy </th>
+            <th class ="fract" id="fract221"> xy </th>
+            <th class ="fract" id="fract222"> xy </th>
+            <th class ="fract" id="fract223"> xy </th>
+            <th class ="fract" id="fract224"> xy </th>
+            <th class ="fract" id="fract225"> xy </th>
+            <th class ="fract" id="fract226"> xy </th>
+            <th class ="fract" id="fract227"> xy </th>
+            <th class ="fract" id="fract228"> xy </th>
+            <th class ="fract" id="fract229"> xy </th>
+            <th class ="fract" id="fract2210"> xy </th>
+            <th class ="fract" id="fract2211"> xy </th>
+            <th class ="fract" id="fract2212"> xy </th>
+            <th class ="fract" id="fract2213"> xy </th>
+            <th class ="fract" id="fract2214"> xy </th>
+            <th class ="fract" id="fract2215"> xy </th>
+            <th class ="fract" id="fract2216"> xy </th>
+            <th class ="fract" id="fract2217"> xy </th>
+            <th class ="fract" id="fract2218"> xy </th>
+            <th class ="fract" id="fract2219"> xy </th>
+            <th class ="fract" id="fract2220"> xy </th>
+            <th class ="fract" id="fract2221"> xy </th>
+            <th class ="fract" id="fract2222"> xy </th>
+            <th class ="fract" id="fract2223"> xy </th>
+            <th></th>
+            <th id="value23"></th>
+        </tr>
+        <tr>
+            <td class =" firstbot">Bit</td>
+            <td>0</td>
+            <td>1</td>
+            <td>2</td>
+            <td>3</td>
+            <td>4</td>
+            <td>5</td>
+            <td>6</td>
+            <td>7</td>
+            <td>8</td>
+            <td>9</td>
+            <td>10</td>
+            <td>11</td>
+            <td>12</td>
+            <td>13</td>
+            <td>14</td>
+            <td>15</td>
+            <td>16</td>
+            <td>17</td>
+            <td>18</td>
+            <td>19</td>
+            <td>20</td>
+            <td>21</td>
+            <td>22</td>
+            <td>23</td>
+            <td>24</td>
+            <td>25</td>
+            <td>26</td>
+            <td>27</td>
+            <td>28</td>
+            <td>29</td>
+            <td>30</td>
+            <td>31</td>
+        </tr>
+    </table>
+    <table class = "hiddenone" id ="tabdouble" >
+        <tr>
+            <td></td>
+            <td>Sign</td>
+            <td></td>
+            <td>Exponent</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>Mantissa</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td> 
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td> 
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td> 
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td> 
+            <td></td>
+            <td></td>
+            <td></td>       
+        </tr>
+        <tr>
+            <th class="empty"></th>
+            <th class ="mant" id="mant301"> xy </th>
+            <th class ="expo" id="expo301"> xy </th>
+            <th class ="expo" id="expo302"> xy </th>
+            <th class ="expo" id="expo303"> xy </th>
+            <th class ="expo" id="expo304"> xy </th>
+            <th class ="expo" id="expo305"> xy </th>
+            <th class ="expo" id="expo306"> xy </th>
+            <th class ="expo" id="expo307"> xy </th>
+            <th class ="expo" id="expo308"> xy </th>
+            <th class ="expo" id="expo309"> xy </th>
+            <th class ="expo" id="expo3010"> xy </th>
+            <th class ="expo" id="expo3011"> xy </th>
+            <th class ="fract" id="fract301"> xy </th>
+            <th class ="fract" id="fract302"> xy </th>
+            <th class ="fract" id="fract303"> xy </th>
+            <th class ="fract" id="fract304"> xy </th>
+            <th class ="fract" id="fract305"> xy </th>
+            <th class ="fract" id="fract306"> xy </th>
+            <th class ="fract" id="fract307"> xy </th>
+            <th class ="fract" id="fract308"> xy </th>
+            <th class ="fract" id="fract309"> xy </th>
+            <th class ="fract" id="fract3010"> xy </th>
+            <th class ="fract" id="fract3011"> xy </th>
+            <th class ="fract" id="fract3012"> xy </th>
+            <th class ="fract" id="fract3013"> xy </th>
+            <th class ="fract" id="fract3014"> xy </th>
+            <th class ="fract" id="fract3015"> xy </th>
+            <th class ="fract" id="fract3016"> xy </th>
+            <th class ="fract" id="fract3017"> xy </th>
+            <th class ="fract" id="fract3018"> xy </th>
+            <th class ="fract" id="fract3019"> xy </th>
+            <th class ="fract" id="fract3020"> xy </th>
+            <th class ="fract" id="fract3021"> xy </th>
+            <th class ="fract" id="fract3022"> xy </th>
+            <th class ="fract" id="fract3023"> xy </th>
+            <th class ="fract" id="fract3024"> xy </th>
+            <th class ="fract" id="fract3025"> xy </th>
+            <th class ="fract" id="fract3026"> xy </th>
+            <th class ="fract" id="fract3027"> xy </th>
+            <th class ="fract" id="fract3028"> xy </th>
+            <th class ="fract" id="fract3029"> xy </th>
+            <th class ="fract" id="fract3030"> xy </th>
+            <th class ="fract" id="fract3031"> xy </th>
+            <th class ="fract" id="fract3032"> xy </th>
+            <th class ="fract" id="fract3033"> xy </th>
+            <th class ="fract" id="fract3034"> xy </th>
+            <th class ="fract" id="fract3035"> xy </th>
+            <th class ="fract" id="fract3036"> xy </th>
+            <th class ="fract" id="fract3037"> xy </th>
+            <th class ="fract" id="fract3038"> xy </th>
+            <th class ="fract" id="fract3039"> xy </th>
+            <th class ="fract" id="fract3040"> xy </th>
+            <th class ="fract" id="fract3041"> xy </th>
+            <th class ="fract" id="fract3042"> xy </th>
+            <th class ="fract" id="fract3043"> xy </th>
+            <th class ="fract" id="fract3044"> xy </th>
+            <th class ="fract" id="fract3045"> xy </th>
+            <th class ="fract" id="fract3046"> xy </th>
+            <th class ="fract" id="fract3047"> xy </th>
+            <th class ="fract" id="fract3048"> xy </th>
+            <th class ="fract" id="fract3049"> xy </th>
+            <th class ="fract" id="fract3050"> xy </th>
+            <th class ="fract" id="fract3051"> xy </th>
+            <th class ="fract" id="fract3052"> xy </th>
+            <th></th>
+            <th id="value31"></th>
+        </tr>
+        <tr>
+            <th class="empty"></th>
+            <th class ="mant" id="mant311"> xy </th>
+            <th class ="expo" id="expo311"> xy </th>
+            <th class ="expo" id="expo312"> xy </th>
+            <th class ="expo" id="expo313"> xy </th>
+            <th class ="expo" id="expo314"> xy </th>
+            <th class ="expo" id="expo315"> xy </th>
+            <th class ="expo" id="expo316"> xy </th>
+            <th class ="expo" id="expo317"> xy </th>
+            <th class ="expo" id="expo318"> xy </th>
+            <th class ="expo" id="expo319"> xy </th>
+            <th class ="expo" id="expo3110"> xy </th>
+            <th class ="expo" id="expo3111"> xy </th>
+            <th class ="fract" id="fract311"> xy </th>
+            <th class ="fract" id="fract312"> xy </th>
+            <th class ="fract" id="fract313"> xy </th>
+            <th class ="fract" id="fract314"> xy </th>
+            <th class ="fract" id="fract315"> xy </th>
+            <th class ="fract" id="fract316"> xy </th>
+            <th class ="fract" id="fract317"> xy </th>
+            <th class ="fract" id="fract318"> xy </th>
+            <th class ="fract" id="fract319"> xy </th>
+            <th class ="fract" id="fract3110"> xy </th>
+            <th class ="fract" id="fract3111"> xy </th>
+            <th class ="fract" id="fract3112"> xy </th>
+            <th class ="fract" id="fract3113"> xy </th>
+            <th class ="fract" id="fract3114"> xy </th>
+            <th class ="fract" id="fract3115"> xy </th>
+            <th class ="fract" id="fract3116"> xy </th>
+            <th class ="fract" id="fract3117"> xy </th>
+            <th class ="fract" id="fract3118"> xy </th>
+            <th class ="fract" id="fract3119"> xy </th>
+            <th class ="fract" id="fract3120"> xy </th>
+            <th class ="fract" id="fract3121"> xy </th>
+            <th class ="fract" id="fract3122"> xy </th>
+            <th class ="fract" id="fract3123"> xy </th>
+            <th class ="fract" id="fract3124"> xy </th>
+            <th class ="fract" id="fract3125"> xy </th>
+            <th class ="fract" id="fract3126"> xy </th>
+            <th class ="fract" id="fract3127"> xy </th>
+            <th class ="fract" id="fract3128"> xy </th>
+            <th class ="fract" id="fract3129"> xy </th>
+            <th class ="fract" id="fract3130"> xy </th>
+            <th class ="fract" id="fract3131"> xy </th>
+            <th class ="fract" id="fract3132"> xy </th>
+            <th class ="fract" id="fract3133"> xy </th>
+            <th class ="fract" id="fract3134"> xy </th>
+            <th class ="fract" id="fract3135"> xy </th>
+            <th class ="fract" id="fract3136"> xy </th>
+            <th class ="fract" id="fract3137"> xy </th>
+            <th class ="fract" id="fract3138"> xy </th>
+            <th class ="fract" id="fract3139"> xy </th>
+            <th class ="fract" id="fract3140"> xy </th>
+            <th class ="fract" id="fract3141"> xy </th>
+            <th class ="fract" id="fract3142"> xy </th>
+            <th class ="fract" id="fract3143"> xy </th>
+            <th class ="fract" id="fract3144"> xy </th>
+            <th class ="fract" id="fract3145"> xy </th>
+            <th class ="fract" id="fract3146"> xy </th>
+            <th class ="fract" id="fract3147"> xy </th>
+            <th class ="fract" id="fract3148"> xy </th>
+            <th class ="fract" id="fract3149"> xy </th>
+            <th class ="fract" id="fract3150"> xy </th>
+            <th class ="fract" id="fract3151"> xy </th>
+            <th class ="fract" id="fract3152"> xy </th>
+            <th></th>
+            <th id="value32"></th>
+        </tr>
+        <tr></tr>
+        <tr></tr>
+        <tr>
+            <th class="empty"></th>
+            <th class ="mant" id="mant321"> xy </th>
+            <th class ="expo" id="expo321"> xy </th>
+            <th class ="expo" id="expo322"> xy </th>
+            <th class ="expo" id="expo323"> xy </th>
+            <th class ="expo" id="expo324"> xy </th>
+            <th class ="expo" id="expo325"> xy </th>
+            <th class ="expo" id="expo326"> xy </th>
+            <th class ="expo" id="expo327"> xy </th>
+            <th class ="expo" id="expo328"> xy </th>
+            <th class ="expo" id="expo329"> xy </th>
+            <th class ="expo" id="expo3210"> xy </th>
+            <th class ="expo" id="expo3211"> xy </th>
+            <th class ="fract" id="fract321"> xy </th>
+            <th class ="fract" id="fract322"> xy </th>
+            <th class ="fract" id="fract323"> xy </th>
+            <th class ="fract" id="fract324"> xy </th>
+            <th class ="fract" id="fract325"> xy </th>
+            <th class ="fract" id="fract326"> xy </th>
+            <th class ="fract" id="fract327"> xy </th>
+            <th class ="fract" id="fract328"> xy </th>
+            <th class ="fract" id="fract329"> xy </th>
+            <th class ="fract" id="fract3210"> xy </th>
+            <th class ="fract" id="fract3211"> xy </th>
+            <th class ="fract" id="fract3212"> xy </th>
+            <th class ="fract" id="fract3213"> xy </th>
+            <th class ="fract" id="fract3214"> xy </th>
+            <th class ="fract" id="fract3215"> xy </th>
+            <th class ="fract" id="fract3216"> xy </th>
+            <th class ="fract" id="fract3217"> xy </th>
+            <th class ="fract" id="fract3218"> xy </th>
+            <th class ="fract" id="fract3219"> xy </th>
+            <th class ="fract" id="fract3220"> xy </th>
+            <th class ="fract" id="fract3221"> xy </th>
+            <th class ="fract" id="fract3222"> xy </th>
+            <th class ="fract" id="fract3223"> xy </th>
+            <th class ="fract" id="fract3224"> xy </th>
+            <th class ="fract" id="fract3225"> xy </th>
+            <th class ="fract" id="fract3226"> xy </th>
+            <th class ="fract" id="fract3227"> xy </th>
+            <th class ="fract" id="fract3228"> xy </th>
+            <th class ="fract" id="fract3229"> xy </th>
+            <th class ="fract" id="fract3230"> xy </th>
+            <th class ="fract" id="fract3231"> xy </th>
+            <th class ="fract" id="fract3232"> xy </th>
+            <th class ="fract" id="fract3233"> xy </th>
+            <th class ="fract" id="fract3234"> xy </th>
+            <th class ="fract" id="fract3235"> xy </th>
+            <th class ="fract" id="fract3236"> xy </th>
+            <th class ="fract" id="fract3237"> xy </th>
+            <th class ="fract" id="fract3238"> xy </th>
+            <th class ="fract" id="fract3239"> xy </th>
+            <th class ="fract" id="fract3240"> xy </th>
+            <th class ="fract" id="fract3241"> xy </th>
+            <th class ="fract" id="fract3242"> xy </th>
+            <th class ="fract" id="fract3243"> xy </th>
+            <th class ="fract" id="fract3244"> xy </th>
+            <th class ="fract" id="fract3245"> xy </th>
+            <th class ="fract" id="fract3246"> xy </th>
+            <th class ="fract" id="fract3247"> xy </th>
+            <th class ="fract" id="fract3248"> xy </th>
+            <th class ="fract" id="fract3249"> xy </th>
+            <th class ="fract" id="fract3250"> xy </th>
+            <th class ="fract" id="fract3251"> xy </th>
+            <th class ="fract" id="fract3252"> xy </th>
+            <th></th>
+            <th id="value33"></th>
+        </tr>
+        <tr>
+            <td class =" firstbot">Bit</td>
+            <td>0</td>
+            <td>1</td>
+            <td>2</td>
+            <td>3</td>
+            <td>4</td>
+            <td>5</td>
+            <td>6</td>
+            <td>7</td>
+            <td>8</td>
+            <td>9</td>
+            <td>10</td>
+            <td>11</td>
+            <td>12</td>
+            <td>13</td>
+            <td>14</td>
+            <td>15</td>
+            <td>16</td>
+            <td>17</td>
+            <td>18</td>
+            <td>19</td>
+            <td>20</td>
+            <td>21</td>
+            <td>22</td>
+            <td>23</td>
+            <td>24</td>
+            <td>25</td>
+            <td>26</td>
+            <td>27</td>
+            <td>28</td>
+            <td>29</td>
+            <td>30</td>
+            <td>31</td>
+            <td>32</td>
+            <td>33</td>
+            <td>34</td>
+            <td>35</td>
+            <td>36</td>
+            <td>37</td>
+            <td>38</td>
+            <td>39</td>
+            <td>40</td>
+            <td>41</td>
+            <td>42</td>
+            <td>43</td>
+            <td>44</td>
+            <td>45</td>
+            <td>46</td>
+            <td>47</td>
+            <td>48</td>
+            <td>49</td>
+            <td>50</td>
+            <td>51</td>
+            <td>52</td>
+            <td>53</td>
+            <td>54</td>
+            <td>55</td>
+            <td>56</td>
+            <td>57</td>
+            <td>58</td>
+            <td>59</td>
+            <td>60</td>
+            <td>61</td>
+            <td>62</td>
+            <td>63</td>
+        </tr>
+    </table>
+    <div class="hiddenone" id="showbutton">
+        <input type="button" id="rechenweganzeige" onclick="show_rechenweg()" value="Rechenweg anzeigen"><br>
+    </div>
+
+
+
+    <script src="funktionen.js"></script>
+
+</body>
+</html>

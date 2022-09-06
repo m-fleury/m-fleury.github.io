@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+<meta charset="utf-8">
+<meta name="keywords" content="floating, GRS, double, float, bfloat8, bfloat16">
+<meta name="author" content="John Doe">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css" />
+<title>Floating-point arithmetic</title>
+<link rel="icon" type="image/x-icon" href="images/favicon.ico">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <!-- LOGO -->
+        <div class="logo">Floating-point arithmetic</div>
+        <!-- NAVIGATION MENU -->
+        <ul class="nav-links">
+          <!-- NAVIGATION MENUS -->
+          <div class="menu">
+            <li><a href="home.html">Home</a></li>  
+            <li><a href="bfloat.html">Floating-point</a></li>             
+            <li><a href="grs.html">GRS</a></li>
+            <li><a href="rechner.html">Rechner</a></li>
+          </div>
+        </ul>
+    </nav>
+<br>
+<br>
+<h2>Runden von Gleitkommazahlen</h2>
+<br>
+<p>
+  Reele Zahlen sind nicht immer endliche Zahlen, dadurch sind sie mit endlichem Speicher nicht
+  genau darstellbar. Auch endliche Zahlen können mehr Speicher benötigen, wie ihnen
+  zur Verfügung steht. Um sie dennoch darzustellen, müssen die Zahlen gerundet werden.
+  In der floating-point Arithmetik wird als Defaultwert "<a href="https://en.wikipedia.org/wiki/Rounding">round to nearest, ties to even</a>" 
+  verwendet. Um zu runden werden neben den normale Bits der Mantissa drei weitere Bits 
+  benöigt. Das Guard, das Round und das Sticky Bit. Sie sind die drei Bits, die direkt 
+  auf das letzte gespeicherte Bit folgen.
+  <br>
+  <br>
+  <h3>Aufrunden</h3>
+  <br>
+  Damit eine Zahl aufgerundet wird, muss das Guard Bit Eins sein. Das alleine reicht jedoch nicht
+  um zu bestimmen, ob die Zahl aufgerundet werden soll. Damit dies eindeutig ist, muss entweder 
+  das Guard oder das Sticky Bit ebendfalls Eins sein. Wenn nur das Guard Bit den Wert Eins 
+  besitzt, entscheidet das Bit links des Guard Bit. Ist es eine Eins wird aufgerundet (ties to even),
+  weil immer zu nächsten geraden Zahl gerundet wird. In diesen Fällen wird aufgerundet:
+  <table id="examplebfloat84">
+    <tr>
+      <tr>
+        <td>Hidden Bit</td>
+        <td></td>
+        <td>Mantissa</td>
+        <td></td>
+        <td></td>
+        <td>G</td>
+        <td>R</td>
+        <td>S</td> 
+        <td></td>           
+      </tr>
+      <tr>
+      <th class ="extrafract" > 1 </th>
+      <th > . </th>
+      <th class ="fract" > 1 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 1 </th>
+      <th class ="grs" > 1 </th>
+      <th class ="grs" > 1 </th>
+      <th class ="grs" > 1 </th>
+    </tr>
+    <tr>
+      <th class ="extrafract" > 1 </th>
+      <th> . </th>
+      <th class ="fract" > 1 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 1 </th>
+      <th class ="grs" > 1 </th>
+      <th class ="grs" > 1 </th>
+      <th class ="grs" > 0 </th>
+    </tr>
+    <tr>
+      <th class ="extrafract" > 1 </th>
+      <th> . </th>
+      <th class ="fract" > 1 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 1 </th>
+      <th class ="grs" > 1 </th>
+      <th class ="grs" > 0 </th>
+      <th class ="grs" > 1 </th>
+    </tr>
+    <tr>
+      <th class ="extrafract" > 1 </th>
+      <th> . </th>
+      <th class ="fract" > 1 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 1 </th>
+      <th class ="grs" > 1 </th>
+      <th class ="grs" > 0 </th>
+      <th class ="grs" > 0 </th>
+    </tr>
+  </table>
+  <br>
+  In all diesen Fällen wird die Zahl zu dieser Zahl aufgerundet:
+  <table id="examplebfloat86">
+    <tr>
+      <th class ="extrafract" > 1 </th>
+      <th> . </th>
+      <th class ="fract" > 1 </th>
+      <th class ="fract" > 1 </th>
+      <th class ="fract" > 0 </th>
+    </tr>
+  </table>
+  <br>
+  <br>
+  <h3>Abrunden</h3>
+  <br>
+  Damit eine Zahl abgerundet wird, muss das Guard Bit Null sein. Das alleine reicht, damit eindeutig 
+  bestimmt weren kann, dass die Zahl abgerundet wird. Der zweite Fall in dem abgerundet wird ist,
+  wenn das Guard Bit den Wert Eins und das Round und Sticky Bit Null sind und das Bit links des 
+  Guard Bit ebenfalls Null ist. In diesen Fällen wird abgerundet:
+  <table id="examplebfloat85">
+    <tr>
+      <tr>
+        <td>Hidden Bit</td>
+        <td></td>
+        <td>Mantissa</td>
+        <td></td>
+        <td></td>
+        <td>G</td>
+        <td>R</td>
+        <td>S</td> 
+        <td></td>           
+      </tr>
+      <tr>
+      <th class ="extrafract" > 1 </th>
+      <th > . </th>
+      <th class ="fract" > 1 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="grs" > 0 </th>
+      <th class ="grs" > 1 </th>
+      <th class ="grs" > 1 </th>
+    </tr>
+    <tr>
+      <th class ="extrafract" > 1 </th>
+      <th> . </th>
+      <th class ="fract" > 1 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="grs" > 0 </th>
+      <th class ="grs" > 1 </th>
+      <th class ="grs" > 0 </th>
+    </tr>
+    <tr>
+      <th class ="extrafract" > 1 </th>
+      <th> . </th>
+      <th class ="fract" > 1 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="grs" > 0 </th>
+      <th class ="grs" > 0 </th>
+      <th class ="grs" > 1 </th>
+    </tr>
+    <tr>
+      <th class ="extrafract" > 1 </th>
+      <th> . </th>
+      <th class ="fract" > 1 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="grs" > 1 </th>
+      <th class ="grs" > 0 </th>
+      <th class ="grs" > 0 </th>
+    </tr>
+  </table>
+  <br>
+  In all diesen Fällen wird die Zahl zu dieser Zahl abgerundet:
+  <table id="examplebfloat87">
+    <tr>
+      <th class ="extrafract" > 1 </th>
+      <th> . </th>
+      <th class ="fract" > 1 </th>
+      <th class ="fract" > 0 </th>
+      <th class ="fract" > 0 </th>
+    </tr>
+  </table>
+  <br>
+</p>
+
+
+<script src="funktionen.js"></script>
+
+</body>
+</html>
