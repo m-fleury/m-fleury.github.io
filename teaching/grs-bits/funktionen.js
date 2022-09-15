@@ -42,13 +42,13 @@ function add_float(num1,num2,num3){
     }
     if(config == 0){
         exp_sub = exp1 - exp2;
-        num2 = adapt_val(num2,exp_sub); //Exponenten anpassen
+        num2 = adapt_val(num2,exp_sub); //Mantisse anpassen
         extend(num1,num2,num3);//Alle Arrays auf die selbe länge bringen
         adapt_exp(num1,num2,num3);//Exponeneten übernehmen
     }
     else if(config == 1){
         exp_sub = exp2 - exp1;
-        num1 = adapt_val(num1,exp_sub);//Exponenten anpassen
+        num1 = adapt_val(num1,exp_sub);//Mantisse anpassen
         extend(num2,num1,num3);//Alle Arrays auf die selbe länge bringen
         adapt_exp(num2,num1,num3);//Exponeneten übernehmen
     } else{
@@ -173,6 +173,19 @@ function sub_float(num1,num2,num3){
             take_fract_1(num1,num2,exp_sub);
         }
     }
+
+    //checken ob num2 0 ist
+    let num15 = calc_val(num2);
+    if (num15 == 0){
+        let len7 = num2.length;
+        for (let i = 0; i < len7; i ++){
+            num3[i] = num1[i];
+        }
+        if (type == 0){
+            take_fract_2(num3);
+        }
+        return;
+    } 
    
     print_exp();
 	//Beide Zahlen subtrahieren
@@ -208,7 +221,7 @@ function sub_float(num1,num2,num3){
         num3.push(0);
         len2 = num3.length;
     }
-    if (hi == 1 || exp_sub == 0) {
+    if ((hi == 1 || exp_sub == 0) && nicer != 2 && nicer2 != 2) {
         underflowe = 1;
     }
     if (type == 0){
@@ -220,8 +233,9 @@ function sub_float(num1,num2,num3){
 	if (hi == 1 || exp_sub == 0) {
         let nicer6 = special_one(num3);
         if (nicer6 != 2){
-            while(num3[num_exp +1] == 0){
+            while(num3[num_exp +1] == 0 && nicer6 != 2){
                 num3 = exp_min(num3);
+                nicer6 = special_one(num3); //10001110  00001111
 		        let val7 = 0;
 		        let val8 = 0;
                 let len3 = num3.length;
@@ -674,7 +688,7 @@ function showContent() {
 function calc_round(num){
 	if (num[num_frac + 1]) {
 		if (num[num_frac + 2] || num[num_frac + 3]) { 
-			num = round_up(num,type);
+			num = round_up(num);
             document.getElementById("grstext").innerHTML = "Das Guard Bit ist eine Eins und das Round und/ oder Sticky Bit"+
                 " sind eine Eins. Das führt dazu das aufgerundet wird.";
 		}
@@ -816,7 +830,58 @@ function adapt_val(num2,diff){
             num2.splice(num_exp + 1,0,0);
 		}
 	}
+    round_num(num2);
     return num2;
+}
+
+//runden auf 6 bits
+function round_num(num){
+    num.push(0);
+    num.push(0);
+    num.push(0);
+    let len8 = num.length;
+    if (num[num_frac + 4]) {
+		if (num[num_frac + 5] || num[num_frac + 6]) { 
+			num = round_upper(num);
+		}
+		else {
+			if (num[num_frac + 3]) {
+				num = round_upper(num);
+			}
+            else if(num[num_frac + 3] == 0){
+            }
+		}
+    }
+    while ( len8 > num_frac + 4){
+        num.pop();
+        len8 --;
+    }
+}
+
+// Zahl aufrunden
+function round_upper(num){
+    let num4 = [];
+    let len7 = num.length;
+    for (let i = 0; i< len7; i++){
+        num4.push(0);
+    }
+    num4[num_frac + 3] = 1;
+    let carry = 0;
+	for (let j = num_frac + 3; j > 0; j--) {
+		num[j] = num[j] + num4[j] + carry;
+		if (num[j] == 2) {
+			carry = 1;
+			num[j] = 0;
+		}
+		else if (num[j] == 3) {
+			carry = 1;
+			num[j] = 1;
+		}
+		else {
+			carry = 0;
+		}
+	}
+    return num;
 }
 
 //Exponenten um eins erhöhen
@@ -844,7 +909,6 @@ function exp_plus(num){
 		}
 	}
 	if (carry == 1) {
-        overflow();
 		alert("Die Zahl ist nicht darstellbar")
 	}
     document.getElementById("overflow").className = "nothidden";
@@ -1043,14 +1107,25 @@ function decider_add(num1,num2,num3){
     }
     else if((high == 0 || high == 2)&& config == 2){
         sub_add = 0;
+        exp_sub = exp1- exp2;
+        take_fract_1(num1,num2,exp_sub);//Die fractions in die Tabelle schreiben
         document.getElementById("vorzeichen").innerHTML = "+";
         add(num1,num2,num3);
         return;
     }
     else if(high == 1 && config == 2){
-        sub_add = 1;
-        document.getElementById("vorzeichen").innerHTML = "+";
-        add_float(num1,num2,num3);
+        sub_add = 0;
+        num3[0] = 0;
+        for (let i = 1; i <= num_frac; i++){
+            num3[i] = 0;
+            nicer = 2;//denormalized Number
+        }
+        exp_sub = exp1- exp2;
+        take_fract_1(num1,num2,exp_sub);//Die fractions in die Tabelle schreiben
+        document.getElementById("vorzeichen").innerHTML = "-";
+        print_exp();
+        take_fract_2(num3)
+        return;
     }
 }
 
@@ -1121,11 +1196,14 @@ function decider_sub(num1,num2,num3){
         }
     }
     else if((high == 0 || high == 2)&& config == 2){
-        num3[0] = num1[0];
+        sub_add = 0;
+        document.getElementById("vorzeichen").innerHTML = "-";
+        num3[0] = 0;
         for (let i = 1; i <= num_frac; i++){
             num3[i] = 0;
             nicer = 2;//denormalized Number
         }
+        exp_sub = exp1- exp2;
         take_fract_1(num1,num2,exp_sub);//Die fractions in die Tabelle schreiben
         print_exp();
         take_fract_2(num3)
@@ -1134,6 +1212,7 @@ function decider_sub(num1,num2,num3){
     else if(high == 1 && config == 2){
         sub_add = 0;
         document.getElementById("vorzeichen").innerHTML = "+";
+        exp_sub = exp1- exp2;
         take_fract_1(num1,num2,exp_sub);//Die fractions in die Tabelle schreiben
         print_exp();
         add(num1,num2,num3);
@@ -1324,7 +1403,7 @@ function take_fract_1(numm1,numm2, exp_sub){
         if (i < num_exp + 4){
             document.getElementById("calcfrac01" + offset).className = "fract";
         }
-        if (i > num_exp + exp_sub && i < num_exp + exp_sub + 5){
+        if (i > num_exp + exp_sub && i < num_exp + exp_sub + 4){
             document.getElementById("calcfrac02" + offset).className = "fract";
         }
         if (i == num_exp + exp_sub && exp_sub != 0){
