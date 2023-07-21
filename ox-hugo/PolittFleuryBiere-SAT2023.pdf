@@ -1,0 +1,1084 @@
+\documentclass[a4paper,USenglish,cleveref, autoref, thm-restate]{lipics-v2021}
+%This is a template for producing LIPIcs articles. 
+%See lipics-v2021-authors-guidelines.pdf for further information.
+%for A4 paper format use option "a4paper", for US-letter use option "letterpaper"
+%for british hyphenation rules use option "UKenglish", for american hyphenation rules use option "USenglish"
+%for section-numbered lemmas etc., use "numberwithinsect"
+%for enabling cleveref support, use "cleveref"
+%for enabling autoref support, use "autoref"
+%for anonymousing the authors (e.g. for double-blind review), add "anonymous"
+%for enabling thm-restate support, use "thm-restate"
+%for enabling a two-column layout for the author/affilation part (only applicable for > 6 authors), use "authorcolumns"
+%for producing a PDF according the PDF/A standard, add "pdfa"
+
+%\pdfoutput=1 %uncomment to ensure pdflatex processing (mandatatory e.g. to submit to arXiv)
+%\hideLIPIcs  %uncomment to remove references to LIPIcs series (logo, DOI, ...), e.g. when preparing a pre-final version to be uploaded to arXiv or another public repository
+
+%\graphicspath{{./graphics/}}%helpful if your graphic files are in another directory
+
+\usepackage[binary-units=true,group-four-digits=true,detect-all]{siunitx}
+\usepackage{subcaption}
+\bibliographystyle{plainurl}% the mandatory bibstyle
+
+%\usepackage[inline]{enumitem}
+\usepackage{algorithm2e,cite,syntax}
+
+\newcommand{\cakelpr}{\textsc{Cake\_Lpr}}
+\newcommand{\drattrim}{DRAT-Trim}
+\newcommand{\lrattrim}{\textsc{Lrat-Trim}}
+\newcommand{\fratrs}{\textsc{FRAT-rs}}
+\newcommand{\cadical}{\textsc{CaDiCaL}}
+\newcommand{\clrat}{CLRAT}
+
+
+\newif\iflongversion
+\longversiontrue
+
+\title{Faster LRAT Checking than Solving with CaDiCaL}
+
+
+
+%\titlerunning{Dummy short title} %TODO optional, please use if title is longer than one line
+
+\author{Florian Pollitt}{University Freiburg, Germany}{pollittf@informatik.uni-freiburg.de}{}{}%TODO mandatory, please use full name; only 1 author per \author macro; first two parameters are mandatory, other parameters can be empty. Please provide at least the name of the affiliation and the country. The full address is optional. Use additional curly braces to indicate the correct name splitting when the last name consists of multiple name parts.
+
+\author{Mathias Fleury}{University Freiburg, Germany}{fleury@cs.uni-freiburg.de}{https://orcid.org/0000-0002-1705-3083}{}
+\author{Armin Biere}{University Freiburg, Germany}{biere@cs.uni-freiburg.de}{https://orcid.org/0000-0001-7170-9242}{}
+
+
+\authorrunning{F. Pollitt, M. Fleury, and A. Biere} %TODO mandatory. First: Use abbreviated first/middle names. Second (only in severe cases): Use first author plus 'et al.'
+
+\Copyright{Florian Pollitt, Mathias Fleury, and Armin Biere} %TODO mandatory, please use full first names. LIPIcs license is "CC-BY";  http://creativecommons.org/licenses/by/3.0/
+
+
+%\ccsdesc[500]{Security and privacy~Logic and verification}
+\ccsdesc[500]{Theory of computation~Automated reasoning}
+
+\keywords{SAT solving, Proof Checking, DRAT, LRAT, FRAT} %TODO mandatory; please add comma-separated list of keywords
+
+\category{Tool Paper} %optional, e.g. invited paper
+
+\relatedversion{} %optional, e.g. full version hosted on arXiv, HAL, or other respository/website
+%\relatedversiondetails[linktext={opt. text shown instead of the URL}, cite=DBLP:books/mk/GrayR93]{Classification (e.g. Full Version, Extended Version, Previous Version}{URL to related version} %linktext and cite are optional
+
+%\supplement{}%optional, e.g. related research data, source code, ... hosted on a repository like zenodo, figshare, GitHub, ...
+\supplement{}
+\supplementdetails[subcategory={Log files}, cite={experiments}]{Dataset}{https://cca.informatik.uni-freiburg.de/lrat/}
+
+%\supplementdetails[linktext={CaDiCaL}]{Implementation }{https://github.com/florianpollitt/radical}
+%\supplementdetails[linktext={opt. text shown instead of the URL}, cite=DBLP:books/mk/GrayR93, subcategory={Description, Subcategory}, swhid={Software Heritage Identifier}]{General Classification (e.g. Software, Dataset, Model, ...)}{URL to related version} %linktext, cite, and subcategory are optional
+
+%\funding{(Optional) general funding statement \dots}%optional, to capture a funding statement, which applies to all authors. Please enter author specific funding statements as fifth argument of the \author macro.
+
+\acknowledgements{We thank reviewers of SAT'23 and MBMV'23
+for their detailed comments as well as
+Mario Carneiro for making \fratrs{} publicly available.}%optional
+
+%\nolinenumbers %uncomment to disable line numbering
+
+
+
+%Editor-only macros:: begin (do not touch as author)%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\EventEditors{Meena Mahajan and Friedrich Slivovsky}
+\EventNoEds{2}
+\EventLongTitle{26th International Conference on Theory and Applications of Satisfiability Testing (SAT 2023)}
+\EventShortTitle{SAT 2023}
+\EventAcronym{SAT}
+\EventYear{2023}
+\EventDate{July 4--8, 2023}
+\EventLocation{Alghero, Italy}
+\EventLogo{}
+\SeriesVolume{271}
+\ArticleNo{20}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\makeatletter
+\newcommand{\customlabel}[2]{%
+   \protected@write \@auxout {}{\string \newlabel {#1}{{#2}{\thepage}{#2}{#1}{}} }%
+   \hypertarget{#1}{#2}
+}
+\makeatother
+
+\begin{document}
+
+\maketitle
+
+%TODO mandatory: add short abstract of the document
+% averages for drat/nocheck frat/nocheck lrat/nocheck
+% 131.87403340068192
+% 215.7407717550478
+% 278.3772285569125
+
+\begin{abstract}
+  DRAT is the standard proof format used in the SAT Competition. It is easy to generate but checking proofs often takes even more
+  time than solving the problem.
+  An alternative is to use the LRAT proof system.
+  While LRAT is easier and way more efficient to check, it is more complex to
+  generate directly.  Due to this complexity LRAT is not supported natively by any state-of-the-art SAT solver.
+  Therefore Carneiro and Heule proposed the mixed proof format FRAT which still suffers from costly intermediate
+  translation.  We present an extension to the state-of-the-art solver \cadical{} which is able to generate LRAT natively for all
+  procedures implemented in \cadical{}.
+  We further present \lrattrim{}, a tool which not only trims and checks LRAT proofs in both ASCII and binary
+  format but also produces clausal cores and has been tested thoroughly.  Our experiments on recent competition benchmarks
+  show that our approach reduces time of proof generation and certification substantially compared to competing approaches
+  using intermediate DRAT or FRAT proofs.
+\end{abstract}
+
+
+\section{Introduction}
+\label{sec:introduction}
+
+Proof production became an essential part in SAT solving.
+For instance, unsatisfiable problems only count as solved in the SAT
+Competition if a certifiable proof is provided.
+Proofs do increase trust in solving results by providing certificates that can be checked independently.
+To increase trust even further proof checkers can also be entirely verified~\cite{DBLP:conf/cade/Cruz-FilipeHHKS17,DBLP:journals/jar/Lammich20}.
+
+In the past the only format allowed in the SAT Competition was
+DRAT~\cite{DBLP:conf/sat/WetzlerHH14},
+even though the SAT Competition 2023 announced to
+allow additional formats. %footnotes take way too much space
+However, checking DRAT proofs often
+takes several times the amount of solving time.
+The problem with DRAT is that the format is not detailed
+enough to avoid search during checking. Both the solver and the checker have
+to propagate clauses (actually using similar data structures).
+To reduce this overhead (and simplify verification) all verified proof checkers expect
+an enriched format.  The DRAT proof is augmented and converted by an (untrusted) external
+program into such an enriched format, e.g., LRAT~\cite{DBLP:conf/cade/Cruz-FilipeHHKS17}
+or GRAT~\cite{DBLP:journals/jar/Lammich20}, which contains enough
+information to avoid search and can then be checked easily by the
+verified proof checker.
+
+On top of the actual clause contents (its literals)
+the LRAT~\cite{DBLP:conf/cade/Cruz-FilipeHHKS17} format requires the following additional information:
+($i$) clause identifiers (ids) are used to reference clauses and to
+make clause deletion steps more concise;
+($ii$) clause antecedent ids used in the resolution chain when deriving an added clause
+through reverse unit propagation (RUP)~\cite{DBLP:conf/isaim/Gelder08}, i.e., as asymmetric tautology (AT)~\cite{DBLP:conf/lpar/HeuleJB10};
+($iii$) the ID and further resolution paths to refute the resolvent of 
+the added clause 
+with 
+all clauses containing a RAT (blocking) literal
+in case the added clause relies on the stronger resolution asymmetric tautology (RAT) property~\cite{DBLP:conf/cade/JarvisaloHB12}.
+
+These RAT literals would be needed to model more powerful reasoning (such as blocked
+clause addition or symmetry breaking etc.) but
+neither our SAT solver \cadical{}~\cite{Biere-SAT-Competition-2021-solvers} nor any
+top performing SAT solver in the SAT Competition over the last 2 years actually used such reasoning.
+Therefore, our efforts to extend \cadical{} did not need to address the full power
+of RAT and we can focus on producing ``LRUP'' proofs, i.e., reverse-unit-propagation (RUP) proofs,
+but still need to augment these proofs with ids and resolution chains.
+
+\iffalse
+Our SAT \cadical{} contains many different inprocessing techniques,
+which makes it a good candidate to implement direct generation of LRAT
+proofs -- although some of the techniques are not activated by default.
+\fi
+
+A similar attempt~\cite{DBLP:journals/lmcs/BaekCH22} by Carneiro and Heule led to a new proof format,
+FRAT, that sits between LRAT (because it allows for justifications) and DRAT (because it
+still allows steps without justification). Their aim was to fill out
+most ``\emph{gaps}'' and leave \emph{``harder''} to implement cases as black box
+to be filled in by an (untrusted) proof checker, i.e., by their \fratrs{} tool
+used to convert an FRAT proof to a fully justified LRAT proof. % -- also trimming the proof on the way.
+In a recent paper~\cite{parallel-frat}
+this limitation of the FRAT producing \cadical{}~\cite{DBLP:journals/lmcs/BaekCH22}
+forced a parallel proof-producing version of the award winning SAT solver \textsc{Mallob}
+to deactivate all steps not covered by FRAT, i.e., most inprocessing,
+as native LRAT proof generation is needed.
+
+In this tool paper, we present an extension of our SAT solver
+\cadical{}~\cite{Biere-SAT-Competition-2021-solvers} to generate the
+richer LRAT format directly. Our focus is on three different aspects:
+\customlabel{correct-proof}{(A)}producing LRAT proofs for all solver configurations
+on all benchmarks,
+\customlabel{slow-down}{(B)}comparable performance and, further,
+\customlabel{same-behavior}{(C)}making sure the solver behaves the same with/without proof
+generation.
+
+Our goal \ref{correct-proof} lead us to reimplement LRAT generation in
+the conflict analysis and all inprocessing techniques of \cadical{}, some of which
+were not covered in the FRAT~\cite{DBLP:journals/lmcs/BaekCH22}
+producing implementation, such as equivalent literal subsumption (Section~\ref{sec:implementation}).
+
+
+Like other SAT solvers, \cadical{} generates a vast number of proof steps
+from which at the end, a significant fraction turns out to be
+unnecessary for the derivation of the empty clause.
+Thus  most tools that process DRAT or FRAT will trim these
+unnecessary steps from the proof. However, we are not aware of a tool that does this for
+LRAT. Therefore we implemented a new tool called \lrattrim{} to trim proofs
+down and improve the performance of checking the proof with the verified checker \cakelpr{}~\cite{DBLP:conf/tacas/TanHM21}
+(Section~\ref{sec:trimming-lrat-proofs}).
+
+To validate robustness of our approach 
+we extended \cadical{} to internally check LRAT proofs too
+and fuzzed the extended solver.
+This allowed us to use the model-based tester \textsc{Mobical} (which comes
+with \cadical{}) to find, debug, and fix bugs much more efficiently.
+We further ran the extended new solver on the unsatisfiable
+problems from the SAT Competition 2022. We observed (almost) no slow-down without proof production (0.3\%) and 
+only a small slow-down for producing LRAT (5\%). Proof checking performance was 
+improved considerably compared to the two competing approaches DRAT and FRAT
+(see Section~\ref{sec:experiments}). Checking (and producing) our LRAT proofs
+has an overhead of 30\% over pure solving, compared to 125\% for FRAT
+and 180\% in the SAT Competition mode (i.e., slower than producing them).
+Without negligible overhead over plain solving with \cadical{}, we managed to check proofs faster
+than they are produced for a state-of-the-art SAT solver.
+
+%
+% AB We want to add some overal percentage 'slow-down  by Z%'
+% as well as some overall improvement ") reducing the overall overhead for proof production
+% and checking from on average XXX% to YY%"
+%
+
+Our \cadical{} extension is available at~\url{https://github.com/florianpollitt/radical}
+and will shortly be merged into the main \cadical{} repository.
+Note that a preliminary version of this paper was %accepted and
+presented at the MBMV workshop~\cite{lrat-mbmv} as work in progress.
+Compared to that shorter version, we have improved and present~\lrattrim{},
+give an extensive evaluation
+on the entire problem set of the SAT Competition 2022
+(not just a single problem) and in general provide more details
+on the implementation.
+
+\section{Preliminaries}
+\label{sec:preliminaries}
+
+
+For an introduction to SAT solving please refer to the
+\emph{Handbook of
+  Satisfiability}~\cite{BiereJarvisaloKiesl-SAT-Handbook-2021}.
+  In our context it is sufficient to recall that SAT solvers
+build a partial assignment and along the way
+learn new clauses preserving satisfiability until either the assignment
+satisfies all clauses
+or the empty clause is derived, meaning that the problem
+is unsatisfiable.
+
+A DRAT~\cite{DBLP:conf/sat/WetzlerHH14} proof is the sequence of all clauses learned
+(or in general deduced) by the SAT solver interleaved with clause deletion steps,
+which are used to help the proof checker to focus on the same clauses
+the solver would see at this point of the proof.
+This design principle helps DRAT~\cite{DBLP:conf/sat/WetzlerHH14} to easily capture all techniques
+currently used by SAT solvers without the need to provide 
+more complex justification e.g. in the form of resolution chains.
+
+The LRAT~\cite{DBLP:conf/cade/Cruz-FilipeHHKS17} proof format has more detailed information: Each clause is associated
+with a clause identifier and claimed to be the result of resolving/propagating several clauses
+in the given order. The list of antecedent clause ids forms a justification
+and is part of such an addition step in LRAT.
+%If an empty clause is derived the problem is unsatisfiable.
+In the rest of the paper we focus on finding these justification.
+
+\iffalse
+Beside other proof formats,
+GRAT~\cite{DBLP:journals/jar/Lammich20} % TODO why do we have this paragraph?
+is of particular interest.
+Similarly to LRAT it contains
+the resolution chain as justification, but in contrast to LRAT,
+GRAT allows adding unit literals, which can be used to implicitly
+simplify all clauses that contain their negation. This simplifies the task
+of proof generation in the SAT solver as the solver can simply
+ignore root-level falsified literals in learned clauses during derivation.
+%(as non-proof producing SAT actually do).
+However, we are currently not aware of any solver that produces
+GRAT proofs directly. Although a conversion from LRAT to GRAT 
+seems easy, but (i) it would not take full advantage
+of GRAT's ability to ignore units and (ii)  GRAT  is stricter
+(no extra clauses at the end of the justification allowed).
+
+
+%
+% AB: Yes, related would is good in general but the contents
+% sofar is not really connected (first par on SMT) and second
+% paragraph is redundant (except for the --lrat option which
+% could also go into the experiments.
+%
+\section{Related Work}
+\label{sec:related-work}
+
+Producing certificates that can be efficiently checked is helpful to
+increase trust in the results and is done in SAT solving (where it is mandatory
+in the SAT Competition), in SMT
+solving~\cite{DBLP:journals/jar/BarbosaBFF20,DBLP:journals/corr/abs-2107-02354,DBLP:conf/smt/HoenickeS22,z3-proofs}
+(although there is no agreement on syntax), ...  A certificate is a way to work around bugs
+discovered by fuzzing~\cite{DBLP:conf/sat/BrummayerLB10}: when the certificate is
+correct, the solver can be buggy.
+
+In previous work, Carneiro and
+Heule~\cite{DBLP:journals/lmcs/BaekCH22} have created a new proof
+format that sits in-between LRAT and FRAT: some justification can be
+left out. This reduces the amount of implementation in the SAT solver,
+since rarer steps can be left unchanged. Confusingly, the option to
+activate this proof is called \texttt{-{}-lrat}.  Throughout the rest
+of paper, we will call their implementation (\cadical{}) FRAT (from CMU).
+
+\fi
+
+
+
+\section{Implementation}
+\label{sec:implementation}
+
+The LRAT extension to \cadical{} was implemented by the first author as part of his master
+project and proceeded in four stages:
+%
+%\begin{enumerate*}
+%\item
+  First, the internal proof checker in \cadical{} for DRAT clauses
+  was extended to produce LRAT proofs, which
+  is quite inefficient but can still be
+  enabled through the \texttt{-{}-lrat-external} option.
+%\item
+  Second, a separate internal LRAT checker was added to
+  \cadical{} to validate proofs on-the-fly while running the solver.
+%\item
+  Third, we implemented LRAT production for \cadical{} without
+  any inprocessing.
+%\item
+  Finally, all different inprocessing techniques were instrumented to generate LRAT
+  proof chains directly.
+  Thanks to the second stage, proofs could be
+  validated on-the-fly, dramatically reducing the implementation effort
+  (particularly for debugging).
+  The implementation of these four stages took around 
+  two months in total but the last two stages only two weeks.
+%\end{enumerate*}
+
+The resolution chain for justifying a new clause can be computed alongside normal CDCL search
+with little computational overhead but clause minimization and shrinking are a bit more
+involved (Section~\ref{sec:prop-vivif}).
+Proof production in preprocessing and inprocessing were of varying degree of difficulty.
+The most interesting inprocessing technique from this point of view is equivalent literal
+substitution which we discuss in Section~\ref{sec:equiv-liter-subst}.
+
+\subsection{Conflict Analysis}
+\label{sec:prop-vivif}
+
+Most clauses derived by a SAT solver originate from clauses learned during 
+conflict analysis. When
+the solver finds a mismatch between the current partial assignment and
+the clauses, i.e., a conflicting clause which is falsified, then this
+conflict is analyzed and a clause is learned which forces
+the solver to adjust the partial assignment.
+In the standard implementation of conflict analysis the learned clause is derived
+by resolving individual reason clauses in reverse assignment order,
+starting with the conflicting clause,
+which in turn immediately gives the
+necessary justification for the (non-minimized first UIP~\cite{DBLP:conf/iccad/ZhangMMM01}) learned clause.
+
+We have adapted our code to generate chains for various technique
+relying on conflict analysis such as hyper binary
+resolution~\cite{DBLP:conf/cpaior/HeuleJB13} and
+vivification~\cite{DBLP:journals/ai/LiXLMLL20}. It is crucial to
+distinguish between techniques that eliminate false literals (thus,
+necessitating an extension of the proof chain) and those that do not.
+
+
+One recent addition to improve conflict analysis is the concept of
+``shrinking''~\cite{DBLP:conf/sat/FengB20,DBLP:conf/sat/FleuryB21} which can be interpreted
+as a more advanced version of ``minimization''~\cite{DBLP:conf/sat/EenB05}. Minimization
+only removes literals from the learned clause following resolution paths in the implication graph, but does not add any literals.
+The additional idea in shrinking is to continue trying
+to resolve literals on a particular decision level until all but one (the first UIP on that level) is
+left, however, without being allowed to add literals from a lower decision level.
+\iffalse
+unless they can be minimized away in turn.
+This technique is highly beneficial in reducing memory usage and also increases
+solver performance for large instances
+with a high fraction of binary clauses, such as those from the planning track in the SAT
+Competition 2020.
+\fi
+
+Our approach differs from the FRAT
+flow~\cite{DBLP:journals/lmcs/BaekCH22}.  Their solver performs a post-process
+analysis of the final learned clause $C_{\mathit{mini+shrink}}$ to
+rediscover the necessary propagation by traversing the implication
+graph, which repeats conflict analysis work.  In contrast, we split
+the justification process into two parts.  First, we derive the
+justification for the clause $C_{\mathit{UIP}}$
+alongside conflict analysis with little to no overhead.  Then, we
+derive the missing resolution steps between $C_{\mathit{UIP}}$
+and the shrunken and minimized clause $C_{\mathit{mini+shrink}}$ as a post-process analysis.  We identify
+literals that differ and add the required reason clauses.  Although we
+still traverse parts of the implication graph, we avoid
+repeating the conflict analysis.
+
+Our Algorithm~\ref{algo:mini} shows the postprocessing step only.  The
+first step has already derived the justification
+$\mathit{Chain}_{\mathit{UIP}}$ for the first UIP clause
+$C_{\mathit{original}}$ from conflict analysis.  Our postprocessing
+step calculates the justification chain in
+$\mathit{Chain}_{\mathit{mini+shrink}}$.  For each removed literal $L$
+(in $C_{\mathit{original}}$ but not in $C_{\mathit{shrunken}}$), we
+extend the chain with additional justification steps
+(Line~\ref{code:calcjustification}).
+
+The function $\mathrm{calculate\_LRAT\_Chain}(L)$
+(Line~\ref{code:calclrat}) extends the chains with the required reason
+and preserves the resolution order.
+It goes recursively over all literals of the reasons and extends the chain with the reason.
+If the function reaches a
+previously used reason ($\mathit{already\_added}$), it can stop the analysis to
+avoid duplicated reasons in the chain.  Our calculation stops when we
+reach literals that appear in $C_{\mathit{shrunken}}$ ($L \not\in
+\mathit{Chain}_{\mathit{new}}$).  After calculating the justification
+chain for minimization and shrink, we merge the two chains
+$\mathit{Chain}_{\mathit{UIP}}$ and $\mathit{Chain}_{\mathit{new}}$
+(Line~\ref{code:mergechains}).  Starting with an empty chain provides
+a valid proof when removing unit literals during both phases.
+
+\begin{algorithm}
+  \LinesNumbered
+  %\SetAlgoLined
+  \SetAlgoNoEnd
+    \SetKwFunction{CalcLRAT}{calculate\_LRAT\_Chain}
+    \SetKwData{CUIP}{$C_{\mathit{original}}$}
+    \SetKwData{Cnew}{$C_{\mathit{shrunken}}$}
+    \SetKwData{ChainUIP}{$\mathit{Chain}_{\mathit{UIP}}$}
+    \SetKwData{Chainnew}{$\mathit{Chain}_{\mathit{mini+shrink}}$}
+    \SetKwData{Chainfull}{$\mathit{Chain}_{\mathit{full}}$}
+    \SetKwData{alreadanalyzed}{$\mathit{already\_added}$}
+    
+    %\KwData{The clause before \CUIP and after shrinking \Cnew}
+    \KwData{currently build LRAT chain \ChainUIP}
+    \KwData{the clause before \CUIP and after minimization and shrinking \Cnew}
+    \KwResult{resulting LRAT chain \Chainfull}
+
+    \bigskip
+
+    \SetKwProg{Fn}{}{}{}
+    
+  \ForEach{literal L in \CUIP} {
+	\smallskip
+  	 \If{L not in \Cnew}{
+	\smallskip
+        \CalcLRAT{L}\label{code:calcjustification}
+      }
+    }
+  \bigskip
+  \Chainfull := \Chainnew + \ChainUIP \label{code:mergechains}
+  \bigskip
+  
+    \Fn{\CalcLRAT(\text{Literal} K)}{\label{code:calclrat}
+    \smallskip  
+    \smallskip  
+      $C$ := reason of $K$ in the current assignment\\[1ex]
+      \ForEach{Literal $L$ in $C$ different from $K$} {
+	\smallskip
+         \alreadanalyzed ${}:={}$ reason of $L$ in \Chainnew\\[1ex]
+  	 \If { $\neg \alreadanalyzed \;\text{and}\; L \not\in \Cnew$}{
+	   \smallskip
+        \CalcLRAT{L}
+      }
+    }
+  \smallskip
+  \smallskip
+    append $C$ to \Chainnew\\[1ex]
+  }
+\bigskip
+\caption{\label{algo:mini}Recursively calculating the prefix LRAT chain for shrinking and minimizing.}
+\end{algorithm}
+
+Our approach can potentially lead to duplicated unit clauses: We add unit clauses
+to the chain during conflict analysis. We can guarantee no duplicates here, but
+the same unit clause might also be added during post process analysis, which means
+it is actually needed earlier in $\mathit{Chain}_{\mathit{mini+shrink}}$ and we could remove it from $\mathit{Chain}_{\mathit{UIP}}$.
+Note that this cannot happen for larger clauses since they can appear at most once as a
+reason for some assignment.
+Since removing these unit clauses afterwards would be rather costly, we actually
+collect unit clauses separately and put
+them at the start of the merged chain after the post process analysis
+for $C_{\mathit{shrunken}}$ is finished. Like this, we can avoid duplicates and
+still get a correct justification chain for $C_{\mathit{shrunken}}$.
+
+\iffalse
+We give a flavor of the implementation
+that calculates the justification ($\mathit{Chain}_{\mathit{new}}$) for shrinking and minimization and adds it
+to the justification from the conflict analysis $\mathit{Chain}_{\mathit{old}}$.
+
+
+
+: If unit clause
+are used both in conflict analysis and during shrinking or minimization,
+the clause ID can appear \emph{twice} in the resolution chain.
+This is accepted by the \cakelpr{} checker, but might produce checking overhead.
+\fi
+
+\subsection{Equivalence Literal Substitution}
+\label{sec:equiv-liter-subst}
+
+While the justification process for clauses derived during variable elimination
+and other preprocessing techniques that rely on propagation and conflict analysis is
+similar to normal learning, producing
+LRAT proof justifications for equivalent literal substitution~\cite{BiereJarvisaloKiesl-SAT-Handbook-2021}
+is more involved.
+
+Equivalent literal substitution detects and replaces equivalent literals by a chosen
+representative. For example, if the problem includes the three clauses
+\((\neg A\lor B)\), \((\neg B \lor C)\) and \((\neg C \vee A)\) we know that \(A\), \(B\) and
+\(C\) are equivalent and we can replace all occurrences of either
+literal by one of the others.
+%
+As is common we use Tarjan's algorithm~\cite{DBLP:journals/siamcomp/Tarjan72}
+to detect cycles in the graph spanned by the binary
+clauses (i.e., the binary implication graph)
+and fix a representative for each cycle~\cite{BiereJarvisaloKiesl-SAT-Handbook-2021}.
+In the DRAT proof we can simply dump all changed clauses and delete the old ones.
+
+For LRAT we have to produce the resolution chains. After
+fixing representatives, proof chains have to be produced for every
+changed clause separately. We derive the justification for each changed or removed
+literal, similarly as for the shrunken clause in conflict analysis~\ref{sec:prop-vivif}.
+
+%For LRAT we have to produce the resolution chains. After
+%fixing representatives, proof chains have to be produced for every
+%changed clause separately using a similar recursive algorithm as the one for shrinking above in
+%ection~\ref{sec:prop-vivif}, i.e., we follow the cycle from the literal to its representative.
+%
+Fixing the representative is a rather arbitrary choice (the smallest absolute value in this implementation).
+We considered changing this to the first visited literal during DFS in Tarjan's Algorithm,
+in order to allow reusing some computation and potentially shorten proofs, but 
+in the end decided against changing solver behavior.
+
+% \begin{verbatim}
+% @Florian add/change whatever you want in thes section
+% \end{verbatim}
+% \begin{verbatim}
+% (4) (also in equivalent literal detection) Cycles in the binary
+%  implication graph can be contracted to a single literal
+%  in the cycle. Every other literal in the cycle occuring 
+% in any clause is then replaced by the literal chosen as 
+% representative of this cycle. In order to justify this 
+% additionally to computing the cycles we need to compute 
+% a spanning tree for the cycle rooting at the chosen representative.
+% This computation could be saved by choosing the representative
+%  differently, further changing the behaviour of the solve
+%  which we did not want.
+% (a spanning tree for any cycle could be generated alongside the search
+%  for cycles but we cannot guarantee that this tree is rooted at the chosen representitive)
+% \end{verbatim}
+
+
+\section{Trimming LRAT proofs}
+\label{sec:trimming-lrat-proofs}
+
+In preliminary experiments we observed that the FRAT flow~\cite{DBLP:journals/lmcs/BaekCH22}
+produced significantly smaller proofs. \fratrs{} trims the proof during translation to LRAT, i.e., it
+omits clauses that are not needed to derive the empty clause, allowing for much more efficient proof checking.
+%
+We concluded that we needed a tool to do such trimming on LRAT directly in order
+to obtain an efficient pure LRAT proof generation and checking flow.
+
+Even though trimming is effective, it is not obvious how to cheaply achieve
+such reduction for
+DRAT proofs because dependencies between proof steps are lacking.
+Luckily, in LRAT these dependencies are explicit.
+Therefore we implemented
+ \lrattrim{}~\cite{lrat-trim}, an 
+open-source 
+LRAT proof 
+trimming and checking tool.
+It often reduces proofs by a factor of 2 to 3,
+again emphasizing how many useless clauses a SAT solver actually
+derives during search.
+
+Trimming LRAT proofs consists of a backward reachability
+analysis starting from the empty clause towards the
+clauses of the original CNF, marking reached clauses as needed.
+Clauses unmarked after this traversal are redundant and can be trimmed.
+This algorithm is implemented
+by depth first search (DFS) along antecedent clauses
+in justification chains.
+
+It also determines the last usage of each clause ID and remaps original
+clause ids to a consecutive ID range.
+\iffalse
+To facilitate this traversal clauses are represented through
+their integer ID and the parser constructs a table mapping clause ids
+to clause literals and a separate table mapping clause ids to antecedents.
+Therefore before the DFS starts we also allocate another table
+mapping clause ids to the last clause ID where it was used.
+\fi
+On completion we can dump the proofs back to a file in a forward manner, only writing
+needed clauses and their antecedents and skipping redundant clauses. 
+While doing this we can eagerly mark clauses once they are not used anymore.
+\iffalse
+We also remap original clause
+ids to a consecutive ID range without ids of trimmed clause.
+Mapped clause ids are only needed during writing proof steps though.
+\fi
+
+\iffalse
+Furthermore, for each clause
+we maintain a deletion list of clauses which have that clause as their last
+occurrence (occur in its antecedent chain).  Theses lists are
+filled whenever a needed clause is written to disk.  After writing
+a needed clause it is checked whether its deletion list is non-empty,
+and if it is not we will write one deletion step for all the clause ids
+in that list to disk (as LRAT supports deletion of multiple clauses
+in one deletion step).
+\fi
+
+Before starting to write proof lines,
+we check whether there are redundant original clauses
+and if so write a single deletion line with all
+unused original clause ids.  This minimizes the life-span
+of clauses in the trimmed LRAT proof,
+both for added and
+original clauses.
+Note that \lrattrim{}, in contrast to \drattrim{}, does not require access to the original CNF nor looks at
+literals of clauses to trim proofs.
+
+\iffalse
+and , as all the necessary information is contained in the LRAT format
+in contrast to \drattrim{},
+as LRAT proofs have all the necessary information, i.e., literals of clauses,
+particularly those of the original CNF, are not needed for trimming.
+\fi
+
+We also implemented a checking mode in \lrattrim{} which, given the
+original CNF and an LRAT proof, checks that the resolution chains of added
+clauses can be resolved to produce the claimed clauses.
+It also checks that clauses are not used after they are deleted in a deletion step. 
+%
+This checking mode comes in two flavors.
+The default is to first trim the clauses
+with the trimming algorithm described above and only
+check needed clauses.
+Alternatively \lrattrim{} supports forward checking, which checks added clauses on-the-fly
+during parsing and in particular allows to delete clauses in deletion
+steps eagerly.
+
+On the one hand, forward checking reduces maximum memory usage to at most that of the solving process,
+whereas backward checking needs
+to keep the whole proof in memory which is usually much more than maximum usage during solving.
+%
+On the other hand, forward checking substantially increases
+checking time, as all clauses have to be checked without trimming information,
+irrespective of being needed or not.
+% but, in principle, allows on-the-fly checking during proof generation.
+% AB: still need to implement skipping '^[csv]' steps ...
+%(and even allows to pipe and check proofs on-the-fly)
+%The clausal core of the original CNF can be written too.
+
+During the development of \lrattrim{}
+substantial effort went into
+making parsing as fast and robust as possible and also provide meaningful
+error messages during parsing and checking.
+The parsing code amounts to roughly 900 lines of C code out
+of 2400 lines for the whole tool (including comments but formatted with \textsc{ClangFormat}).
+
+All three proof formats (DRAT, FRAT and LRAT) have a binary version.
+\iffalse   my opinion (florian)
+which unfortunately is not
+well documented (we had to reverse engineer the syntax from existing code).
+\fi
+We implemented the binary format for LRAT (both in \cadical{} and in \lrattrim{})
+which is only supported by \clrat{}~\cite{CLRAT}, a formally verified
+checker for LRAT using ACL2.
+\iffalse
+While implementing binary proofs, we realized that \drattrim{} 
+is able to generate
+binary LRAT proofs 
+using the options ``\texttt{-L -C}'', which
+unfortunately at this point cannot be checked by any verified tool.
+\fi
+We are grateful to
+Peter Lammich who provided us a tool that converts LRAT proofs
+(with some extra requirements on proofs)
+to GRAT~\cite{DBLP:journals/jar/Lammich20} that his checker can check.
+However, GRAT is stricter as duplicate or extraneous ids are not allowed.
+We leave it to future work to produce stricter proofs.
+\iffalse
+Here is the BNF:
+
+\setlength{\grammarparsep}{0.1cm}
+\begin{grammar}
+  <statement> ::= a <id> <clause> 0 <id>* 0| d <id>+ 0
+
+  <id> ::= int64 encoded as in DRAT
+
+  <literal> ::= int32 except for 0 and INT32\_MAX-1 encoded as in DRAT
+
+  <clause> ::= <literal>*
+\end{grammar}
+\fi
+
+\iffalse
+Furthermore, note, that there is also a binary FRAT format that has the same structure as its ASCII counterpart.
+It mostly differs from LRAT by deletions being required to start with an ID instead of a
+``\texttt{d}''.
+Therefore, an LRAT proof cannot be interpreted as an FRAT proof nor vice versa.
+\fi
+
+\section{Experiments}
+\label{sec:experiments}
+\begin{figure}[t]
+  \centering
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../logs/figures/cadical-frat.pdf}
+        \caption{Checking FRAT proofs of our new \cadical{} version 1.5.1 from UFR but
+	in the configuration of \textsc{CaDiCaL} version 1.2.1 used in~\cite{DBLP:journals/lmcs/BaekCH22}.}
+        \label{fig:frat}
+      \end{subfigure}
+      \hfill
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../logs/figures/cadical-lrat-noshrink.pdf}
+        \caption{Checking LRAT proofs of our new \cadical{} version 1.5.1 from UFR but
+	in the configuration  of \textsc{CaDiCaL} version 1.2.1 used in ~\cite{DBLP:journals/lmcs/BaekCH22}.}
+        \label{fig:lrat-no-shrinking}
+      \end{subfigure}
+      \\[2ex]
+    \begin{subfigure}[t]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../logs/figures/cadical-trimming.pdf}
+        \caption{Comparing trimmers \lrattrim{}\,vs.\,\fratrs{} (LRAT in FRAT) using \cadical{} 1.5.1 proofs
+	before checking with \cakelpr{}, except for the run ``LRAT-trim+check'' which checks with \lrattrim{}.}
+        \label{fig:all-trimming-cdf}
+      \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../logs/figures/cadical-all-noshrink.pdf}
+        \caption{CDF of all the solving and checking flows with the vertical black line indicating the 5,000 seconds timeout used for
+	the solver, showing that our flow is the fastest with fewer timeouts.}
+        \label{fig:all-checking-cdf}
+      \end{subfigure}
+      \\[2ex]
+  \caption{Performance on unsatisfiable instances from the SAT Competition 2022.}
+  \label{fig:performance-with-checking}
+\end{figure}
+
+
+\iffalse
+After implementing LRAT production in our SAT solver
+\cadical{}, we first identified a minor necessary change
+%(Section~\ref{sec:no-behav-diff}) 
+that has no major impact. Besides fuzzing we
+have also tested our approach including for input files containing unit
+clauses, which was not supported by FRAT.
+%(Section~\ref{sec:fuzzing})
+Finally we report on the performance difference.
+%(Section~\ref{sec:performance-loss}).
+\fi
+
+
+%\subsection{No Behavior Difference}
+%\label{sec:no-behav-diff}
+
+
+While checking for our extensions not to change solver behavior
+with and without proof generation, i.e., validating \ref{same-behavior},
+we realized that two changes to the solver became necessary.
+%
+First, scheduling of garbage
+collection during bounded-variable elimination depends on the number of bytes allocated for clauses,
+which changed with LRAT proof generation, as clauses require an ID and thus became larger.
+Therefore, our \cadical{} extension always uses clause ids,
+which is not expected to have major impact on performance nor memory usage. 
+The second change is due to the way conflicts were derived in equivalent
+literal detection.  Originally detection was aborted on such a conflict, which
+we now simply delay until detection finishes. Then
+the conflicting literal 
+is propagated
+to yield
+a proper LRAT proof.
+
+%\subsection{Robustness by Fuzzing}
+%\label{sec:fuzzing}
+
+
+Our goal \ref{correct-proof} of being able to always generate correct proofs was tested by
+intensive fuzzing of our solver, proof generation, and proof checking.
+We attempted to apply the same approach to the FRAT extension of \cadical{}~\cite{DBLP:journals/lmcs/BaekCH22}
+but immediately experienced failing proofs, due to several reasons, particularly with respect to
+handling unit clauses in the input CNF. %DODO really input proof not CNF?
+%
+We also observed that chains often listed the same clause id
+multiple times. Reducing these occurrences might lead to a substantial speedup,
+since justifying one literal can pull in several more clauses (e.g., if some of the
+literals have been removed by minimization).
+
+After fuzzing, we ran our LRAT flow on the problems of the SAT Competition 2022
+%(results reported below\iffalse in Section~\ref{sec:perf-sat-comp}\fi)
+and found three issues:
+%
+%\begin{enumerate*}
+%\item 
+($i$)~\cakelpr{} did not accept some input files, because they contained trailing empty lines, which we then removed manually;
+%\item 
+($ii$)~\cakelpr{} requires a very large amount of memory (around the size of the proof file);
+%\item 
+($iii$)
+one node of the cluster showed irregular behavior, when many proofs were written to the temporary disk at the same time, which
+lead to corrupted proof files resulting in an \lrattrim{} error.
+Reducing the number of jobs per node fixed this issue and
+we did not discover any further problem with the generated proofs, 
+validating (A)
+and
+showing again the effectiveness of fuzzing.
+%Simply rerunning affected experiments with less
+%processes in parallel fixed this issue.
+%but we could not reproduce this behavior. % TODO what was the solution then?
+%\end{enumerate*}
+%
+
+%\subsection{Performance Loss}
+%\label{sec:performance-loss}
+
+To compare performance, i.e., showing that we achieved (B), of our extended version to the base
+version of \cadical{} (added clause ids taking up space without being used), we let both versions
+write generated proofs to \texttt{/dev/null}  in order to ensure that we do not introduce any bias
+due to file I/O limits as LRAT proofs exceed DRAT proofs in size substantially.
+This yielded an average overhead of 5\% for our new LRAT proof production versus DRAT in base \cadical{}.
+% This is a small performance cost, that is unlikely to matter for real-world problems.
+
+
+
+% \begin{verbatim}
+%$ scatter-plot ../devnullproofs/1.5.2+id-devnullproof/ ../devnullproofs/1.5.2+lrat-devnullproof/lrat/ 
+%
+% $ /home/fleury/bin/leastsquares /tmp/scatter-plot-coos
+% 0.997373*x+43.486086
+% \end{verbatim}
+
+%\subsection{Performance on the SAT Competition 2022}
+%\label{sec:perf-sat-comp}
+
+For the remaining empirical analysis we have chosen to focus on the 127
+benchmarks from the SAT Competition 2022, which were shown to be unsatisfiable during
+the competition.
+%In essence, we could also check the steps for satisfiable problems (i.e., that
+%every step is implied), but checking the model is more efficient.
+First, we tried to determine how much proofs can be reduced with our
+new tool \lrattrim{}.
+%To this extent
+%we compared sizes of trimmed and 
+%untrimmed proofs in percent in Figure~\ref{fig:trimming}.
+It turns out,
+that some proofs were reduced
+to \emph{one percent}, i.e., 99\% of the output is not useful for deriving
+the contradiction. These problems stem from the \texttt{sudoku-N30} family.
+In other proofs 80\% and more clauses are needed -- most of these
+problems have a short runtime (around \SI{200}{\second}), contain a large
+amount of fixed variables and accordingly many clauses are simplified by removing
+these units, where each removal contributes a proof step.
+
+In order to determine the performance of our new solving and checking flow,
+we compared the following
+three workflows: ($i$)~the (competition) DRAT workflow, i.e., generating the DRAT proof, converting
+it to LRAT with \drattrim{}, then checking that proof; ($ii$)~the FRAT workflow,
+i.e., generating the FRAT proof, converting it to LRAT with \fratrs, then checking it;
+($iii$)~our new LRAT flow including generating, trimming, and checking the
+proof. All workflows use binary proof formats, except for feeding \cakelpr{} at the end.
+%was used as the formally verified checker of the trimmed proofs at the end for all three flows.
+%DRAT and FRAT use the binary proof format, while LRAT the (larger) ASCII proofs,
+%ecause no binary LRAT format was properly described (and it subtly differs from the binary FRAT).
+%he three different steps are plotted in Figure~\ref{fig:performance-with-checking}.
+% TODO -- all three workflows now use binary
+% TODO -- Do we want to describe the binary format??
+
+We also ported the FRAT extensions~\cite{DBLP:journals/lmcs/BaekCH22} to the newest \cadical{} version,
+but did not try to fix any issues.
+%(as fuzzing produced too many errors on the original version from CMU as
+%well as for the ported version).
+Nevertheless, we ran the ported version
+(see Figure~\ref{fig:frat}) which is now able to use the latest heuristics
+used in \cadical{},
+except for shrinking which had to be deactivated as it is not supported by
+the original FRAT code~\cite{DBLP:journals/lmcs/BaekCH22}.
+
+The first observation we can make is that the overhead of trimming and proof
+checking is quite consistent among our configurations, but wildly differs for FRAT:
+If many clauses without justification are used for the proof, the translation needs a lot of
+search -- although, as expected, less than using the conversion to DRAT%
+\iflongversion
+  (see Figure~\ref{fig:drat-checking} in appendix).
+\else
+.
+\fi
+
+To our surprise, we observed several timeouts though.
+They all seem to origin from one family submitted by AWS in 2022, where
+solving took less than \SI{600}{\second}, but elaboration (translation)
+never finishes. In comparison, \drattrim{}
+also needs a very long time (\SI{6000}{\second}), but stays well below
+the time limit. It is unclear what the problem is and thus
+we tested one instance \texttt{aws-c-common:aws\_priority\_queue\_s\_sift\_either}
+on a (twice as fast) computer where it took nearly \SI{10}{\hour} %\SI{35847}{\second}
+to convert the \SI{400}{\mega\byte} FRAT proof to a \SI{3.8}{\giga\byte}
+LRAT proof. We have reported the issue on GitHub,\footnote{\url{https://github.com/digama0/frat/issues/18}} but have not heard back yet.
+
+A comparison of \lrattrim{} with \fratrs{}
+in both \emph{normal mode} and \emph{super strict mode}
+is shown in Figure~\ref{fig:all-trimming-cdf}.
+We used the feature of our extended version of \cadical{} to generate proofs both in LRAT and in FRAT,
+where in FRAT, every step is properly justified. 
+The results show that \lrattrim{} scales much better than \fratrs{}, although there was
+a bug which we reported that made \fratrs{} significantly slower when not using the \emph{super strict mode}.
+%TODO what about binary here?
+Furthermore, \lrattrim{} can also check proofs
+directly and it turns out that the additional overhead of this (untrusted) checking
+compared to parsing and trimming is small.
+
+Overall, our new LRAT proof flow performs best, with reasonably small overhead on solving. %TODO I want to see a percentage here.
+To ease visual comparison, we printed all different configurations into a single
+graph (Figure~\ref{fig:all-checking-cdf}). The fastest option is (of course)
+``no-checking'' but our new method is not too far behind.
+Figure~\ref{fig:cadical-overhead} shows that the overhead (cost) of proof checking compared to not checking
+any proofs.  Our approach performs best taking only 30\% more time than pure solving. The existing competing
+approaches are much slower with
+DRAT incurring an overhead of 180\%
+and FRAT still requiring 125\% more time than solving, i.e., both 
+more than doubling overall certification time, while our approach has faster
+checking than solving.
+
+As a sanity check, we also tested our LRAT proof flow using the
+default shrinking (see
+Fig~\ref{fig:all-checking-cdf-with-shrinking}). We observed that our
+new approach remains faster compared to the FRAT proof flow,
+confirming our initial findings.
+
+\iffalse
+they take \emph{longer} to verify than finding the proof,
+the verification process for the other approaches is actually \emph{slower} than finding the proof,
+with 125\% for FRAT and 180\% for DRAT.
+\fi
+
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=1.00]{../logs/figures/cadical-all-percent.pdf}
+  \caption{Overhead of the whole checking flow using FRAT, DRAT and our new LRAT flow
+           on top of plain solving (without proof generation and checking), with averages shown
+	   as horizontal lines (LRAT 30\% overhead, FRAT 125\% and DRAT 180\% overhead).}
+  \label{fig:cadical-overhead}
+\end{figure}
+
+
+
+
+\begin{figure}
+  \centering
+        \includegraphics[width=\textwidth]{../logs/figures/cadical-all.pdf}
+        \caption{CDF all methods with vertical line indicating timeout of the solver with default options (i.e., with shrinking not
+	supported by the \textsc{CaDiCaL}).}
+        \label{fig:all-checking-cdf-with-shrinking}
+\end{figure}
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+
+We have implemented native LRAT proof production in our SAT solver
+\cadical{}. Even though direct production of LRAT
+proofs slows down the solver slightly this loss is by far offset by the
+reduction in proof checking time, both compared to DRAT and FRAT proofs.
+%The offset is only 30\% compared to 125\% for FRAT and 180\% for DRAT.
+At the end our certification flow adds only 30\% overhead compared to pure solving
+while other approaches take more than twice the time for certification.
+
+It might be interesting to apply this work to recent results on distributed proof generation
+in the context of the cloud solver~\textsc{Mallob}~\cite{parallel-frat} as well as our multi-core solver
+in~\textsc{Gimsatul}~\cite{DBLP:journals/corr/abs-2207-13577}. We also see the question
+of how to handle clause ids for virtual binary clauses as a technical challenge.
+Such clauses occur in both~\textsc{Gimsatul}~\cite{DBLP:journals/corr/abs-2207-13577}
+and the state-of-the-art sequential solver \textsc{kissat}~\cite{BiereFleury-SAT-Competition-2022-solvers}.
+
+\iffalse
+One key feature work is to redo the work on the proofs generated by the
+distributed clause-sharing \textsc{Mallob}~\cite{parallel-frat}, since
+\cadical{} can now produce LRAT steps for each transformation, including
+inprocessing.
+The experiments also show that trimming is very fast, but
+interestingly, trimming is very close to backwards checking -- the
+only difference is that we do not resolve the clause to check whether
+the new clause is really the result of resolving the given
+antecedents. Therefore, it would be interested to do the checks online
+directly -- even if this does not allow users to check proofs offline.
+\fi
+
+
+
+
+% \clearpage
+% \newpage
+%%
+%% Bibliography
+%%
+
+%% Please use bibtex, 
+
+\bibliography{paper}
+
+\iflongversion
+\newpage
+\appendix
+
+\section{More experiments}
+
+In this appendix we present some additional plots which did not fit into the main part of the
+paper, might shed more light on some of the experimental data, but we
+do not consider to be essential.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=.7]{../logs/figures/memory-sizes}
+  \caption{Trimming reduction of the ASCII proof files on solved unsatisfiable instances from the SAT Competition 2022.}
+  \label{fig:trimming}
+\end{figure}
+
+
+
+\begin{figure}[h!]
+  \centering
+  
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{../logs/figures/cadical-drat.pdf}
+        \caption{DRAT conversion to LRAT \\(without full verification)}
+        \label{fig:drat-checking}
+      \end{subfigure}
+      \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{../logs/figures/cadical-frat-old.pdf}
+        \caption{Original FRAT version in \cadical{} 1.2.1 (compared to our ported version in Figure~\ref{fig:frat})}
+        \label{fig:old-frat}
+      \end{subfigure}
+      \\[2ex]
+    \begin{subfigure}[b]{0.47\textwidth}
+        \includegraphics[width=\textwidth]{../logs/figures/cadical-lrat.pdf}
+        \caption{Direct LRAT production \\with \cadical{} 1.5.1}
+        \label{fig:lrat-with-shrinking}
+      \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \includegraphics[width=\textwidth]{../logs/figures/cadical-lrat-no-trimming.pdf}
+        \caption{LRAT with \cadical{} 1.5.1 without trimming the proof with checking}
+        \label{fig:lrat-checking-notrimming}
+      \end{subfigure}
+  \caption{Performance on the same set of problems of the SAT Competition 2022 (not all of them are solved), showing that the verification part is not the most critical.}
+  \label{fig:performance-with-checking-with-shrinking-appendix}
+\end{figure}
+
+
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\textwidth]{../logs/figures/absolute-memory-sizes.pdf}
+  
+  
+  \caption{Size of the proofs in Bytes.}
+  \label{fig:memory-sizes-appendix}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics{../logs/figures/cadical-lrat.pdf}
+  \caption{\cadical{} 1.5.1 on 127 solved unsatisfiable instances of SAT Competition 2022.}
+  \label{fig:performance-with-checking-with-shrinking}
+\end{figure}
+
+\fi
+\end{document}
