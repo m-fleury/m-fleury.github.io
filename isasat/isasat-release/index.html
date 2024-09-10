@@ -65,7 +65,44 @@
 	<article class="post">
 		<h1><a href="https://m-fleury.github.io/isasat/isasat-release/">IsaSAT Releases</a> </h1>
 
-		<div class="post-content"><h2 id="h:2023-sc2023">SAT Competition 2023</h2>
+		<div class="post-content"><h2 id="h:2024-sc2024">SAT Competition 2024</h2>
+<p>There is not much to tell for the <a href="../../src/isasat/isasat-sc2024.tar.xz">release</a> for this year of the SAT
+Competition 2024. This year, I finished last, exactly as
+expected. However, I am very close to the second-to-last on SAT
+benchmarks.</p>
+<p>My main performance problem seems to be UNSAT problems, which I blame
+on missing preprocessing. I intended to implement variable elimination
+based on the model reconstruction implemented in Katharina Wagner&rsquo;s
+Master&rsquo;s thesis in Isabelle. I actually started to implement it, but,
+as usual, once I went to proofs, things became more complicated. But
+it is interesting.</p>
+<p>SAT solvers implicitly have two different sets of variables: the ones
+that can be used and the ones that appear in the clauses. All
+variables in clauses can be used… but the first set is one to be used
+to define the size of the various arrays. However, some variables
+might have been eliminated, making them still usable. Does not seem to
+be issue, but in my correctness proofs of CDCL, I merge these sets
+(and this is an invariant). In retrospect, it is obvious that it would
+be a problem…  but I started that 9 years ago and it is the very first
+time that it is a roadblock.</p>
+<p>The equality of the variable sets caused a minor issue: during
+subsumption, it can happen that a variable is removed. To avoid this
+issue, I simply kept the clauses but proved that I never have to use
+them for propagations/conflict (and the clauses is deleted from the
+concrete code, it is just kept for the proofs).</p>
+<p>In my first attempt to add variable elimination, I thought I could
+just use the same trick. Except that it is annoying to keep the
+clauses and work on them. It is also not so obvious that all these
+clauses are not required to be considered for resolution during
+variable elimination, especially if some generated clauses are removed
+because of tautologies.</p>
+<p>In my second attempt, I tried to just make tautologies out of subsumed
+clauses in order to ensure that we do need to consider those clauses
+for variable elimination because they are already tautologies. But
+that fails for unit clauses.</p>
+<p>For my current attempt, let&rsquo;s see if it works and if it fails
+again. Maybe I will be done by next year.</p>
+<h2 id="h:2023-sc2023">SAT Competition 2023</h2>
 <p>This year, once again, I submitted IsaSAT to the SAT Competition 2023
 (the source code is as always <a href="../../src/isasat/isasat-sc2023.zip">available</a>). According to the results, I
 did not finish last. However, compared to other solvers, I am trailing
@@ -138,31 +175,31 @@ which are solved in the <a href="../../src/isasat/isasat-v2022_01-30966c1.tar.xz
 </figure>
 
 <table>
-<thead>
-<tr>
-<th></th>
-<th>solved</th>
-<th>sat</th>
-<th>uns</th>
-<th>par2</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>with-proper-scheduling</td>
-<td>198</td>
-<td>87</td>
-<td>111</td>
-<td>2273168</td>
-</tr>
-<tr>
-<td>sc2022</td>
-<td>176</td>
-<td>85</td>
-<td>91</td>
-<td>2457296</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: left"></th>
+          <th style="text-align: left">solved</th>
+          <th style="text-align: left">sat</th>
+          <th style="text-align: left">uns</th>
+          <th style="text-align: left">par2</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: left">with-proper-scheduling</td>
+          <td style="text-align: left">198</td>
+          <td style="text-align: left">87</td>
+          <td style="text-align: left">111</td>
+          <td style="text-align: left">2273168</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">sc2022</td>
+          <td style="text-align: left">176</td>
+          <td style="text-align: left">85</td>
+          <td style="text-align: left">91</td>
+          <td style="text-align: left">2457296</td>
+      </tr>
+  </tbody>
 </table>
 <p>(Better <a href="/ox-hugo/sc2021-isasat-schedule-fix.pdf">PDF version</a> of the cactus plot). So, clearly a good fix. I
 will probably try to describe to the bug in more details, but in
@@ -191,45 +228,45 @@ been the slowest solver (if I had been able to make IsaSAT work on
 Starexec). It is not a great result, but it is an indication how
 far you can go without inprocessing.</p>
 <table>
-<thead>
-<tr>
-<th></th>
-<th></th>
-<th>Solved</th>
-<th></th>
-<th></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Solver</td>
-<td>SAT+UNSAT</td>
-<td>SAT</td>
-<td>UNSAT</td>
-<td>PAR-2</td>
-</tr>
-<tr>
-<td>Kissat</td>
-<td>283</td>
-<td>137</td>
-<td>146</td>
-<td>1377523</td>
-</tr>
-<tr>
-<td>IsaSAT</td>
-<td>137</td>
-<td>69</td>
-<td>68</td>
-<td>2795128</td>
-</tr>
-<tr>
-<td>CleanMaple_PriPro</td>
-<td>136</td>
-<td>71</td>
-<td>65</td>
-<td>2868588</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: left"></th>
+          <th style="text-align: left"></th>
+          <th style="text-align: left">Solved</th>
+          <th style="text-align: left"></th>
+          <th style="text-align: left"></th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: left">Solver</td>
+          <td style="text-align: left">SAT+UNSAT</td>
+          <td style="text-align: left">SAT</td>
+          <td style="text-align: left">UNSAT</td>
+          <td style="text-align: left">PAR-2</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Kissat</td>
+          <td style="text-align: left">283</td>
+          <td style="text-align: left">137</td>
+          <td style="text-align: left">146</td>
+          <td style="text-align: left">1377523</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">IsaSAT</td>
+          <td style="text-align: left">137</td>
+          <td style="text-align: left">69</td>
+          <td style="text-align: left">68</td>
+          <td style="text-align: left">2795128</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">CleanMaple_PriPro</td>
+          <td style="text-align: left">136</td>
+          <td style="text-align: left">71</td>
+          <td style="text-align: left">65</td>
+          <td style="text-align: left">2868588</td>
+      </tr>
+  </tbody>
 </table>
 <p>The conclusion is three-fold. First, it is possible to verify
 efficient code in a proof assistant. Second, there is no reason to
